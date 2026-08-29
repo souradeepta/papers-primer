@@ -6,7 +6,7 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 
 | # | Paper | arXiv | Status |
 |---|-------|-------|--------|
-| 01 | Attention Is All You Need | [1706.03762](https://arxiv.org/abs/1706.03762) | planned |
+| 01 | [Attention Is All You Need](papers/01-attention-is-all-you-need/README.md) | [1706.03762](https://arxiv.org/abs/1706.03762) | done |
 | 02 | BERT | [1810.04805](https://arxiv.org/abs/1810.04805) | planned |
 | 03 | GPT-3: Language Models are Few-Shot Learners | [2005.14165](https://arxiv.org/abs/2005.14165) | planned |
 | 04 | LoRA: Low-Rank Adaptation | [2106.09685](https://arxiv.org/abs/2106.09685) | planned |
