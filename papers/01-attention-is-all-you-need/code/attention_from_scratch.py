@@ -61,7 +61,10 @@ if __name__ == "__main__":
     # Causal (decoder self-attention) case: verify masking actually zeroes
     # out attention to future positions.
     mask = causal_mask(5)
-    q = k = v = x.view(2, 4, 5, 4)[:, 0]  # reuse x reshaped to a single head, 4 dims
+    # Raw unprojected data reshaped to a single (batch, head, seq, dim)
+    # slice, purely to get a tensor of the right shape for testing the
+    # mask's effect on the weights -- not a real head's Q/K/V projection.
+    q = k = v = x.view(2, 4, 5, 4)[:, 0]
     _, weights = scaled_dot_product_attention(q.unsqueeze(1), k.unsqueeze(1), v.unsqueeze(1), mask)
     upper_triangle = weights.squeeze(1).triu(diagonal=1)
     assert torch.allclose(upper_triangle, torch.zeros_like(upper_triangle)), (

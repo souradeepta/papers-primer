@@ -46,8 +46,8 @@ Transformer scored 28.4 BLEU, beating the best previously reported models
 (including ensembles) by more than 2 BLEU, while training in 3.5 days on
 8 P100 GPUs — a small fraction of the training cost of the best prior
 models. On English-to-French it reached 41.8 BLEU, a new single-model
-state of the art, at 1/4 the training cost of the previous best
-single model.
+state of the art, at less than 1/4 the training cost of the previous
+state-of-the-art model.
 
 What changed after: within about a year, this architecture became the
 substrate for essentially every major advance in NLP — BERT (bidirectional
@@ -91,11 +91,11 @@ flowchart LR
         T2["cat"]
         T3["sat"]
     end
-    T1 -->|Query| QK["Compare Query vs\nevery token's Key"]
+    T1 -->|Query| QK["Compare Query vs<br/>every token's Key"]
     T2 -->|Key/Value| QK
     T3 -->|Key/Value| QK
-    QK -->|softmax scores| W["Weighted average\nof Values"]
-    W --> OUT["New representation\nfor 'The'"]
+    QK -->|softmax scores| W["Weighted average<br/>of Values"]
+    W --> OUT["New representation<br/>for 'The'"]
 ```
 
 One more piece of intuition: because there's no recurrence, the model has
@@ -129,9 +129,12 @@ Three things worth understanding about this formula specifically:
    by `sqrt(d_k)` keeps the variance of the dot products roughly constant
    regardless of dimension, which keeps training stable. This single
    scaling factor is the entire difference between "dot-product
-   attention" and "scaled dot-product attention," and the paper is
-   explicit that they added it after noticing worse performance without
-   it for large `d_k`.
+   attention" and "scaled dot-product attention." The paper reports that
+   for large `d_k`, unscaled dot-product attention underperforms additive
+   attention (an observation it attributes to cited prior work) and
+   states its authors "suspect" the variance-growth/softmax-saturation
+   mechanism above is the cause — this is the paper's own stated
+   reasoning, not an ablation it ran itself.
 3. **`softmax(...)  V`** turns the scores into a weighted average of
    value vectors — the actual content that gets passed forward.
 
@@ -148,11 +151,14 @@ MultiHead(Q, K, V) = Concat(head_1, ..., head_h) W^O
 where head_i = Attention(Q W_i^Q, K W_i^K, V W_i^V)
 ```
 
-Why bother, instead of just using one big attention operation? A single
-attention head, because of the softmax, tends to concentrate on one
-dominant relationship per query. Multiple heads let the model track
-several different kinds of relationships in parallel — e.g. one head
-might specialize in subject-verb agreement, another in coreference
+Why bother, instead of just using one big attention operation? The
+paper's own stated reason is that averaging over a single attention
+head inhibits the model's ability to jointly attend to information from
+different representation subspaces at different positions — one shared
+softmax has to compromise across everything it's tracking at once. A
+useful (if informal) way to picture that: multiple heads let the model
+track several different kinds of relationships in parallel — e.g. one
+head might specialize in subject-verb agreement, another in coreference
 ("it" → "cat"), another in adjacent-word syntax — without any of them
 having to share a single softmax distribution. Empirically, later
 interpretability work (not this paper) has found heads that do
@@ -172,27 +178,28 @@ each:
 flowchart TB
     subgraph Encoder["Encoder (x6)"]
         direction TB
-        E_SA["Multi-Head\nSelf-Attention"] --> E_ADD1["Add & LayerNorm"]
-        E_ADD1 --> E_FF["Feed-Forward\n(d_ff=2048)"] --> E_ADD2["Add & LayerNorm"]
+        E_SA["Multi-Head<br/>Self-Attention"] --> E_ADD1["Add & LayerNorm"]
+        E_ADD1 --> E_FF["Feed-Forward<br/>(d_ff=2048)"] --> E_ADD2["Add & LayerNorm"]
     end
     subgraph Decoder["Decoder (x6)"]
         direction TB
-        D_MSA["Masked Multi-Head\nSelf-Attention"] --> D_ADD1["Add & LayerNorm"]
-        D_ADD1 --> D_CA["Multi-Head\nCross-Attention\n(Q from decoder,\nK/V from encoder)"] --> D_ADD2["Add & LayerNorm"]
+        D_MSA["Masked Multi-Head<br/>Self-Attention"] --> D_ADD1["Add & LayerNorm"]
+        D_ADD1 --> D_CA["Multi-Head<br/>Cross-Attention<br/>(Q from decoder,<br/>K/V from encoder)"] --> D_ADD2["Add & LayerNorm"]
         D_ADD2 --> D_FF["Feed-Forward"] --> D_ADD3["Add & LayerNorm"]
     end
-    Input["Input embeddings\n+ positional encoding"] --> Encoder
+    Input["Input embeddings<br/>+ positional encoding"] --> Encoder
     Encoder -->|"K, V"| D_CA
-    Output["Output embeddings\n(shifted right)\n+ positional encoding"] --> Decoder
-    Decoder --> Linear["Linear + Softmax"] --> Prediction["Next-token\nprobabilities"]
+    Output["Output embeddings<br/>(shifted right)<br/>+ positional encoding"] --> Decoder
+    Decoder --> Linear["Linear + Softmax"] --> Prediction["Next-token<br/>probabilities"]
 ```
 
 Each sub-layer (self-attention, feed-forward) is wrapped in a residual
 connection followed by layer normalization: `LayerNorm(x +
-Sublayer(x))`. The residual connection is what makes stacking 6+ layers
-trainable at all — without it, gradients would have to flow through every
-attention and feed-forward transformation at every layer, and this deep a
-stack would be very difficult to train from scratch.
+Sublayer(x))`. The residual connection is what makes stacking this many
+layers dramatically easier to train — without it, gradients have to flow
+unaided through every attention and feed-forward transformation at every
+layer, which in general deep networks makes optimization far more
+difficult (though not strictly impossible).
 
 Three places attention is used, each slightly differently:
 - **Encoder self-attention:** every input token attends to every other
@@ -249,15 +256,17 @@ attention has gathered the relevant context.
 
 ## Practical Engineering Notes
 
-**Where this lives in real code:** Hugging Face `transformers`
-implements this almost layer-for-layer — see
-`transformers.models.bert.modeling_bert.BertSelfAttention` for
-scaled dot-product multi-head self-attention, or, more directly, PyTorch's
-own built-in `torch.nn.functional.scaled_dot_product_attention` (added in
-PyTorch 2.0), which implements exactly the formula above but dispatches
-to fused, hardware-specific kernels (FlashAttention, memory-efficient
-attention, or a math fallback) depending on your device and input shapes,
-instead of materializing the full `QK^T` score matrix in memory.
+**Where this lives in real code:** Hugging Face `transformers` implements
+this almost layer-for-layer in its per-model self-attention classes
+(exact class names and module paths shift release to release as the
+library refactors its attention internals — search the installed
+version's source for "self_attention" or "Attention" in a given model's
+`modeling_*.py`). More directly and more durably, PyTorch's own built-in
+`torch.nn.functional.scaled_dot_product_attention` (added in PyTorch 2.0)
+implements exactly the formula above but dispatches to fused,
+hardware-specific kernels (FlashAttention, memory-efficient attention, or
+a math fallback) depending on your device and input shapes, instead of
+materializing the full `QK^T` score matrix in memory.
 
 **The quadratic cost is the thing to internalize.** Computing `QK^T` for
 a sequence of length `n` produces an `n × n` matrix — both compute and
@@ -293,15 +302,19 @@ compute-bound, processes the whole prompt in parallel) versus token-by-token
 generation ("decode", memory-bandwidth-bound, one token at a time,
 reading the growing KV cache).
 
-**Parameter budget intuition.** For the base model, most of the ~65M
-parameters are in the embedding/output matrices and the feed-forward
-sublayers (`d_model × d_ff × 2` per layer, i.e. 512×2048×2 ≈ 2.1M just
-for one layer's FFN weights) — attention's own projection matrices
-(`W^Q, W^K, W^V, W^O`, each `d_model × d_model`) are comparatively small.
-This ratio is worth knowing because it means most of a Transformer's
-capacity, in the original design, sits in the position-wise feed-forward
-layers, not the attention mechanism itself — despite attention being what
-the paper (and this explainer) spends most of its words on.
+**Parameter budget intuition.** Working through the base model's ~65M
+parameters by block: the position-wise FFN sublayers total roughly 25M
+(`d_model × d_ff × 2` per layer ≈ 2.1M, across 12 FFN blocks — 6 encoder
++ 6 decoder), the tied input/output embedding matrix is roughly 19M
+(~37,000-token vocab × 512), and all the attention projection matrices
+(`W^Q, W^K, W^V, W^O` across 18 attention blocks — 6 encoder self-attn +
+6 decoder self-attn + 6 decoder cross-attn) total roughly 19M. So the FFN
+sublayers are the single largest block — around 40% of the total — but
+not a majority: embeddings and attention projections together outweigh
+them. Worth knowing because it means a meaningful share of a
+Transformer's capacity, in the original design, sits outside the
+attention mechanism itself, even though attention is what the paper (and
+this explainer) spends most of its words on.
 
 ## Runnable Code Example
 
@@ -339,11 +352,13 @@ probability distribution for a real (if untrained) set of projections.
 
 - **"Attention replaces the need for any other layer type."** It doesn't
   — the position-wise feed-forward network is still a standard MLP doing
-  real computational work per token, and as noted above, it holds most of
-  the base model's parameters. Attention is what mixes information
-  *across* tokens; the FFN is what transforms information *within* a
-  token after that mixing. Removing the FFN and using attention alone
-  significantly hurts performance in practice.
+  real computational work per token, and as noted above, it's the single
+  largest block of the base model's parameters. Attention is what mixes
+  information *across* tokens; the FFN is what transforms information
+  *within* a token after that mixing — they're doing structurally
+  different jobs, and later ablation studies (not this paper) have found
+  removing the FFN and relying on attention alone measurably hurts
+  performance, consistent with that division of labor.
 - **"Multi-head attention means the model literally learns semantic roles
   like 'subject' and 'object' per head."** Some heads in some trained
   models do show interpretable, specializable patterns (this was studied
@@ -353,16 +368,18 @@ probability distribution for a real (if untrained) set of projections.
   clean, human-nameable job.
 - **"Self-attention is inherently order-aware."** It is not — without
   positional encoding, self-attention over a set of tokens is *permutation
-  invariant*: shuffle the input tokens and shuffle the output the same
-  way, and you get the same result up to that shuffle. All positional
-  information comes from the added encoding vectors, not from the
-  attention mechanism itself.
+  equivariant*, not invariant: shuffle the input tokens and the output
+  shuffles the same way (rather than staying fixed), so the model has no
+  independent signal for absolute or relative position at all. All
+  positional information comes from the added encoding vectors, not from
+  the attention mechanism itself.
 - **"Bigger `d_k` per head is always better."** The scaling factor
   `1/sqrt(d_k)` exists precisely because larger `d_k` pushes dot products
   toward the extremes, saturating softmax and killing gradients if you
   don't correct for it. This is a concrete, checkable numerical-stability
-  issue, not just a design preference — the paper explicitly reports it
-  motivated the scaling term.
+  issue, not just a design preference — it's the paper's own stated
+  motivation for the scaling term (see The Mechanism above for the exact
+  attribution).
 
 ## Interview Q&A
 
@@ -384,9 +401,10 @@ versus a recurrent layer, and why does that matter in practice?
 a sequence of length n, each comparison costing O(d) for d-dimensional
 vectors), but every one of those n² comparisons is independent and can be
 computed in parallel — the sequential depth is O(1). A recurrent layer is
-O(n · d²) total (cheaper in total operations for long sequences with
-large d) but has O(n) sequential depth — you cannot start computing step
-t+1 until step t finishes. In practice, on hardware with massive
+O(n · d²) total (cheaper in total operations than attention specifically
+when the sequence is short relative to the dimension, i.e. `n < d`) but
+has O(n) sequential depth — you cannot start computing step t+1 until
+step t finishes. In practice, on hardware with massive
 parallelism (GPUs/TPUs), that O(1) sequential depth dominates wall-clock
 training time far more than the raw operation count does, which is the
 efficiency argument the paper makes for preferring attention. The
@@ -408,15 +426,14 @@ softmax, making the learned weight exactly 0 there.
 
 **Q:** What would happen if you used only one attention head with the
 full `d_model` dimensionality instead of `h` smaller heads?
-**A:** You'd get a single softmax distribution per query, which tends to
-concentrate mass on the most dominant relationship it finds — it's much
-harder for one softmax to simultaneously represent "attend a little to
-syntax, a little to coreference, a little to nearby tokens" because
-softmax pushes toward peaked distributions. Splitting into `h` heads with
-their own smaller projections gives the model `h` independent softmax
-distributions per query, so it can represent several different kinds of
-relationships in parallel without them competing for probability mass in
-the same distribution. It's not solely an efficiency trick — going from
+**A:** The paper's own reasoning: averaging over a single attention head
+inhibits the model from jointly attending to information from different
+representation subspaces at different positions — one shared softmax
+distribution has to compromise across everything it's tracking at once.
+Splitting into `h` heads with their own smaller projections gives the
+model `h` independent softmax distributions per query, so it can
+represent several different kinds of relationships in parallel instead of
+compromising within one. It's not solely an efficiency trick — going from
 one head at `d_model` dimensions to `h` heads at `d_model/h` dimensions
 each keeps total compute roughly comparable, so the benefit is
 representational, not computational.
