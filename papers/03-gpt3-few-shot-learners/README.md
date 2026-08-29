@@ -60,10 +60,11 @@ a single labeled training example for that specific task during training.
 On LAMBADA (a word-prediction benchmark requiring long-range context), the
 paper reports GPT-3 achieves 86.4% accuracy in the few-shot setting, an
 18-percentage-point improvement over the previous state of the art. On
-TriviaQA, GPT-3's few-shot accuracy (71.2%) matches open-domain,
-fine-tuned models that use explicit retrieval systems. On the SuperGLUE
-benchmark suite, the paper reports a few-shot average of 69.0%, still
-below the 92.5% fine-tuned state of the art (few-shot GPT-3 is not
+TriviaQA, GPT-3's one-shot accuracy (68.0%) matches open-domain,
+fine-tuned models that use explicit retrieval systems, and its few-shot
+accuracy (71.2%) exceeds that mark by 3.2 points. On the SuperGLUE
+benchmark suite, the paper reports a few-shot average of 71.8%, still
+below the 89.0% fine-tuned state of the art (few-shot GPT-3 is not
 universally competitive — it does close to fine-tuned-SOTA on some
 component tasks like COPA, 92.0%, and ReCoRD, 91.1%, but trails on
 others). What changed after this paper: the idea that you could get
@@ -279,16 +280,18 @@ A sample of the paper's reported few-shot results, to make the scale of
 - **LAMBADA** (predict the final word of a passage requiring long-range
   context): 86.4% few-shot accuracy, an 18-percentage-point improvement
   over the prior state of the art the paper compares against.
-- **TriviaQA** (open-domain question answering): 71.2% few-shot accuracy,
+- **TriviaQA** (open-domain question answering): 68.0% one-shot accuracy,
   which the paper reports as matching open-domain QA systems that use
   fine-tuning combined with explicit retrieval — GPT-3 has no retrieval
   step, only what it memorized during pretraining and what's in the
-  prompt.
-- **SuperGLUE** (aggregate of several hard NLU tasks): 69.0% few-shot
-  average, against a 92.5% fine-tuned state of the art at the time — a
+  prompt; the few-shot accuracy (71.2%) exceeds that matched mark by 3.2
+  points.
+- **SuperGLUE** (aggregate of several hard NLU tasks): 71.8% few-shot
+  average, against an 89.0% fine-tuned state of the art at the time — a
   clear case where few-shot GPT-3 does **not** close the gap to
   fine-tuning, though it does well on specific component tasks such as
-  COPA (92.0%) and ReCoRD (91.1%).
+  COPA (92.0%) and ReCoRD (91.1%), and clearly trails on others, such as
+  RTE (69.0% few-shot vs. 92.5% fine-tuned SOTA).
 - **Machine translation, English to French** (few-shot): 32.6 BLEU,
   which the paper reports as approaching (not exceeding) the best
   unsupervised neural machine translation results.
@@ -539,15 +542,16 @@ first-class part of using large language models in production, in a way
 it simply wasn't as relevant when fine-tuning was the primary adaptation
 mechanism.
 
-**Q:** GPT-3's few-shot SuperGLUE score (69.0%) is well below the fine-
-tuned state of the art (92.5%) reported in the paper. Does that
+**Q:** GPT-3's few-shot SuperGLUE score (71.8%) is well below the fine-
+tuned state of the art (89.0%) reported in the paper. Does that
 contradict the paper's headline claim?
 **A:** Not really — it's consistent with the paper's actual claim, which
 is narrower than "few-shot always matches fine-tuning." The paper
 presents a mix of results: some benchmarks (like LAMBADA, at 86.4%
 few-shot) where GPT-3 beats prior fine-tuned state of the art outright;
-some (like TriviaQA) where it matches strong fine-tuned-plus-retrieval
-systems; and some (like the SuperGLUE aggregate, and specific tasks like
+some (like TriviaQA) where its one-shot result matches, and its few-shot
+result exceeds, strong fine-tuned-plus-retrieval systems; and some (like
+the SuperGLUE aggregate, and specific tasks like
 QuAC and RACE) where it clearly trails fine-tuning. The paper's
 contribution is characterizing this whole landscape — where in-context
 learning closes the gap to fine-tuning and where it doesn't — not
