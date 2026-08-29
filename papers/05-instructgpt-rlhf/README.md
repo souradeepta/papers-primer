@@ -179,12 +179,15 @@ step 1 score a mean of 0 — a calibration step, not a modeling choice
 that affects what the RM has learned to rank.
 
 One deliberate scale choice: the paper only trains a 6B-parameter reward
-model, even for their 175B-parameter InstructGPT variant, stating that a
-175B reward model "saves a lot of compute" isn't the reason — rather,
-they found that "175B RM training could be unstable" and used the 6B RM
-across all runs, including as the reward signal for PPO fine-tuning the
-175B policy. The reward model doesn't need to match the policy's scale to
-supervise it effectively.
+model, even for their 175B-parameter InstructGPT variant, for two
+reasons it states together: "we only use 6B RMs, as this saves a lot of
+compute, and we found that 175B RM training could be unstable and thus
+was less suitable to be used as the value function during RL." Compute
+savings and training stability are both the paper's own stated
+justification for the 6B choice — not competing explanations — and the
+6B RM is used across all runs, including as the reward signal for PPO
+fine-tuning the 175B policy. The reward model doesn't need to match the
+policy's scale to supervise it effectively.
 
 ### Step 3: Reinforcement learning with PPO
 
@@ -222,7 +225,9 @@ Term by term:
   in Core Intuition above. The paper does not give a single fixed
   numeric value of `beta` used across all runs in the main text; it
   states `beta` and the pretraining coefficient `gamma` jointly "control
-  the strength" of their respective terms and are tuned per run.
+  the strength" of their respective terms; my interpretation is that this
+  implies they're tuned per run (e.g. varied across their ablations),
+  though the paper doesn't state that tuning practice explicitly.
 - **`gamma * E[log(pi_RL(x))]`** — an additional pretraining-data
   log-likelihood term (mixing in gradient updates from the original GPT-3
   pretraining distribution), present only in the "PPO-ptx" variant
@@ -246,8 +251,9 @@ dynamics depend on the actual reward and reference models.
 Comparing model outputs pairwise via human preference judgments on a
 held-out set of API-style prompts, the paper reports: "outputs from the
 1.3B parameter InstructGPT model are preferred to outputs from the 175B
-GPT-3, despite having over 100x fewer parameters" (175B / 1.3B ≈ 134.6,
-consistent with "over 100x"). At matched 175B scale, the paper reports
+GPT-3, despite having 100x fewer parameters" (175B / 1.3B ≈ 134.6, so
+"100x" is itself a round-down of the actual ratio, not an
+exaggeration). At matched 175B scale, the paper reports
 175B InstructGPT outputs are preferred to plain 175B GPT-3 outputs 85% ±
 3% of the time, and preferred 71% ± 4% of the time to 175B GPT-3 prompted
 with a handful of few-shot examples designed to encourage
@@ -496,8 +502,8 @@ standard PPO setup, without needing the longer-horizon credit-assignment
 machinery general RL research usually has to grapple with.
 
 **Q:** The paper reports InstructGPT-1.3B is preferred over GPT-3-175B
-"despite having over 100x fewer parameters" — is that evidence that
-scale doesn't matter for language model quality?
+"despite having 100x fewer parameters" — is that evidence that scale
+doesn't matter for language model quality?
 **A:** No — it's evidence that *raw pretraining scale alone* is not the
 same axis as *following instructions the way humans want*, for the
 specific evaluation the paper ran (human preference on API-style

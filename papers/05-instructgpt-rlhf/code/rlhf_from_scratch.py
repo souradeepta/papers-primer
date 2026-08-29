@@ -60,10 +60,11 @@ def ppo_kl_penalized_reward(
 ) -> torch.Tensor:
     """total_reward = r_theta(x,y) - beta * log(pi_RL(y|x) / pi_SFT(y|x))
 
-    (paper, section 3.5). logprob_policy and logprob_ref are the
-    *frozen-reference* and *current-policy* log-probabilities the PPO
-    policy assigned to the sampled completion y; their difference is the
-    (sample estimate of the) per-episode KL term.
+    (paper, section 3.5). logprob_policy is the *current, evolving* RL
+    policy pi_RL's log-probability of the sampled completion y; logprob_ref
+    is the *frozen* SFT/reference policy pi_SFT's log-probability of that
+    same completion. Their difference is the (sample estimate of the)
+    per-episode KL term.
     """
     kl = logprob_policy - logprob_ref
     return r_theta - beta * kl
