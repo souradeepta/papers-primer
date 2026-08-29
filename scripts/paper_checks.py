@@ -67,6 +67,29 @@ def check_code_dir(paper_dir: Path) -> list[str]:
     return errors
 
 
+_SECTION_RE = re.compile(r"^## (.+)$", re.MULTILINE)
+
+
+def _section_body(text: str, heading: str) -> str | None:
+    """Return the text between `## {heading}` and the next `## ` heading (or EOF)."""
+    matches = list(_SECTION_RE.finditer(text))
+    for i, m in enumerate(matches):
+        if m.group(1).strip() == heading:
+            start = m.end()
+            end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+            return text[start:end]
+    return None
+
+
+def check_mechanism_mermaid(text: str) -> list[str]:
+    body = _section_body(text, "The Mechanism")
+    if body is None:
+        return ["no '## The Mechanism' section found"]
+    if "```mermaid" not in body:
+        return ["The Mechanism section has no Mermaid diagram"]
+    return []
+
+
 def check_qa_pairs(text: str) -> int:
     return len(_QA_RE.findall(text))
 

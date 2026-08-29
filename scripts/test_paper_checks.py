@@ -6,6 +6,7 @@ from paper_checks import (
     check_code_dir,
     check_further_reading,
     check_gifs,
+    check_mechanism_mermaid,
     check_qa_pairs,
     check_sections,
     count_prose_words,
@@ -99,3 +100,30 @@ def test_check_qa_pairs_counts():
 def test_check_further_reading_counts_links():
     text = "- [a](https://x.com)\n- [b](https://y.com)"
     assert check_further_reading(text) == 2
+
+
+def test_check_mechanism_mermaid_present():
+    text = "## The Mechanism\n```mermaid\nflowchart TB\nA-->B\n```\n## Practical Engineering Notes\ncontent"
+    assert check_mechanism_mermaid(text) == []
+
+
+def test_check_mechanism_mermaid_missing():
+    text = "## The Mechanism\nno diagram here\n## Practical Engineering Notes\ncontent"
+    errors = check_mechanism_mermaid(text)
+    assert any("Mermaid" in e for e in errors)
+
+
+def test_check_mechanism_mermaid_diagram_elsewhere_does_not_count():
+    text = (
+        "## Core Intuition\n```mermaid\nflowchart TB\nA-->B\n```\n"
+        "## The Mechanism\nno diagram here\n## Practical Engineering Notes\ncontent"
+    )
+    errors = check_mechanism_mermaid(text)
+    assert any("Mermaid" in e for e in errors)
+
+
+def test_check_mechanism_mermaid_missing_section_reports_no_sections_crash():
+    # If "## The Mechanism" is absent entirely, report it rather than raising.
+    text = "## TL;DR\ncontent"
+    errors = check_mechanism_mermaid(text)
+    assert any("The Mechanism" in e for e in errors)

@@ -9,6 +9,7 @@ from paper_checks import (
     check_code_dir,
     check_further_reading,
     check_gifs,
+    check_mechanism_mermaid,
     check_qa_pairs,
     check_sections,
     count_prose_words,
@@ -32,6 +33,9 @@ def test_paper_is_spec_compliant(paper_dir: Path):
 
     gif_errors = check_gifs(text, paper_dir)
     assert not gif_errors, f"{paper_dir.name}: {gif_errors}"
+
+    mermaid_errors = check_mechanism_mermaid(text)
+    assert not mermaid_errors, f"{paper_dir.name}: {mermaid_errors}"
 
     code_errors = check_code_dir(paper_dir)
     assert not code_errors, f"{paper_dir.name}: {code_errors}"

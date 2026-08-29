@@ -15,6 +15,9 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 
 ## Checkable numbers
 - Prose word count >= 2000 (fenced code/Mermaid blocks excluded)
+- The Mechanism section specifically (not just anywhere in the doc) must
+  contain a ```mermaid fenced block — a diagram elsewhere (e.g. Core
+  Intuition) does not satisfy this
 - GIFs referenced must exist in assets/ and be > 10 KB
 - code/ has >=1 .py file, exits 0 within 60s, no traceback
 - Interview Q&A >= 5 pairs; Further Reading >= 3 links
