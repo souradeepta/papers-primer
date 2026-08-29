@@ -241,8 +241,14 @@ rather than just its headline "on-par or better" framing. On the GLUE
 benchmark average (its Table 2), the paper reports RoBERTa-large full
 fine-tuning (355.0M trainable parameters) scoring 88.9 versus LoRA
 (0.8M trainable parameters) scoring 88.6 — a small drop, not a gain, on
-that particular model — while DeBERTa-XXL full fine-tuning scores 91.1
-versus LoRA scoring 91.3, a small LoRA *edge* on that larger model. On
+that particular model. The paper also reports DeBERTa-XXL full
+fine-tuning at 91.1 versus LoRA at 91.3 on the same GLUE average — a
+small LoRA *edge* on that larger model, though I have lower confidence in
+this specific pair of numbers than the RoBERTa-large ones above (fetched
+and cross-checked only once, versus three independent checks for
+RoBERTa-large), so treat the DeBERTa-XXL figures as reported-but-less-
+rigorously-verified rather than as solid as the RoBERTa-large comparison.
+On
 GPT-2 large's E2E NLG Challenge results (its Table 3), the paper reports
 full fine-tuning (774.03M trainable parameters) at 68.5 BLEU versus LoRA
 (0.77M trainable parameters) at 70.4 BLEU — LoRA ahead there. On GPT-3
@@ -298,8 +304,9 @@ scaling: for one attention projection matrix at GPT-3 175B's scale
 this one), trainable parameters grow only linearly with `r` — `r *
 (d_model + d_model)` — while the reference full fine-tuning parameter
 count for that one matrix stays fixed at `d_model^2` (about 151 million).
-Even at `r=64`, the LoRA side is still several hundred times smaller than
-the single full matrix it's adapting:
+Even at `r=64`, the LoRA side is still roughly 96x smaller — nearly two
+orders of magnitude — than the single full matrix it's adapting
+(1,572,864 LoRA parameters vs. 150,994,944 full parameters):
 
 ![Trainable parameters scale linearly with LoRA rank r, staying orders of magnitude below full fine-tuning](assets/lora_rank_scaling.gif)
 
