@@ -168,6 +168,19 @@ hidden state is used as the aggregate sequence representation for
 classification tasks, and sentences within a sequence are separated by a
 special `[SEP]` token.
 
+```mermaid
+flowchart TB
+    TOK["Token embeddings<br/>(WordPiece, 30K vocab)<br/>'[CLS] the cat [SEP] it sat [SEP]'"]
+    SEG["Segment embeddings<br/>(A or B per token)"]
+    POS["Position embeddings<br/>(learned, 0..511)"]
+    TOK --> SUM["Element-wise sum"]
+    SEG --> SUM
+    POS --> SUM
+    SUM --> ENC["Transformer encoder stack<br/>(L layers, bidirectional<br/>self-attention, no mask)"]
+    ENC --> CLSOUT["[CLS] final hidden state<br/>-> classification head"]
+    ENC --> TOKOUT["Per-token final hidden states<br/>-> MLM / tagging / QA heads"]
+```
+
 ### Pre-training objective 1: Masked Language Model (MLM)
 
 Standard language-model training can't be made bidirectional by simply
@@ -352,7 +365,7 @@ address.
 See `code/bert_mlm_from_scratch.py` for a minimal, runnable
 implementation of two things: bidirectional self-attention (contrasted
 against a causally-masked version of the identical layer) and the
-paper's MLM 80/10/10 masking procedure — about 130 lines, no external
+paper's MLM 80/10/10 masking procedure — 161 lines, no external
 dependencies beyond `torch`.
 
 Running it (`python code/bert_mlm_from_scratch.py`) does three things:
