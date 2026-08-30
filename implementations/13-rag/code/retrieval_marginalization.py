@@ -1,18 +1,46 @@
-"""Toy RAG-Sequence: retrieve documents then marginalize generator answers."""
+"""RAG-Sequence retrieval and document-marginalized generation.
 
-# Reading guide: follow the named helpers in data-flow order, then inspect the
-# assertions at the bottom. Change one toy input at a time and rerun the file.
+RAG uses a dense retriever to choose evidence from an external index, then
+marginalizes a generator's answer probability across the top documents. This
+small implementation retains the key paper distinction: retrieval probability
+is part of the likelihood, not merely a prompt-formatting convenience.
+"""
+
+from __future__ import annotations
+
 import torch
-def main():
- q=torch.tensor([1.,0.]); docs=torch.tensor([[1.,0.],[.5,.5],[0.,1.]])
- scores=docs@q; top=scores.topk(2).indices; weights=scores[top].softmax(0)
- # p(answer yes/no | document); top document favors yes, second favors no.
- likelihood=torch.tensor([[.9,.1],[.25,.75]])
- answer=(weights[:,None]*likelihood).sum(0)
- changed=(torch.tensor([.05,.95])*weights[0]+likelihood[1]*weights[1])
- print('top docs:',top.tolist(),'weights:',weights.tolist(),'answer:',answer.tolist())
- assert torch.allclose(answer.sum(),torch.tensor(1.)) and answer.argmax().item()==0
- assert changed.argmax().item()==1
- print('ok: retriever-weighted marginal is normalized and evidence can change answer ranking')
-if __name__=='__main__':main()
 
+
+def retrieve(query: torch.Tensor, document_embeddings: torch.Tensor, top_k: int) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return top-k document ids and normalized dense-retriever probabilities."""
+    similarity = document_embeddings @ query
+    top_scores, document_ids = similarity.topk(top_k)
+    return document_ids, top_scores.softmax(dim=0)
+
+
+def rag_sequence_probability(
+    retriever_probability: torch.Tensor, generator_probability: torch.Tensor
+) -> torch.Tensor:
+    """Implement p(y|x) = sum_z p_eta(z|x) p_theta(y|x,z) for one generated token."""
+    return (retriever_probability[:, None] * generator_probability).sum(dim=0)
+
+
+def main() -> None:
+    # Rows form a tiny frozen dense index; rows of likelihoods are a generator
+    # distribution over answer tokens yes/no conditioned on each retrieved doc.
+    query = torch.tensor([1.0, 0.0])
+    index = torch.tensor([[1.0, 0.0], [0.7, 0.3], [0.0, 1.0], [-1.0, 0.0]])
+    document_ids, retrieval_probability = retrieve(query, index, top_k=2)
+    generator_probability = torch.tensor([[0.90, 0.10], [0.25, 0.75]])
+    answer_probability = rag_sequence_probability(retrieval_probability, generator_probability)
+
+    print(f"retrieved ids: {document_ids.tolist()}; weights: {[round(x, 3) for x in retrieval_probability.tolist()]}")
+    print(f"marginal answer distribution yes/no: {[round(x, 3) for x in answer_probability.tolist()]}")
+    assert document_ids.tolist() == [0, 1]
+    assert torch.allclose(answer_probability.sum(), torch.tensor(1.0))
+    assert answer_probability.argmax().item() == 0
+    print("ok: RAG combines generator probabilities using retriever confidence")
+
+
+if __name__ == "__main__":
+    main()

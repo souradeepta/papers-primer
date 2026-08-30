@@ -1,20 +1,68 @@
-"""Toy PagedAttention-style logical KV block table with shared-prefix refs."""
+"""PagedAttention-style KV-cache block allocation and copy-on-write sharing.
 
-# Reading guide: follow the named helpers in data-flow order, then inspect the
-# assertions at the bottom. Change one toy input at a time and rerun the file.
-class Manager:
- def __init__(self,size=4): self.size=size;self.refs={};self.next=0
- def alloc(self): b=self.next;self.next+=1;self.refs[b]=1;return b
- def share(self,b): self.refs[b]+=1;return b
- def free(self,b):
-  self.refs[b]-=1
-  if not self.refs[b]: del self.refs[b]
- def locate(self,table,index): return table[index//self.size],index%self.size
-def main():
- m=Manager();prefix=m.alloc();a=[prefix,m.alloc()];b=[m.share(prefix),m.alloc()]
- assert m.locate(a,5)==(a[1],1) and m.refs[prefix]==2
- m.free(a[0]);m.free(a[1]);assert prefix in m.refs
- m.free(b[0]);m.free(b[1]);assert not m.refs
- print('ok: logical blocks translate correctly and a shared prefix survives until its final release')
-if __name__=='__main__':main()
+vLLM maps each sequence's logical token blocks to non-contiguous physical
+KV-cache blocks, analogous to virtual memory. Shared prompts initially share
+physical blocks; appending to a shared final block requires copy-on-write.
+This CPU model implements those allocation and lifetime rules, not attention
+kernel math.
+"""
 
+from __future__ import annotations
+
+
+class KVBlockManager:
+    """Manage physical KV blocks and per-sequence logical block tables."""
+
+    def __init__(self, block_size: int = 4) -> None:
+        self.block_size, self._next_id = block_size, 0
+        self.references: dict[int, int] = {}
+
+    def allocate(self) -> int:
+        """Allocate a physical block with one owning sequence reference."""
+        block = self._next_id
+        self._next_id += 1
+        self.references[block] = 1
+        return block
+
+    def fork_prefix(self, table: list[int]) -> list[int]:
+        """Create a new logical table sharing every immutable prefix block."""
+        for block in table:
+            self.references[block] += 1
+        return list(table)
+
+    def append(self, table: list[int], token_count: int) -> tuple[int, int]:
+        """Return physical block/offset for a new token, copying shared tails."""
+        logical_block, offset = divmod(token_count, self.block_size)
+        if logical_block == len(table):
+            table.append(self.allocate())
+        elif self.references[table[-1]] > 1:
+            # Copy-on-write avoids changing cached keys/values visible to fork.
+            old = table[-1]
+            self.references[old] -= 1
+            table[-1] = self.allocate()
+        return table[logical_block], offset
+
+    def release(self, table: list[int]) -> None:
+        """Drop a sequence and reclaim a physical block only at refcount zero."""
+        for block in table:
+            self.references[block] -= 1
+            if self.references[block] == 0:
+                del self.references[block]
+
+
+def main() -> None:
+    manager = KVBlockManager(block_size=4)
+    prompt = [manager.allocate(), manager.allocate()]
+    branch = manager.fork_prefix(prompt)
+    physical, offset = manager.append(branch, token_count=7)
+    print(f"shared prefix refs: {manager.references}; appended location: ({physical}, {offset})")
+    assert prompt[1] != branch[1] and offset == 3
+    manager.release(prompt)
+    assert physical in manager.references
+    manager.release(branch)
+    assert not manager.references
+    print("ok: forked prompts share blocks, writes copy shared tails, and refcounts reclaim memory")
+
+
+if __name__ == "__main__":
+    main()

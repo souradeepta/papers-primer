@@ -1,13 +1,46 @@
-"""Compute a training-mode BatchNorm transform for one scalar feature."""
+"""Batch Normalization with train-time batch statistics and running estimates.
 
-# Reading guide: follow the named helpers in data-flow order, then inspect the
-# assertions at the bottom. Change one toy input at a time and rerun the file.
+BatchNorm normalizes each feature channel over a mini-batch, then restores
+learnable scale and bias. During inference it uses exponentially averaged
+training statistics instead of the current request, avoiding predictions that
+depend on which examples happen to share a batch.
+"""
+
 from __future__ import annotations
-def main() -> None:
-    xs=[1.0,3.0,5.0,7.0]; mean=sum(xs)/len(xs); var=sum((x-mean)**2 for x in xs)/len(xs)
-    ys=[(x-mean)/(var+1e-5)**.5 for x in xs]
-    print(f'mean={mean:.1f}, variance={var:.1f}, normalized={ys}')
-    assert abs(sum(ys)/len(ys)) < 1e-9 and abs(sum(y*y for y in ys)/len(ys)-1) < 1e-5
-    print('ok: training batch is centered and unit variance')
-if __name__ == '__main__': main()
 
+import torch
+
+
+class BatchNorm:
+    """Minimal channel-wise BatchNorm for two-dimensional batches."""
+
+    def __init__(self, features: int, momentum: float = .1, epsilon: float = 1e-5) -> None:
+        self.gamma, self.beta = torch.ones(features), torch.zeros(features)
+        self.running_mean, self.running_var = torch.zeros(features), torch.ones(features)
+        self.momentum, self.epsilon = momentum, epsilon
+
+    def __call__(self, x: torch.Tensor, training: bool) -> torch.Tensor:
+        """Normalize by fresh batch stats in training or accumulated stats in eval."""
+        if training:
+            mean, variance = x.mean(0), x.var(0, unbiased=False)
+            self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mean
+            self.running_var = (1 - self.momentum) * self.running_var + self.momentum * variance
+        else:
+            mean, variance = self.running_mean, self.running_var
+        return self.gamma * (x - mean) / torch.sqrt(variance + self.epsilon) + self.beta
+
+
+def main() -> None:
+    norm = BatchNorm(features=2)
+    train_batch = torch.tensor([[1., 10.], [3., 14.], [5., 18.], [7., 22.]])
+    normalized = norm(train_batch, training=True)
+    evaluation = norm(torch.tensor([[100., -100.]]), training=False)
+    print(f"running mean: {norm.running_mean.tolist()}; eval shape: {tuple(evaluation.shape)}")
+    assert torch.allclose(normalized.mean(0), torch.zeros(2), atol=1e-6)
+    assert torch.allclose(normalized.var(0, unbiased=False), torch.ones(2), atol=1e-4)
+    assert not torch.allclose(evaluation, torch.zeros_like(evaluation))
+    print("ok: training uses batch statistics while evaluation uses running estimates")
+
+
+if __name__ == "__main__":
+    main()

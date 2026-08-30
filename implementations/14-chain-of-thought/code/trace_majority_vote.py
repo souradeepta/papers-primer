@@ -1,14 +1,45 @@
-"""A deterministic illustration of later self-consistency over reasoning traces."""
+"""Chain-of-thought prompting with answer extraction and self-consistency.
 
-# Reading guide: follow the named helpers in data-flow order, then inspect the
-# assertions at the bottom. Change one toy input at a time and rerun the file.
+The original paper shows that few-shot worked examples can induce intermediate
+reasoning in sufficiently large language models. Self-consistency, a later
+extension, samples multiple reasoning paths and returns their most common
+final answer. This script implements the evaluation-side aggregation pipeline;
+the traces stand in for model samples so no API or large model is required.
+"""
+
+from __future__ import annotations
+
 from collections import Counter
-def answer(trace): return int(trace.rsplit('=',1)[1].strip())
-def main():
- traces=['3 + 4 = 7','start at 3, add 4: 7 = 7','3 + 4 = 8','three plus four gives 7 = 7','3 + 4 = 7']
- votes=Counter(map(answer,traces)); winner,count=votes.most_common(1)[0]
- print('votes:',dict(votes),'winner:',winner)
- assert winner==7 and count==4
- print('ok: a majority of independently formatted traces yields the known answer')
-if __name__=='__main__':main()
+import re
 
+
+def extract_final_answer(trace: str) -> str:
+    """Read a deliberately explicit final-answer field from a generated trace."""
+    match = re.search(r"final answer:\s*([^\n.]+)", trace, flags=re.IGNORECASE)
+    if not match:
+        raise ValueError("trace must end with a 'Final answer:' field")
+    return match.group(1).strip()
+
+
+def self_consistent_answer(traces: list[str]) -> tuple[str, Counter[str]]:
+    """Vote over independently sampled chains rather than trusting one path."""
+    votes = Counter(extract_final_answer(trace) for trace in traces)
+    return votes.most_common(1)[0][0], votes
+
+
+def main() -> None:
+    traces = [
+        "3 apples plus 4 apples equals 7. Final answer: 7",
+        "Start with 3; add four one-by-one to get 7. Final answer: 7",
+        "I accidentally added five. Final answer: 8",
+        "The equation is 3 + 4 = 7. Final answer: 7",
+        "Counting again gives seven. Final answer: 7",
+    ]
+    answer, votes = self_consistent_answer(traces)
+    print(f"answer votes: {dict(votes)}; selected: {answer}")
+    assert answer == "7" and votes["7"] == 4
+    print("ok: self-consistency selects the answer supported by independent reasoning paths")
+
+
+if __name__ == "__main__":
+    main()
