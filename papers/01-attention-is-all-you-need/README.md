@@ -19,15 +19,28 @@ Words are like students in a group project: each word can look around and decide
 
 `📚 words → 👀 attention looks around → 🧠 richer word meanings → ✍️ next word`
 
+Instead of passing one message along a single line, every word can directly inspect the other words. That makes “it” easier to connect to the right earlier noun, even when they are far apart.
+
 💻 **CS analogy:** attention is a database query: each word asks which records are most relevant, then combines their values.
 
+## Math Playground 🧮
 ## Math Playground 🧮
 
 **Essential equation:** softmax(QKᵀ/√d)V. First, each question vector Q scores every key K: a large score means “pay attention here.” Softmax turns scores into percentages that add to 100%; those percentages average the value vectors V. The √d divisor prevents large vectors from making one percentage unfairly close to 100%.
 
+The essential equation or rule is:
+
+```text
+softmax(QKᵀ / √d) V
+```
+
+You can read the equation left to right: score possible connections, turn scores into fair shares, then blend information using those shares. The symbols are learned number lists, not words themselves.
+
 ## Background: What Came Before 🕰️
 
 Before this paper, translation models usually processed text one word at a time with recurrent networks, sometimes aided by convolutional layers and an attention add-on. Long paths made distant relationships hard to learn and limited parallel training. The Transformer was needed to make attention itself the main computation, so every token could connect directly to the others.
+
+This direct connection path let the architecture handle distant relationships while doing much more work in parallel than recurrent models.
 
 ## Why It Matters
 
@@ -333,6 +346,19 @@ attention mechanism itself, even though attention is what the paper (and
 this explainer) spends most of its words on.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/01-attention-is-all-you-need/code/attention_from_scratch.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 See `code/attention_from_scratch.py` for a minimal, runnable
 implementation of `scaled_dot_product_attention` and `MultiHeadAttention`

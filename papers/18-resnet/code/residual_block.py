@@ -1,4 +1,7 @@
 """Show the defining invariant of an identity residual block without NumPy."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 
 def residual_block(x: list[float], residual: list[float]) -> list[float]:

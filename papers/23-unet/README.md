@@ -15,15 +15,28 @@ U-Net first zooms out to understand a whole image, then zooms back in while carr
 
 `🖼️ image → 🔍 zoom out for context → 🪜 skip details → 🎨 pixel-by-pixel mask`
 
+U-Net shrinks an image to understand broad context, then expands it back to label every pixel. Shortcuts carry fine detail to the expanding side.
+
 💻 **CS analogy:** the encoder is a compressed index, while skip connections are direct links back to the full-resolution source records needed for precise output.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+−Σ_c y_c log p_c
+```
 
 **Essential equation:** \(-\sum_c y_c\log p_c\), the per-pixel cross-entropy loss. For one pixel, \(p_c\) is the model’s probability for class c, while \(y_c\) is 1 only for the true class and 0 for the rest. The sum therefore picks out the probability of the correct label and penalizes it when it is small. U-Net applies this simple quiz score to every pixel in an image.
+
+For a pixel, y is 1 for the correct class and 0 otherwise, so the loss focuses on the model’s probability p for the true label.
 
 ## Background: What Came Before 🕰️
 
 Classifiers could say what was in an image but discarded spatial detail as they pooled down to one label. Sliding-window methods preserved locality but repeated expensive work. U-Net was needed to combine broad context with exact localization, especially when labeled medical images were scarce.
+
+This was needed because classifiers could recognize an object but often lost the exact location and boundary needed for segmentation.
 
 ## Why It Matters
 
@@ -180,6 +193,19 @@ That evidence makes deployment decisions measurable and accountable.
 It also supports careful post-release monitoring.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/23-unet/code/skip_concat.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/skip_concat.py`](code/skip_concat.py) shows two same-resolution feature
 maps concatenating along channels, the skip-connection contract a real U-Net

@@ -10,15 +10,28 @@ SentencePiece turns raw text into reusable word pieces, including a visible mark
 
 `📝 raw text → ⬜ visible spaces → 🧩 subword pieces → 🔢 token IDs`
 
+Common pieces can be stored as larger chunks, while rare words can be assembled from smaller chunks. That avoids an unknown-word failure for unfamiliar spellings.
+
 💻 **CS analogy:** choosing subword pieces is a shortest-path problem over string positions, where each valid piece is an edge with a cost.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+p(text) = ∏ p(pieceᵢ)
+```
 
 **Essential equation:** p(text) = ∏ p(pieceᵢ). A spelling can be split in many ways; SentencePiece gives each possible piece a probability and prefers the split whose multiplied probabilities are largest. Computers use −log p instead, because multiplying many small decimals is awkward but adding costs is easy. Dynamic programming then finds the cheapest complete split, like finding the shortest route through a map.
+
+The ∏ sign means multiply. Programs use −log p instead because adding costs is easier than multiplying many tiny decimals; dynamic programming finds the cheapest split.
 
 ## Background: What Came Before 🕰️
 
 Word tokenizers often depended on language-specific rules and produced unknown tokens for rare or misspelled words. Character tokenization avoids unknowns but makes sequences long. SentencePiece was needed to learn a language-agnostic subword vocabulary directly from raw text and make tokenization reproducible as part of a model artifact.
+
+This supplied a language-independent middle ground between brittle whole-word vocabularies and very long character sequences.
 
 ## Why It Matters
 
@@ -99,6 +112,19 @@ During generation, decoding should normally be incremental and stateful at the a
 The framework also separates a normal vocabulary piece from control behavior. A user-defined symbol can be protected from splitting; a control symbol may affect an encoder without appearing as ordinary decoded text. These distinctions are model-specific. When integrating tools, retrieval citations, or multimodal placeholders, assign and validate their token behavior explicitly rather than assuming angle-bracket spelling makes a string special.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/11-sentencepiece/code/unigram_segmentation.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/unigram_segmentation.py`](code/unigram_segmentation.py) implements a tiny Viterbi-style best-path segmenter over the visible-whitespace string `▁hello▁world`. Its vocabulary includes both compact word-with-space pieces and smaller fallback pieces. The program asserts that concatenating the winning pieces restores the normalized stream, decoding restores `hello world`, and the selected path scores no worse than a known valid fallback.
 

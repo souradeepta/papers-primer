@@ -16,15 +16,28 @@ PPO teaches an agent from rewards but stops it from changing its behavior too wi
 
 `🎮 try action → 🏆 reward signal → 📏 clip giant change → 🤖 safer learning step`
 
+An agent tries actions, receives feedback, then improves its behavior a little. PPO prevents one surprising result from causing an enormous policy change.
+
 💻 **CS analogy:** PPO is a rate limiter around a policy update: a promising change is allowed, but a giant jump is capped before it destabilizes the running system.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+min(r_tA_t, clip(r_t,1−ε,1+ε)A_t)
+```
 
 **Essential equation:** \(\min(r_tA_t,\operatorname{clip}(r_t,1-\epsilon,1+\epsilon)A_t)\). rₜ compares the new policy’s probability of an action with the old policy’s probability; Aₜ says whether that action turned out better or worse than expected. Clipping limits rₜ to a small range around 1. It is a safety rail: one training update cannot claim a huge reward by changing its mind too drastically.
+
+r compares a new action probability with its old probability; A says whether the action beat expectation. Clip limits r near 1 as a safety rail.
 
 ## Background: What Came Before 🕰️
 
 Policy-gradient methods could learn directly from rewards but often made updates so large that a previously useful policy collapsed. Trust-region methods improved stability but needed more complicated constrained optimization. PPO was needed as a practical approximation that keeps the update guardrail simple enough for broad adoption.
+
+PPO made policy-gradient reinforcement learning more stable and easier to use than earlier methods with delicate update constraints.
 
 ## Why It Matters
 
@@ -179,6 +192,19 @@ environment assumptions, and distribution shifts that summary metrics conceal.
 They are essential evidence for responsible model operation.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/24-ppo/code/clipped_objective.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/clipped_objective.py`](code/clipped_objective.py) calculates a positive-
 advantage clipped surrogate and asserts that a ratio beyond the upper bound gains

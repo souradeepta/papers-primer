@@ -16,15 +16,28 @@ SimCLR shows a model two altered versions of the same picture and says “these 
 
 `🖼️ one image → ✂️ two random views → 🧠 shared encoder → 🤝 pull together / ↔️ push apart`
 
+SimCLR makes two altered views of the same picture agree, while making views from different pictures less similar. It learns image features without human labels.
+
 💻 **CS analogy:** treat two transformed copies as duplicate records that must hash nearby, while every other record in the batch is a temporary negative test case.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+−log(exp(sim(i,j)/τ) / Σ_(k≠i) exp(sim(i,k)/τ))
+```
 
 **Essential equation:** \(-\log\frac{\exp(\mathrm{sim}(i,j)/\tau)}{\sum_{k\ne i}\exp(\mathrm{sim}(i,k)/\tau)}\). i and j are two altered views of the same image. The top says “how similar is the true partner?”; the bottom compares it with every other image in the batch. Training wants the true pair to win this retrieval contest. Temperature τ controls how strongly the contest favors the highest score.
+
+The top is the true pair’s similarity and the bottom includes all competing images in the batch. Training makes the true pair win this retrieval contest.
 
 ## Background: What Came Before 🕰️
 
 Image representations usually relied on manual labels, while earlier self-supervised approaches used hand-designed pretext tasks whose benefit did not always transfer. Contrastive ideas existed but their training recipes were complicated. SimCLR was needed to show that strong augmentations, a projection head, and a simple contrastive objective could learn highly useful visual features without labels.
+
+This was needed because labeled images are costly, while simple image augmentations can create learning signals for free.
 
 ## Why It Matters
 
@@ -182,6 +195,19 @@ It also preserves clear accountability for model behavior.
 It supports measured, safe iteration across dependent products.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/27-simclr/code/contrastive_pair.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/contrastive_pair.py`](code/contrastive_pair.py) checks that a hand-built
 positive view embedding scores above two negative image embeddings.

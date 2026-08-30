@@ -10,15 +10,28 @@ Chain-of-thought prompting shows worked examples, so a model can write intermedi
 
 `🧮 problem → 🪜 intermediate steps → ✅ final answer → 🔍 verify important work`
 
+Writing intermediate steps gives the model more places to keep track of numbers and decisions. It is useful scratch work, but it still needs checking.
+
 💻 **CS analogy:** a reasoning trace is an execution trace: intermediate state can make a hard final result easier to compute and debug.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+p(steps, answer | prompt)
+```
 
 **Essential concept:** p(steps, answer | prompt). The model does not solve arithmetic using a special calculator equation; it predicts a longer sequence: intermediate words first, final answer last. Those steps act like scratch-paper lines or temporary variables in a program. They can make a hard answer easier to reach, but convincing-looking steps are still not proof that every step is correct.
+
+The comma means the model predicts the steps and final answer together. The vertical bar means both depend on the earlier prompt.
 
 ## Background: What Came Before 🕰️
 
 Large language models could answer many questions from a direct prompt, yet multi-step arithmetic and symbolic tasks often failed because the final answer had to appear in one jump. Fine-tuning a reasoning model was not always available. Chain-of-thought prompting was needed to show that demonstrations containing intermediate steps can unlock better in-context problem solving.
+
+It was needed because direct prompts often forced a multi-step problem into one jump with too little room for intermediate state.
 
 ## Why It Matters
 
@@ -92,6 +105,19 @@ Sampling needs care. Temperature zero produces one deterministic continuation fo
 Finally, reasoning tasks may be under-specified. A model can write a flawless calculation based on a missing assumption, such as a tax rate, date, unit conversion, or definition. A good CoT prompt can encourage the model to state uncertainty, but application logic should make missing inputs explicit and request clarification when needed. Better reasoning format cannot create absent evidence.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/14-chain-of-thought/code/trace_majority_vote.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/trace_majority_vote.py`](code/trace_majority_vote.py) parses five fixed arithmetic traces and majority-votes their final answers. It asserts that four correct traces beat one incorrect trace. This illustrates later self-consistency, not the original paper’s single-chain few-shot method; the distinction is deliberately documented in the code and mechanism section.
 

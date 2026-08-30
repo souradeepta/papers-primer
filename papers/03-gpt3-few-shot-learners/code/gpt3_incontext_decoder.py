@@ -12,6 +12,9 @@ GPT-3 itself uses the GPT-2-style decoder-only Transformer architecture
 that shape at toy scale with plain integer "token" ids so it needs no real
 tokenizer or trained weights to demonstrate the mechanism.
 """
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 import torch
 import torch.nn.functional as F
 

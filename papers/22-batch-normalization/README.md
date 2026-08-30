@@ -15,15 +15,29 @@ BatchNorm gives a layer numbers on a more predictable scale, like converting man
 
 `📊 batch values → ➗ center and scale → 🎚️ learned adjuster → 🧠 steadier training`
 
+BatchNorm gives each layer inputs with a more predictable scale during training. The layer can still learn the scale it wants afterward.
+
 💻 **CS analogy:** it is like standardizing measurements before a shared service consumes them, then allowing each caller to choose a scale and offset again.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+x̂ = (x − μ_B) / √(σ_B² + ε)
+y = γx̂ + β
+```
 
 **Essential equation:** \(\hat{x}=(x-\mu_B)/\sqrt{\sigma_B^2+\epsilon}\), followed by \(y=\gamma\hat{x}+\beta\). First subtract the batch average \(\mu_B\), so values are centered around zero. Then divide by the spread (standard deviation), so a wide-ranging batch and narrow-ranging batch use a comparable scale. The learned γ and β can scale and shift the result back if that helps the network.
+
+Subtracting μ centers values around zero; dividing by the spread makes batches comparable. γ and β are learned knobs that can rescale and shift the result.
 
 ## Background: What Came Before 🕰️
 
 Deep networks were increasingly hard to optimize because a layer kept receiving differently distributed inputs as earlier layers changed. Smaller learning rates and careful initialization helped but slowed experiments. Batch Normalization was needed to make training more stable and permit more aggressive optimization settings.
+
+It addressed unstable deep-network training, where changing earlier layers constantly changed the scale seen by later layers.
 
 ## Why It Matters
 
@@ -175,6 +189,19 @@ candidate. BatchNorm makes these checks cheap and concrete because its buffers
 and affine parameters provide visible state to compare across runtimes.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/22-batch-normalization/code/batch_norm.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/batch_norm.py`](code/batch_norm.py) computes scalar minibatch statistics
 and asserts the transformed batch has approximately zero mean and unit variance.

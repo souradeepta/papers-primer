@@ -10,15 +10,28 @@ T5 treats every language task as text in and text out. It practices repairing mi
 
 `📥 task text → 🧠 encoder understands → ✍️ decoder writes → 📤 task answer`
 
+The same interface handles translation, summarization, and classification: give text in and ask for text out. A task prefix tells the model which job the input requests.
+
 💻 **CS analogy:** span corruption is like replacing missing substrings with numbered placeholders, then asking a decoder to emit the patch file in order.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+p(y|x) = ∏ p(yᵢ | earlier y, x)
+```
 
 **Essential equation:** p(y|x) = ∏ p(yᵢ | earlier y, x). To write output y from input x, T5 predicts one output token at a time. Each new prediction sees the original input and the output tokens already written. It is like completing a sentence while keeping both the question and your partial answer visible.
+
+The ∏ sign means predict every output token in order. Each prediction sees both the original input and the answer already written.
 
 ## Background: What Came Before 🕰️
 
 NLP systems used many different architectures and objectives for classification, translation, question answering, and summarization. That made transfer experiments hard to compare and implementations hard to reuse. T5 was needed to frame every task as text-to-text, so one encoder–decoder recipe and one training objective could cover them all.
+
+This was needed because task-specific output heads and formats made transfer-learning systems harder to compare and reuse.
 
 ## Why It Matters
 
@@ -100,6 +113,19 @@ For fine-tuning, distinguish teacher-forced likelihood from generation-time qual
 The unified interface does not eliminate data licensing, corpus filtering, or contamination concerns. C4 is a web-derived corpus construction and the paper’s result must be read in that experimental context. When adapting T5-like models, record the data mixture and evaluation overlap policy just as carefully as model hyperparameters. Transfer learning is a workflow spanning data, pre-training, formatting, and evaluation—not merely a call to `generate`.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/12-t5/code/span_corruption.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/span_corruption.py`](code/span_corruption.py) constructs a token list with two removed spans, writes ordered sentinels into the source and target, then reconstructs the original tokens. It asserts that each sentinel is present once in the corrupted source and that the target’s fills restore the exact original order.
 

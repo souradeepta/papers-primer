@@ -18,17 +18,17 @@ All papers 01–30 are complete. In addition to the binding SPEC.md
 requirements, each paper now starts with four learner-first sections before
 **Why It Matters**:
 
-1. **Fun Map for First Years 🧭** — a compact emoji flow diagram and a
-   plain-language explanation of the central idea.
+1. **Fun Map for First Years 🧭** — a compact emoji flow diagram plus two
+   short, plain-language paragraphs.
 2. A **CS analogy** — connects the concept to a familiar programming or
    systems idea (for example, a database query, patch, cache, rate limiter,
    or priority inbox).
 3. **Math Playground 🧮** — the paper’s single most essential equation or
-   mathematical concept, followed by a high-school-level explanation of its
-   parts and purpose. Define important symbols plainly; this bridges into, but
-   does not replace, the formal treatment in **The Mechanism**.
-4. **Background: What Came Before 🕰️** — explains the previous approach,
-   its limitation, and why the paper’s idea became necessary.
+   mathematical concept in a fenced text block, followed by two short,
+   high-school-level paragraphs. Define important symbols plainly; this bridges
+   into, but does not replace, the formal treatment in **The Mechanism**.
+4. **Background: What Came Before 🕰️** — two short paragraphs: the earlier
+   approach and its limitation, then why the paper’s idea became necessary.
 
 Keep these sections accurate, approachable to a first-year student, and
 concrete. Prefer tiny inline diagrams, Mermaid diagrams, or existing GIFs

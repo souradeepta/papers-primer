@@ -1,4 +1,7 @@
 """Compute a toy power-law loss change when compute doubles."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 def main()->None:
  baseline,compute,exponent=2.0,1.0,-.1

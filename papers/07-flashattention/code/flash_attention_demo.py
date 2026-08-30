@@ -11,6 +11,9 @@ that the tiled, block-streaming algorithm is mathematically exact: it must
 produce the same output as ordinary, fully-materialized softmax attention,
 just without ever holding the full N x N score matrix in memory at once.
 """
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 
 import torch

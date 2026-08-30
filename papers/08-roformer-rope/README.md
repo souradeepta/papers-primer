@@ -10,15 +10,28 @@ RoPE gives each word a tiny spin based on where it sits. Comparing two spun vect
 
 `📍 position → 🌀 rotate vectors → 👀 compare relative distance → 🧠 ordered language`
 
+Imagine every word holds an arrow. RoPE turns the arrow a little more for later positions, so attention can sense both matching content and relative order.
+
 💻 **CS analogy:** RoPE is like encoding an array index as an angle, so subtracting positions becomes a simple relative phase comparison.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+(x,y) → (x cos θ − y sin θ, x sin θ + y cos θ)
+```
 
 **Essential equation:** (x,y) → (x cos θ − y sin θ, x sin θ + y cos θ). This is the high-school formula for rotating a point around the origin. RoPE gives each word a rotation angle based on its position. A rotation keeps an arrow’s length the same but changes its direction, so comparing two word arrows can reveal how far apart their positions are.
+
+x and y are two coordinates of an arrow, while θ is its turn angle. Sine and cosine describe the horizontal and vertical parts after a turn.
 
 ## Background: What Came Before 🕰️
 
 Transformers need position information because attention alone does not know token order. Absolute position embeddings worked but did not naturally express a relative distance inside an attention score or extrapolate gracefully. RoPE was needed to encode position as a rotation, so the query–key interaction directly reflects relative offset.
+
+RoPE answered the need for position information that naturally appears inside attention comparisons rather than as a separate position label.
 
 ## Why It Matters
 
@@ -105,6 +118,19 @@ For kernels, fuse rotation into Q/K preparation when possible, but keep a clear 
 The design also has a product implication: a relative relationship is available inside the score without adding a position-bias lookup. That helps a model generalize patterns such as locality, but it does not supply document structure, timestamps, or segment semantics. Those may still require tokenization choices, special tokens, attention masks, or other features. RoPE is a positional coordinate system, not a complete long-context strategy.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/08-roformer-rope/code/rope_relative_position.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/rope_relative_position.py`](code/rope_relative_position.py) implements the pairwise rotation in plain PyTorch. It creates fixed query/key vectors, scores three position pairs with the same offset, and asserts the scores agree to `1e-6`. It also checks that a different offset changes the score for this seeded example and that rotations preserve the query norm. Run it with:
 

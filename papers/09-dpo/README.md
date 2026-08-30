@@ -10,15 +10,28 @@ DPO learns from “this answer is better than that one” pairs directly. It nud
 
 `❓ prompt → 👍 preferred answer / 👎 rejected answer → 📏 preference loss → 🤖 better choices`
 
+DPO learns directly from paired choices. It avoids training a separate reward model and a reinforcement-learning loop, which makes the recipe simpler.
+
 💻 **CS analogy:** DPO is a direct ranking-loss update, similar to teaching a search ranker from clicked-versus-skipped result pairs.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+−log σ(β[log(π(y_w|x)/π_ref(y_w|x)) − log(π(y_l|x)/π_ref(y_l|x))])
+```
 
 **Essential equation:** \(-\log\sigma(\beta[\log\frac{\pi(y_w|x)}{\pi_\text{ref}(y_w|x)}-\log\frac{\pi(y_l|x)}{\pi_\text{ref}(y_l|x)}])\). \(y_w\) is the answer a human chose and \(y_l\) is the losing answer. In simple terms, DPO rewards the new model when it makes the winner more likely than the loser, but measures both changes against a frozen reference model. The sigmoid turns that gap into a 0-to-1 confidence; logs turn many word-probability multiplications into additions.
+
+π means the new model’s answer probability, π_ref is the frozen reference, and β is a strength dial. The equation favors the winning answer without drifting too far.
 
 ## Background: What Came Before 🕰️
 
 RLHF could align a model with preferences, but it required training a separate reward model and running a delicate PPO loop. That pipeline adds moving parts and opportunities for instability. DPO was needed to learn directly from preferred-versus-rejected response pairs while keeping a reference model as an anchor.
+
+It was needed to keep the useful preference data of RLHF while removing several moving parts that can make RL training fragile.
 
 ## Why It Matters
 
@@ -112,6 +125,19 @@ Finally, separate training-time reference anchoring from serving-time behavior. 
 For reproducibility, log the reference checkpoint revision, tokenizer revision, chat-template text, beta, maximum lengths, truncation direction, dataset hash, and the exact preference-field mapping. These are part of the objective’s effective definition. A change in any of them can alter the computed log-ratio while leaving the training command apparently unchanged.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/09-dpo/code/dpo_toy_preference.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/dpo_toy_preference.py`](code/dpo_toy_preference.py) contains a three-response toy policy and a frozen logit table as reference. Responses 0 and 1 are the chosen and rejected pair. It computes the exact DPO logistic loss, takes 80 SGD steps, and asserts that the chosen-minus-rejected log-probability margin relative to reference rises by more than one nat.
 

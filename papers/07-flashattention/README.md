@@ -12,15 +12,28 @@ FlashAttention solves an organizer problem: do attention in small tiles so the G
 
 `🧩 small tiles → 🚀 fast GPU memory → 👀 exact attention → ⏱️ cheaper long context`
 
+The result does not approximate attention or skip information. It is the same answer as ordinary attention, but the computer visits data in an order that fits GPU memory better.
+
 💻 **CS analogy:** FlashAttention is cache-aware blocked matrix multiplication, except it also maintains a streaming softmax result.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+softmax(QKᵀ / √d) V
+```
 
 **Essential equation:** softmax(QKᵀ/√d)V. FlashAttention produces this exact same attention result as the original Transformer. Its trick is to keep a running maximum, running total, and running weighted sum while reading small blocks of the score table. Like adding a long column a page at a time, it avoids needing the whole enormous table in memory.
+
+Q, K, and V have the same roles as normal attention: ask, match, and carry information. The innovation is calculating the formula safely piece by piece.
 
 ## Background: What Came Before 🕰️
 
 Standard attention was mathematically simple but materialized a huge score matrix, so memory traffic—not only arithmetic—became the bottleneck for long sequences. Faster hardware did not solve wasteful reads and writes by itself. FlashAttention was needed to preserve exact attention while reorganizing the computation around fast on-chip tiles.
+
+This was needed because standard attention’s giant intermediate table became the bottleneck for long inputs, even when the arithmetic itself was manageable.
 
 ## Why It Matters
 
@@ -90,6 +103,19 @@ You will very rarely write a FlashAttention kernel yourself today — it is avai
 There are real constraints to know before assuming "just enable flash attention" always helps. Kernel support is typically restricted to specific head dimensions (historically ≤128, though this has expanded across FlashAttention-2/3), specific dtypes (fp16/bf16 more reliably than fp32), and specific GPU architectures (Ampere and newer for many kernel versions); on unsupported configurations you silently fall back to a slower path unless you check which backend actually ran. The speedup is largest for longer sequences and memory-bound configurations — for very short sequences or already compute-bound workloads the relative win shrinks, since there is less redundant HBM traffic to eliminate in the first place. Because backward-pass recomputation trades FLOPs for memory bandwidth, a GPU with unusually low compute headroom relative to its memory bandwidth (an unusual ratio for current-generation accelerators, but worth checking) could see the trade-off favor a different implementation. Dropout inside attention requires care: FlashAttention regenerates the dropout mask from a saved PRNG state during the backward pass rather than storing the mask, so custom attention variants that need bespoke masking behavior should not assume they can freely swap in a fused kernel without checking semantic equivalence. Finally, remember that FlashAttention computes *exact* attention — if you are debugging a quality regression, the fused kernel is very unlikely to be the cause (output should match standard attention up to floating-point tolerance), which is a useful elimination step versus debugging a genuinely approximate attention variant.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/07-flashattention/code/flash_attention_demo.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/flash_attention_demo.py`](code/flash_attention_demo.py) implements the numerical core of Algorithm 1 in plain, CPU-only PyTorch: a `flash_attention` function that tiles queries and keys/values into blocks, maintains the running max `m_i`, running normalizer `l_i`, and running output accumulator across blocks with the rescale-and-merge update described above, and a `standard_attention` reference that materializes the full score matrix directly. It runs both on the same small random Q/K/V example (N=37, d=16, deliberately not multiples of the block sizes 8 and 5, to stress boundary handling) and asserts `torch.allclose(reference, tiled, atol=1e-5)`. This does not implement the paper's actual CUDA kernel, SRAM sizing, or fused backward pass — there is no speed or memory benefit to be measured here, since everything still runs as ordinary PyTorch ops on CPU — the only claim being demonstrated is that the tiled, block-streaming algorithm is mathematically exact.
 

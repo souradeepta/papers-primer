@@ -12,15 +12,28 @@ Chinchilla says a big brain also needs enough books. Spending all compute on a g
 
 `⚙️ compute budget → 🧠 model size + 📚 training tokens → ⚖️ balanced training → 📉 lower loss`
 
+The key lesson is balance. A giant model that reads too little is like buying a huge hard drive but never filling it; a tiny model that reads everything may not have enough room to learn.
+
 💻 **CS analogy:** compute-optimal training is capacity planning: CPU cores and input records must be provisioned together, not independently maxed out.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+L(C) ≈ aC⁻ᵝ + c
+```
 
 **Essential equation:** L(C) ≈ aC⁻ᵝ + c. L means error (lower is better) and C means training compute. The negative exponent says more compute reduces error, but with diminishing returns: doubling the budget helps, yet usually not by twice as much. The fitted curve helped compare how to split one fixed budget between a bigger model and more training tokens.
+
+The ≈ sign means fitted estimate, not an exact rule. The constants a, β, and c are measured from experiments and control the curve’s height, bend, and lower limit.
 
 ## Background: What Came Before 🕰️
 
 Scaling practice had emphasized making models larger, and compute-optimal rules based on earlier evidence encouraged parameter-heavy training. Many large models consequently saw too few tokens for their size. Chinchilla was needed to show, under a fixed compute budget, that model parameters and training data should grow together.
+
+This shifted planning from “always make it bigger” to testing how model size and data should share a fixed compute budget.
 
 ## Why It Matters
 
@@ -105,6 +118,19 @@ When running a sweep, use a shared configuration schema and immutable run metada
 Finally, separate pre-training planning from post-training. Instruction tuning, preference optimization, retrieval, tool use, and architecture changes may move product quality substantially without following the same frontier. Chinchilla answers a valuable narrower question: how to allocate dense autoregressive pre-training compute between parameters and tokens in the studied setting.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/06-chinchilla/code/compute_optimal_scaling.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/compute_optimal_scaling.py`](code/compute_optimal_scaling.py) is a CPU-only, dependency-free toy sweep. It holds normalized compute (N D) fixed, evaluates a simplified version of the paper's loss shape for candidate parameter counts, and derives the token count from the fixed budget. The printout marks the lowest point and assertions check that the balanced allocation beats both extremes.
 

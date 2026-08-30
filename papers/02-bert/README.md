@@ -26,15 +26,28 @@ BERT is a reading student who practices filling in missing words while looking b
 
 `📖 sentence with blanks → 👀 read both directions → 🧩 guess blank → 🧠 reusable language skills`
 
+BERT practices a fill-in-the-blank game millions of times. Because it can look left and right, it learns that the same word can mean different things in different sentences.
+
 💻 **CS analogy:** masked-language training is like a unit test with a deliberately deleted variable that the program must reconstruct from surrounding context.
 
+## Math Playground 🧮
 ## Math Playground 🧮
 
 **Essential equation:** −log p(correct missing word | surrounding words). BERT fills in a hidden word and gives every possible word a probability. If it gives the real word 90%, the penalty is small; if it gives it 1%, the penalty is large. Training lowers this penalty, like grading a multiple-choice guess much more harshly when the correct answer was ranked last.
 
+The essential equation or rule is:
+
+```text
+−log p(correct missing word | surrounding words)
+```
+
+The vertical bar means “given”: predict the missing word given its context. The log is a scoring trick that makes many small probabilities easier for a computer to add during training.
+
 ## Background: What Came Before 🕰️
 
 Language models were often trained left-to-right, so a word representation could not use the words after it during pretraining. Task-specific models also had to be built from scratch for each benchmark. BERT was needed to learn reusable bidirectional language features from unlabeled text, then adapt them with a small supervised fine-tuning step.
+
+This made it possible to pretrain one general language model and adapt it cheaply to many benchmarks instead of building a separate model for each.
 
 ## Why It Matters
 
@@ -377,6 +390,19 @@ later work responding to a real deployment cost this paper doesn't itself
 address.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/02-bert/code/bert_mlm_from_scratch.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 See `code/bert_mlm_from_scratch.py` for a minimal, runnable
 implementation of two things: bidirectional self-attention (contrasted

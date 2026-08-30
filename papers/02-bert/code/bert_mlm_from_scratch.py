@@ -19,6 +19,9 @@ dot-product attention formula as the Transformer paper, since BERT is a
 Transformer encoder stack) and asserts properties that would fail if
 either mechanic were implemented wrong.
 """
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 import torch
 import torch.nn.functional as F
 

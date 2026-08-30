@@ -10,6 +10,9 @@ near a balanced parameter/data allocation.
 It is a teaching simulation, not a reproduction of Chinchilla's fitted
 coefficients or a recommendation for selecting a production model size.
 """
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 import math
 
 

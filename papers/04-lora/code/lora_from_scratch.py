@@ -11,6 +11,9 @@ training (paper, section 4.1: "We use a random Gaussian initialization
 for A and zero for B, so ∆W = BA is zero at the beginning of training").
 A gets a random Gaussian init, matching a standard nn.Linear-style init.
 """
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 import torch
 import torch.nn as nn
 

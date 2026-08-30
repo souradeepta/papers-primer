@@ -1,4 +1,7 @@
 """Toy RAG-Sequence: retrieve documents then marginalize generator answers."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 import torch
 def main():
  q=torch.tensor([1.,0.]); docs=torch.tensor([[1.,0.],[.5,.5],[0.,1.]])

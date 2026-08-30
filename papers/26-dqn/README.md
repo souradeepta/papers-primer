@@ -15,15 +15,28 @@ DQN learns which game move is worth most by remembering past moves and their rew
 
 `🎮 state → 🎯 choose action → 🏆 reward → 🗃️ replay memory → 🧠 better values`
 
+DQN learns a score for each possible action. It updates the score using both the reward it got now and an estimate of what happens next.
+
 💻 **CS analogy:** DQN is dynamic programming with a learned cache: store an estimate of each state–action value, then update it from the best estimate of the next state.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+y = r + γ max_a′ Q_target(s′, a′)
+```
 
 **Essential equation:** \(y=r+\gamma\max_{a'}Q_{\text{target}}(s',a')\). r is the reward received now. The second term is the best predicted future reward from the next situation s′, reduced by γ because future rewards are less certain or less immediate. Adding them teaches the agent: a move is good not only for today’s score, but also for where it leads.
+
+r is today’s reward; the max term is the best predicted future reward from the next state. γ discounts that future because it is less immediate.
 
 ## Background: What Came Before 🕰️
 
 Q-learning had strong tabular results, but a table cannot cover every possible video-game screen. Deep neural networks could read pixels yet combining them directly with bootstrapped value targets was unstable. DQN was needed to make one agent learn Atari control from high-dimensional observations using replay memory and a stabilized target.
+
+This extended reinforcement learning from small hand-designed tables to high-dimensional inputs such as game pixels.
 
 ## Why It Matters
 
@@ -182,6 +195,19 @@ measurement assumption.
 It supports responsible maintenance and reproducible scientific review.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/26-dqn/code/td_target.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/td_target.py`](code/td_target.py) calculates a scalar nonterminal target
 from reward and maximum next-action value.

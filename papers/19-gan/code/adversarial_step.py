@@ -1,4 +1,7 @@
 """Tiny scalar GAN objective directions; no ML framework required."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 import math
 def sigmoid(x: float) -> float: return 1/(1+math.exp(-x))

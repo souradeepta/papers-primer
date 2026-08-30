@@ -1,4 +1,7 @@
 """A deterministic illustration of later self-consistency over reasoning traces."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from collections import Counter
 def answer(trace): return int(trace.rsplit('=',1)[1].strip())
 def main():

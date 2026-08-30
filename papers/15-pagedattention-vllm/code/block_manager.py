@@ -1,4 +1,7 @@
 """Toy PagedAttention-style logical KV block table with shared-prefix refs."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 class Manager:
  def __init__(self,size=4): self.size=size;self.refs={};self.next=0
  def alloc(self): b=self.next;self.next+=1;self.refs[b]=1;return b

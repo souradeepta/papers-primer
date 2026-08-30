@@ -1,4 +1,7 @@
 """Toy T5 span corruption: sentinel-delimited targets reconstruct the input."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 
 def corrupt(tokens: list[str], spans: list[tuple[int, int]]):

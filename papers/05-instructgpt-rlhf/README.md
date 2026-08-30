@@ -22,15 +22,28 @@ RLHF teaches a model from human preferences: people compare answers, a reward mo
 
 `🤖 draft answers → 🧑‍⚖️ humans compare → 🏆 reward signal → 📈 improved assistant`
 
+People do not need to write a perfect numerical score for every answer. Choosing “A is better than B” is often enough to teach a model what people prefer.
+
 💻 **CS analogy:** RLHF resembles training a ranking service from A/B preference logs, then optimizing a policy against that learned scorer.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+−log σ(r(chosen) − r(rejected))
+```
 
 **Essential equation:** −log σ(r(chosen) − r(rejected)). Humans pick the better of two answers. The reward model gives each answer a score; subtracting scores asks whether the chosen answer is ahead. The sigmoid σ converts that difference into a number from 0 to 1, like a predicted chance of winning. Training penalizes it when the preferred answer is not predicted to win.
+
+If the chosen answer scores much higher, the sigmoid is near 1 and the penalty is low. If the rejected answer wins, the model gets a large penalty.
 
 ## Background: What Came Before 🕰️
 
 Next-token pretraining teaches a model to imitate internet text, not necessarily to follow a helpful, safe instruction. Supervised prompts helped, but they could not capture every quality judgment with one target answer. InstructGPT was needed to turn human preference comparisons into an optimization signal that steers a pretrained model’s behavior.
+
+The new idea connected subjective human judgments to a training signal, so usefulness could be optimized rather than assumed from internet text.
 
 ## Why It Matters
 
@@ -359,6 +372,19 @@ RL machinery?") and the answer, for a meaningful chunk of use cases, has
 turned out to be no.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/05-instructgpt-rlhf/code/rlhf_from_scratch.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 See `code/rlhf_from_scratch.py` for two self-contained, runnable smoke
 tests in PyTorch, each mirroring one formula from The Mechanism above:

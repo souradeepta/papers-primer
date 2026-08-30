@@ -15,15 +15,28 @@ DDPM learns to remove a little noise at a time. It practices on messy data, then
 
 `🖼️ clean data → 🌨️ add noise → 🧠 predict noise → 🧼 many denoise steps → ✨ sample`
 
+Diffusion starts with a real image, adds more static, then learns how to remove the static. Starting from pure noise and reversing the process can create a new image.
+
 💻 **CS analogy:** it is like learning a robust cleanup function: first deliberately corrupt a file in many tiny steps, then train a program to undo one step at a time.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+x_t = √ᾱ_t x_0 + √(1 − ᾱ_t) ε
+```
 
 **Essential equation:** \(x_t=\sqrt{\bar\alpha_t}x_0+\sqrt{1-\bar\alpha_t}\epsilon\). x₀ is a clean image and ε is random static. The formula mixes them: \(\bar\alpha_t\) says how much original image remains at time t, while the rest becomes noise. The model learns to predict the static, so generation can repeatedly remove its estimate from a noisy image.
+
+x₀ is a clean image, ε is random static, and ᾱ controls how much signal remains. The weights mix them without changing scale too much.
 
 ## Background: What Came Before 🕰️
 
 GANs could make sharp images but their adversarial game could collapse or miss parts of the data distribution. Likelihood-based alternatives often had other architectural constraints. DDPM was needed to offer a stable, simple generative recipe: turn data into noise gradually and learn the reverse denoising process.
+
+This provided a stable alternative to adversarial generation, using a direct prediction task rather than a two-player game.
 
 ## Why It Matters
 
@@ -191,6 +204,19 @@ and products evolve.
 It enables reliable technical review and safe iteration.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/29-ddpm/code/noise_schedule.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/noise_schedule.py`](code/noise_schedule.py) applies the closed-form
 forward noising equation to one scalar clean value and fixed Gaussian noise.

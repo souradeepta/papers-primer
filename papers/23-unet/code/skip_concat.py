@@ -1,4 +1,7 @@
 """Illustrate U-Net's same-resolution skip concatenation invariant."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 def main() -> None:
     encoder=[[1,2],[3,4]]; decoder=[[9,8],[7,6]]

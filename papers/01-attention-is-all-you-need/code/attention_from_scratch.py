@@ -5,6 +5,9 @@ scaled dot-product attention function, and a multi-head wrapper that
 projects into h parallel heads, applies attention independently per head,
 then concatenates and re-projects.
 """
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 import torch
 import torch.nn.functional as F
 

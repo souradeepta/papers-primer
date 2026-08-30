@@ -15,15 +15,28 @@ ResNet lets a layer learn a small change instead of rebuilding everything. A sho
 
 `📦 input → 🛠️ small correction + ➡️ shortcut → ➕ add together → 🧠 deeper network`
 
+A residual block preserves the original signal and learns only a small correction. That makes a very deep stack less likely to forget useful information.
+
 💻 **CS analogy:** a residual block is a patch or decorator: keep the original value and add only the small correction a function has learned.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+y = F(x) + x
+```
 
 **Essential equation:** \(y=F(x)+x\). x is the layer’s input and F(x) is the change the new layers learn. Instead of asking a layer stack to rebuild the whole answer, ResNet asks it to learn only a correction. If no correction helps, F(x) can be near zero and x passes through unchanged—like applying an empty code diff.
+
+x is the incoming value and F(x) is the correction. If no correction helps, F(x) can be near zero and x still passes through.
 
 ## Background: What Came Before 🕰️
 
 Researchers could make image networks deeper, but simply stacking layers eventually made even the training error worse, not just the test error. Better initialization and normalization helped, yet optimization paths were still fragile. ResNet was needed to let a deep stack learn incremental corrections instead of forcing every block to relearn its entire input.
+
+This solved the problem that adding more ordinary layers could make a network train worse, not better.
 
 ## Why It Matters
 
@@ -171,6 +184,19 @@ measurement path, including preprocessing and multi-crop or multi-scale
 inference where applicable.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/18-resnet/code/residual_block.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/residual_block.py`](code/residual_block.py) represents the add operation
 with lists and asserts the essential invariant: a zero residual branch preserves

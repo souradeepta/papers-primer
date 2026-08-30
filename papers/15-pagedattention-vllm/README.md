@@ -10,15 +10,28 @@ PagedAttention stores a model’s growing memory in small blocks, like library b
 
 `💬 request tokens → 🧱 KV-cache blocks → 🗺️ block table → 🚀 more requests fit`
 
+Long conversations produce a growing cache of past-token information. PagedAttention keeps that cache in small reusable blocks, so one request does not need one giant unbroken memory region.
+
 💻 **CS analogy:** PagedAttention uses virtual-memory-style indirection: a logical token address maps through a table to a physical memory block.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+block = floor(t/B),  offset = t mod B
+```
 
 **Essential equation:** block = floor(t/B), offset = t mod B. If each memory block holds B tokens, divide token number t by B: the whole-number part tells you which block to use, and the remainder tells you the slot inside it. For token 23 in blocks of 8, that is block 2, slot 7. This is the same page-number-and-offset arithmetic used by virtual memory.
+
+The whole-number quotient chooses a block and the remainder chooses a slot inside it. For token 23 with blocks of 8, that is block 2, slot 7.
 
 ## Background: What Came Before 🕰️
 
 Autoregressive serving stores a growing key–value cache for every request, and conventional contiguous allocation wastes memory when requests have different lengths. That waste restricts batch size and throughput. PagedAttention was needed to manage KV cache memory in fixed blocks, much like virtual memory, so more requests fit safely.
+
+This was needed to serve many variable-length requests without wasting memory on large contiguous allocations.
 
 ## Why It Matters
 
@@ -79,6 +92,19 @@ Block size is a tuning parameter, not a cosmetic constant. Smaller blocks reduce
 Use admission control and quotas. Paged allocation makes memory usage predictable in blocks, so a scheduler can reject or queue work before OOM rather than gambling on maximum output lengths. Release blocks on normal completion, cancellation, error, and worker failure paths. For multi-tenant workloads, never allow a reused physical block to expose stale K/V data; allocator zeroing/isolation behavior and cache-key authorization are security requirements, not optional optimizations.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/15-pagedattention-vllm/code/block_manager.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/block_manager.py`](code/block_manager.py) builds a tiny fixed-size block manager. Two requests share a prefix physical block, map a logical token index to physical block plus offset, then release their blocks in turn. Assertions verify that the prefix remains allocated after the first request finishes and is reclaimed only after the final reference is released.
 

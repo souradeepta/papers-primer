@@ -22,6 +22,9 @@ to follow instructions with human feedback":
 Both are toy-scale (random frozen features, small dims) so this runs on
 CPU in well under a second -- not a faithful reproduction of GPT-3 scale.
 """
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

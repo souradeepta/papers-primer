@@ -24,15 +24,28 @@ GPT-3 is a next-word machine that can learn a pattern from examples placed in it
 
 `📝 examples in prompt → 🤖 spot the pattern → 🔮 predict next text → 📤 answer`
 
+Nothing inside the model is retrained when it sees those examples. The prompt acts like a temporary instruction sheet: show a few input-output pairs, then ask it to complete the next one.
+
 💻 **CS analogy:** autoregressive generation is a loop whose next iteration receives every previous output as state.
 
+## Math Playground 🧮
 ## Math Playground 🧮
 
 **Essential equation:** p(x₁,…,xₙ) = ∏ p(xᵢ | x₁,…,xᵢ₋₁). The probability of a whole sentence is found by multiplying the chance of each next word after the earlier words. It is like calculating a sequence of dependent events: predict word 1, then word 2 given word 1, and so on. Few-shot learning comes from putting examples in that earlier-word history.
 
+The essential equation or rule is:
+
+```text
+p(x₁,…,xₙ) = ∏ p(xᵢ | x₁,…,xᵢ₋₁)
+```
+
+The ∏ sign means “multiply all these pieces.” A good next-word predictor can use the examples in the prompt as clues about what continuation the user wants.
+
 ## Background: What Came Before 🕰️
 
 After pretraining, NLP systems commonly needed labeled task data and gradient-based fine-tuning for each new job. Earlier language models showed transfer, but their in-context abilities were less broadly demonstrated. GPT-3 was needed to test whether scale alone could let one next-token model pick up a task from instructions and examples placed in its prompt.
+
+It showed a route to task adaptation at use time: describe the task with examples instead of changing the model’s weights.
 
 ## Why It Matters
 
@@ -398,6 +411,19 @@ using an LLM in production, since there's no other lever left once
 weights are frozen.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/03-gpt3-few-shot-learners/code/gpt3_incontext_decoder.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 See `code/gpt3_incontext_decoder.py` for a minimal, runnable decoder-only
 causal Transformer (a toy GPT-3-shaped model: token embedding + learned

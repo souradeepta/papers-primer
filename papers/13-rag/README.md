@@ -10,15 +10,28 @@ RAG lets a language model open a library before answering. It finds useful passa
 
 `❓ question → 🔎 retrieve passages → 📚 useful evidence → ✍️ generated answer`
 
+The model does not have to keep every fact inside fixed weights. It can first look up useful notes, then use them while composing an answer.
+
 💻 **CS analogy:** RAG is a weighted fan-out query: several retrieved documents each contribute an answer probability, then the system combines them.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+p(y|x) = Σ_z p(z|x)p(y|x,z)
+```
 
 **Essential equation:** \(p(y|x)=\sum_z p(z|x)p(y|x,z)\). x is the question, z is a retrieved document, and y is the answer. Rather than trust only one document, RAG treats each document as a possible source: its contribution is its answer probability times retrieval’s confidence in it, then the contributions are added. It is a weighted average over evidence branches.
+
+Σ means add across documents. Each document contributes according to both retrieval’s confidence and how well it supports the answer.
 
 ## Background: What Came Before 🕰️
 
 Parametric language models store knowledge only in their fixed weights, so facts can be stale, hard to audit, and expensive to update. Search systems can retrieve current documents but do not by themselves compose fluent answers. RAG was needed to couple retrieval with generation so a model can consult external evidence at answer time.
+
+RAG addressed the need for knowledge that can be updated and inspected without retraining every parameter in a language model.
 
 ## Why It Matters
 
@@ -105,6 +118,19 @@ For cost planning, separate index storage from model memory and account for embe
 Measure it continuously.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/13-rag/code/retrieval_marginalization.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/retrieval_marginalization.py`](code/retrieval_marginalization.py) retrieves two toy document vectors by inner product, softmaxes their scores, and marginalizes two document-conditioned answer distributions. It asserts that the result remains a probability distribution and that replacing the best document’s evidence can flip the answer ranking.
 

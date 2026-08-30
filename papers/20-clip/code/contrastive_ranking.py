@@ -1,4 +1,7 @@
 """Tiny symmetric CLIP-style score-matrix ranking check."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 
 

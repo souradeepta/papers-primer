@@ -7,17 +7,19 @@
 <!-- 3-5 sentences, plain language -->
 
 ## Fun Map for First Years 🧭
-<!-- Explain the central idea with an emoji flow, such as:
-input → transformation → useful result. -->
+<!-- Explain the central idea with an emoji flow, then add a second short
+paragraph that makes the flow concrete. -->
 
 💻 **CS analogy:** <!-- connect the idea to a familiar programming or systems concept -->
 
 ## Math Playground 🧮
-<!-- Give the single most essential equation (or central mathematical concept), define
-important symbols plainly, and explain it for a high-school-math reader. -->
+<!-- Give the single most essential equation (or central mathematical concept) in a
+fenced text block. Follow with two short paragraphs: define important symbols
+plainly, then explain the equation's practical meaning for a high-school-math reader. -->
 
 ## Background: What Came Before 🕰️
-<!-- What did practitioners do before? What limitation made this new idea necessary? -->
+<!-- Use two short paragraphs: what practitioners did before and its limitation;
+then why that limitation made this new idea necessary. -->
 
 ## Why It Matters
 <!-- context: what problem existed before, what changed after -->

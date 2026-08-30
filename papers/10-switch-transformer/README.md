@@ -10,15 +10,28 @@ Switch Transformers have many expert helpers, but each token visits only one. It
 
 `🔤 token → 🚦 router picks expert → 🧑‍🔧 one expert works → 🧠 large capacity, lower cost`
 
+Different tokens may need different processing. The router makes a quick choice so the model gets many specialists without asking every specialist to work on every token.
+
 💻 **CS analogy:** the router is a load balancer that picks one worker for each request while trying not to overload one machine.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+i = argmaxⱼ pⱼ(x),  pⱼ(x) = softmax(Wx)ⱼ
+```
 
 **Essential rule:** i = argmaxⱼ pⱼ(x), where pⱼ(x) = softmax(Wx)ⱼ. For each token x, a router gives every expert j a percentage-like score and sends the token only to the expert with the largest score. This one-winner rule is the paper’s central mathematical simplification: the model can store many experts while paying to run only one.
+
+argmax means “choose the biggest.” Softmax changes raw router scores into percentages, so the chosen expert is simply the expert with the largest percentage.
 
 ## Background: What Came Before 🕰️
 
 Dense Transformers use every parameter for every token, so expanding parameter count also expands compute. Earlier mixture-of-experts designs existed but routing multiple experts made training and communication harder. Switch Transformer was needed to scale capacity with a simple one-expert-per-token routing rule.
+
+The paper made sparse models easier to scale by reducing a multi-expert routing problem to one clear routing choice per token.
 
 ## Why It Matters
 
@@ -98,6 +111,19 @@ Router initialization, auxiliary-loss coefficient, z-loss or other later stabili
 Finally, sparse total parameter count can mislead capacity planning. It affects checkpoint storage and aggregate memory across devices, whereas active parameters and communication dominate request latency. Quote both total and active parameters, plus expert count, top-k, and capacity policy. Those fields explain far more about a sparse model’s operating envelope than a headline parameter number alone.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/10-switch-transformer/code/switch_routing_demo.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/switch_routing_demo.py`](code/switch_routing_demo.py) builds nine toy token router-logit rows for three experts. Seven tokens strongly prefer expert 0, which has capacity two; the program accepts two, records five overflow tokens, and calculates the paper-style \(N\sum f_iP_i\) auxiliary loss. It asserts that the collapsed router has higher balancing loss than uniform probabilities.
 

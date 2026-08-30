@@ -16,15 +16,28 @@ A VAE learns a tidy hidden sketch space. It compresses an example into a fuzzy p
 
 `🖼️ input → 🎒 latent distribution → 🎲 sample code → 🛠️ decoder rebuilds image`
 
+A VAE compresses an input into a small, slightly random code, then rebuilds it. Keeping nearby codes meaningful lets us sample a new code to generate a result.
+
 💻 **CS analogy:** a VAE is a lossy compressor with a random, structured code: it must reconstruct an input while keeping its codes organized enough to sample later.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+E_q(z|x)[log p(x|z)] − KL(q(z|x) || p(z))
+```
 
 **Essential equation:** \(\mathbb{E}_{q(z\mid x)}[\log p(x\mid z)]-\mathrm{KL}(q(z\mid x)\|p(z))\). The first part rewards rebuilding input x from a short hidden code z. The second part penalizes codes that become a messy, disconnected map; it encourages them to stay near a simple bell-shaped distribution. Together: reconstruct well, but keep the code space tidy enough that sampling a new point can make a sensible result.
+
+The first term rewards good reconstruction. The second keeps the code space near a simple bell-shaped pattern, so it stays organized instead of scattered.
 
 ## Background: What Came Before 🕰️
 
 Autoencoders could compress and reconstruct data, but their latent spaces could be irregular: picking a random point might decode to nonsense. Probabilistic latent-variable models supplied structure but were hard to train with modern neural networks. VAEs were needed to connect neural encoders and decoders with a latent space that supports both reconstruction and sampling.
+
+This was needed to combine compression and generation in one model whose hidden space could be sampled smoothly.
 
 ## Why It Matters
 
@@ -183,6 +196,19 @@ It preserves useful engineering evidence across iterations.
 It also supports clearer review and rollback decisions.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/21-vae/code/reparameterization.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/reparameterization.py`](code/reparameterization.py) samples a scalar
 latent variable using \(z=\mu+\sigma\epsilon\) and asserts the expected value

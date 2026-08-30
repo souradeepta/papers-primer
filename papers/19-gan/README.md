@@ -15,15 +15,28 @@ A GAN is a game between an artist who makes fakes and a detective who spots them
 
 `🎲 noise → 🎨 generator makes sample → 🕵️ discriminator checks → 🔁 both learn`
 
+A generator tries to make convincing examples while a discriminator tries to spot fakes. Each side improves because the other side exposes its weaknesses.
+
 💻 **CS analogy:** it resembles a red-team test loop: one program creates tricky cases while another program tries to detect them, and each forces the other to improve.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+min_G max_D E[log D(x)] + E[log(1 − D(G(z)))]
+```
 
 **Essential equation:** \(\min_G\max_D\;E[\log D(x)]+E[\log(1-D(G(z)))]\). D is a judge that wants real examples x to score near 1 and generated examples G(z) near 0. G is a creator trying to fool that judge. The min and max mean they have opposite goals, like two players in a game rather than one student minimizing one error score.
+
+D is the judge, G is the creator, x is real data, and z is random input. Min and max show they want opposite outcomes.
 
 ## Background: What Came Before 🕰️
 
 Earlier generative models often had to specify a tractable likelihood or carefully approximate one, which limited the kinds of image generators people could train. They could be mathematically neat but produce blurry outputs. GANs were needed as a new route: learn to generate by competing against a learned judge rather than explicitly scoring every pixel configuration.
+
+GANs were needed to learn rich data generation without requiring one hand-written similarity score for every possible image.
 
 ## Why It Matters
 
@@ -182,6 +195,19 @@ it is not a substitute for the engineering and governance around a generative
 product.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/19-gan/code/adversarial_step.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/adversarial_step.py`](code/adversarial_step.py) shows the scalar logistic
 directions for real, fake, and non-saturating generator objectives.

@@ -17,15 +17,28 @@ word2vec learns a map where words used in similar neighborhoods stand near each 
 
 `📝 nearby words → 🧠 adjust word vectors → 🗺️ similar contexts nearby → 🔎 useful comparisons`
 
+Words that appear in similar neighborhoods get similar coordinates. That turns text patterns into numbers that simple programs can compare quickly.
+
 💻 **CS analogy:** this is an embedding table plus a vector-search score: a word ID looks up a row, and dot products rank candidate neighbors.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+p(o|c) = exp(u_oᵀv_c) / Σ_w exp(u_wᵀv_c)
+```
 
 **Essential equation:** \(p(o\mid c)=\exp(u_o^Tv_c)/\sum_w\exp(u_w^Tv_c)\). c is a center word and o a nearby word. Their dot product is a “how well do these arrows point together?” score. Exponentials make high scores stand out, and dividing by the sum converts all candidate scores into probabilities that add to 1. Training raises the probability of words that really occur nearby.
+
+The dot product measures how well two word arrows agree. Dividing by the total turns all candidate scores into probabilities that add to 1.
 
 ## Background: What Came Before 🕰️
 
 Before word2vec, programs often represented a word as a huge one-hot ID or counted co-occurrences in a table. Those representations made related words look unrelated and were costly to use at scale. This paper was needed to make compact, reusable word features practical on very large text collections.
+
+This gave NLP compact features where related words could be discovered from usage instead of manually coded.
 
 ## Why It Matters
 
@@ -157,6 +170,19 @@ are exposed through nearest-neighbor search, retain document-level permission
 filters outside the vector lookup: embedding proximity is not authorization.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/16-word2vec/code/skipgram_negative_sampling.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/skipgram_negative_sampling.py`](code/skipgram_negative_sampling.py)
 implements one scalar logistic update for an observed pair and for sampled

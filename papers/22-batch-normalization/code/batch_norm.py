@@ -1,4 +1,7 @@
 """Compute a training-mode BatchNorm transform for one scalar feature."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 def main() -> None:
     xs=[1.0,3.0,5.0,7.0]; mean=sum(xs)/len(xs); var=sum((x-mean)**2 for x in xs)/len(xs)

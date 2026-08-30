@@ -15,15 +15,28 @@ CLIP puts pictures and captions on one shared map. A photo of a dog should land 
 
 `🖼️ image + 📝 caption → 🧠 two encoders → 🗺️ shared space → 🔎 compare with prompts`
 
+CLIP learns a shared map where a photo and its matching caption land close together. New label names can later be used as prompts without retraining a classifier.
+
 💻 **CS analogy:** CLIP builds a shared search index: a picture query and a text query should retrieve the same matching record.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+S_ij = τ I_iᵀT_j
+```
 
 **Essential equation:** \(S_{ij}=\tau I_i^TT_j\). Iᵢ is image i turned into an arrow of numbers and Tⱼ is text j turned into another arrow. Their dot product is high when they point in similar directions; τ adjusts how sharply scores differ. In a batch, every image is compared with every caption, and training teaches the real paired image and caption to score highest.
+
+I is an image arrow and T is a text arrow; their dot product is high when they point in similar directions. τ adjusts how sharply scores differ.
 
 ## Background: What Came Before 🕰️
 
 Vision models were commonly trained on fixed human-written class labels, so adding a new label set required a new supervised dataset and training run. Text and image systems also tended to live in separate pipelines. CLIP was needed to use plentiful captioned web data to connect the two modalities and make text-defined, zero-shot classification possible.
+
+This was needed to escape fixed class lists and use the broader supervision in image-caption pairs.
 
 ## Why It Matters
 
@@ -180,6 +193,19 @@ the vector index and its backups. These details make CLIP's flexible matching
 capability reliable within a real application rather than only in a notebook.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/20-clip/code/contrastive_ranking.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/contrastive_ranking.py`](code/contrastive_ranking.py) checks a toy score
 matrix in image-to-text and text-to-image directions.

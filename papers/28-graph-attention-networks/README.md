@@ -14,15 +14,28 @@ GAT lets each dot in a network listen to nearby dots with different volumes, rat
 
 `🔵 node + 👥 neighbors → 🎚️ attention weights → 📬 weighted messages → 🧠 updated node`
 
+A graph node can listen to its neighbors, but not every neighbor deserves equal attention. GAT learns which incoming messages matter most.
+
 💻 **CS analogy:** each node runs a priority inbox: it reads messages from neighbors but turns their relevance scores into per-neighbor weights before combining them.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+Σ_j α_ij W h_j,  α_ij = softmax_j(e_ij)
+```
 
 **Essential equation:** \(\sum_j\alpha_{ij}Wh_j\), with \(\alpha_{ij}=\operatorname{softmax}_j(e_{ij})\). Node i receives a message from every neighbor j. The softmax turns the neighbor scores into weights that add to 1, like splitting a fixed 100% attention budget among messages. The result is a weighted average, so useful neighbors can count more than irrelevant ones.
+
+α is a percentage-like attention weight for neighbor j. The weighted sum lets useful neighbors contribute more than irrelevant ones.
 
 ## Background: What Came Before 🕰️
 
 Graph neural networks could average or sum neighbor features, but that treats every neighbor as equally useful and can blur distinct roles. Fixed graph filters also made it hard to adapt importance across nodes. GAT was needed to learn which neighboring messages deserve more weight while remaining usable on graphs with varying degrees.
+
+This improved on graph methods that treated every neighbor alike, even in noisy graphs.
 
 ## Why It Matters
 
@@ -184,6 +197,19 @@ regions. These tests align measured behavior with the intended inductive use.
 They provide meaningful evidence before release decisions.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/28-graph-attention-networks/code/neighbor_attention.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/neighbor_attention.py`](code/neighbor_attention.py) normalizes two toy
 neighbor scores and verifies that the weighted feature lies between inputs.

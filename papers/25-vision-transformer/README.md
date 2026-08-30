@@ -16,15 +16,28 @@ ViT cuts an image into square patches and treats them like word tokens, letting 
 
 `🖼️ image → 🧩 patches → 📍 add positions → 👀 Transformer attention → 🏷️ label`
 
+A Vision Transformer treats an image as a sequence of small square patches. Attention can then compare distant image regions just as it compares distant words.
+
 💻 **CS analogy:** split an image file into fixed-size chunks, turn each chunk into a record, and let an attention-based service decide which records should exchange information.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+N = HW / P²
+```
 
 **Essential equation:** \(N=HW/P^2\). An image that is H pixels high and W pixels wide is cut into square patches with side length P; each patch has \(P^2\) pixels, so the image becomes N patch tokens. For a 224×224 image with 16×16 patches, N = 196. Smaller patches preserve more detail but create more tokens for attention to compare.
+
+H and W are image height and width, while P is patch side length. Dividing image area by patch area gives the number of tokens N.
 
 ## Background: What Came Before 🕰️
 
 Convolutional networks dominated vision because locality and translation assumptions made them data-efficient. Transformers had succeeded in language but their all-pairs attention seemed ill-suited to raw image pixels. ViT was needed to test whether a nearly unchanged transformer could become a strong vision model when images were represented as patches and enough data was available.
+
+This tested whether Transformer attention could replace vision-specific convolutional assumptions.
 
 ## Why It Matters
 
@@ -172,6 +185,19 @@ more reliable as data, hardware, and product requirements evolve.
 It supports transparent technical review and controlled future updates.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/25-vision-transformer/code/patch_tokens.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/patch_tokens.py`](code/patch_tokens.py) splits a 4×4 toy image into four
 non-overlapping 2×2 flattened tokens and asserts their common shape.

@@ -24,15 +24,28 @@ LoRA teaches a huge model a small new habit without repainting its entire brain.
 
 `🧠 frozen big model + 📝 tiny correction → 🎯 new task behavior → 💾 small saved update`
 
+The base model stays unchanged, so many tasks can share it. Each task only needs its own small patch, which saves training memory and storage.
+
 💻 **CS analogy:** LoRA is a small patch file applied at runtime instead of copying and editing an entire large binary.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+W′ = W + BA
+```
 
 **Essential equation:** W′ = W + BA. W is the original large table of model weights; instead of changing every cell, LoRA learns two skinny tables, B and A. Multiplying the skinny tables makes a compact change table, then adding it to W adapts the model. Think of storing a small patch file rather than a complete second copy of a program.
+
+The prime means “new version.” Low rank means the patch is built from a small number of reusable patterns, so B and A can be much smaller than W.
 
 ## Background: What Came Before 🕰️
 
 Full fine-tuning copies and changes every weight for every task, which is expensive to store, train, and deploy as base models grow. Earlier adapter methods added task modules but could introduce inference overhead. LoRA was needed to express a useful weight update as a small, mergeable low-rank patch.
+
+This made adapting giant models practical for many teams and tasks instead of requiring a full private copy for each job.
 
 ## Why It Matters
 
@@ -385,6 +398,19 @@ here, but it's later work's contribution, not something this paper
 describes.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/04-lora/code/lora_from_scratch.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 See `code/lora_from_scratch.py` for a minimal, runnable PyTorch
 implementation of a `LoRALinear` module — a frozen base `nn.Linear`

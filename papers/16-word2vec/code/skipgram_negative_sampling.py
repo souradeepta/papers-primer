@@ -1,4 +1,7 @@
 """A dependency-free, one-step skip-gram negative-sampling demonstration."""
+
+# Reading guide: follow the named helpers in data-flow order, then inspect the
+# assertions at the bottom. Change one toy input at a time and rerun the file.
 from __future__ import annotations
 import math
 

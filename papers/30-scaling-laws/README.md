@@ -15,15 +15,28 @@ Scaling laws use small experiments to estimate what larger training runs may do,
 
 `🧪 small runs → 📉 measure loss → 📈 fit trend → ⚙️ plan compute, model, and data`
 
+Scaling laws use small experiments to estimate what bigger training runs may do. They are planning tools, not promises that more compute automatically creates a better product.
+
 💻 **CS analogy:** it is empirical capacity planning: benchmark several system sizes, fit a trend, then use the curve to decide where the next compute budget should go.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+L(N) ≈ L_∞ + aN^−α
+```
 
 **Essential equation:** \(L(N)\approx L_\infty+aN^{-\alpha}\). L is error and N is model size. \(L_\infty\) is the floor the fitted curve approaches; α says how quickly extra parameters help. The negative exponent means diminishing returns: a larger model can improve performance, but each further increase normally buys less. This is a measured fit to experiments, not a universal guarantee.
+
+L is error and N is model size. The negative exponent means diminishing returns: each further increase normally buys less improvement.
 
 ## Background: What Came Before 🕰️
 
 Teams knew larger language models often improved, but compute budgets were allocated with scattered rules of thumb: scale parameters, data, or training steps without a shared quantitative guide. That made expensive runs easy to undertrain or mis-size. Scaling-laws studies were needed to turn repeated measurements into forecasts for planning the next training run.
+
+This gave teams a quantitative way to plan expensive runs instead of relying only on scattered rules of thumb.
 
 ## Why It Matters
 
@@ -180,6 +193,19 @@ state which decisions were made under which evidence. Good scaling work is an
 iterative measurement process, not a single extrapolation ceremony.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/30-scaling-laws/code/power_law.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/power_law.py`](code/power_law.py) evaluates a toy negative-exponent power
 law and checks that doubling compute lowers a positive loss proxy.

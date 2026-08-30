@@ -16,15 +16,29 @@ Adam is a careful downhill walker: it remembers the usual slope and slows down o
 
 `📉 gradient → 🧠 remember direction + bumpiness → 👣 scaled update → 🎯 lower loss`
 
+Training is like walking downhill in fog. Adam remembers the recent downhill direction but slows down on bumpy, unreliable directions.
+
 💻 **CS analogy:** Adam is like monitoring a noisy service: keep a smoothed recent trend and a smoothed “how jumpy is it?” metric before changing a setting.
 
 ## Math Playground 🧮
+## Math Playground 🧮
+
+The essential equation or rule is:
+
+```text
+m_t = β₁m_(t−1) + (1−β₁)g_t
+v_t = β₂v_(t−1) + (1−β₂)g_t²
+```
 
 **Essential equations:** \(m_t=\beta_1m_{t-1}+(1-\beta_1)g_t\) and \(v_t=\beta_2v_{t-1}+(1-\beta_2)g_t^2\). A gradient g tells which way to change a weight now. m is a smoothed direction vote from recent gradients; v measures how wildly that direction has varied. Adam divides by \(\sqrt{v_t}\), so a noisy coordinate gets smaller, safer steps.
+
+m is a smoothed direction vote; v measures recent squared gradient size. Dividing by √v makes unusually noisy coordinates take smaller steps.
 
 ## Background: What Came Before 🕰️
 
 Plain SGD used the latest gradient as its whole steering signal, while momentum helped smooth it and RMSProp scaled coordinates by recent squared gradients. Tuning either method still required care. Adam was needed as a simple default that combines both ideas and works well across many neural-network jobs.
+
+Adam was needed because one fixed learning-rate rule can be slow or unstable when weights receive gradients of very different sizes.
 
 ## Why It Matters
 
@@ -178,6 +192,19 @@ accidentally resuming an old experiment with a production-exported model.
 This separation also clarifies ownership and rollback procedures.
 
 ## Runnable Code Example
+
+### Run it
+
+The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+
+```bash
+python3 papers/17-adam/code/adam_step.py
+```
+
+### Read it in order
+
+Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+
 
 [`code/adam_step.py`](code/adam_step.py) performs Adam's first scalar step and
 asserts that bias correction recovers the first gradient and squared gradient.
