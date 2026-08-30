@@ -15,7 +15,7 @@ is the section skeleton to copy.
 ## Current collection standard (carry this forward)
 
 All papers 01–30 are complete. In addition to the binding SPEC.md
-requirements, each paper now starts with three learner-first sections before
+requirements, each paper now starts with four learner-first sections before
 **Why It Matters**:
 
 1. **Fun Map for First Years 🧭** — a compact emoji flow diagram and a

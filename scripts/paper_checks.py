@@ -6,6 +6,9 @@ from pathlib import Path
 
 REQUIRED_SECTIONS = [
     "TL;DR",
+    "Fun Map for First Years 🧭",
+    "Math Playground 🧮",
+    "Background: What Came Before 🕰️",
     "Why It Matters",
     "Core Intuition",
     "The Mechanism",
@@ -15,6 +18,7 @@ REQUIRED_SECTIONS = [
     "Interview Q&A",
     "Further Reading",
 ]
+CS_ANALOGY_MARKER = "💻 **CS analogy:**"
 
 _CODE_FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
 _IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+\.gif)\)")
@@ -23,7 +27,10 @@ _LINK_RE = re.compile(r"\[[^\]]+\]\((https?://[^)]+)\)")
 
 
 def check_sections(text: str) -> list[str]:
-    return [s for s in REQUIRED_SECTIONS if f"## {s}" not in text]
+    missing = [s for s in REQUIRED_SECTIONS if f"## {s}" not in text]
+    if CS_ANALOGY_MARKER not in text:
+        missing.append("CS analogy")
+    return missing
 
 
 def strip_code_blocks(text: str) -> str:

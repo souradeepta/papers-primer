@@ -6,6 +6,18 @@
 ## TL;DR
 <!-- 3-5 sentences, plain language -->
 
+## Fun Map for First Years 🧭
+<!-- Explain the central idea with an emoji flow, such as:
+input → transformation → useful result. -->
+
+💻 **CS analogy:** <!-- connect the idea to a familiar programming or systems concept -->
+
+## Math Playground 🧮
+<!-- Give the paper's central equation/rule, then explain every important part simply. -->
+
+## Background: What Came Before 🕰️
+<!-- What did practitioners do before? What limitation made this new idea necessary? -->
+
 ## Why It Matters
 <!-- context: what problem existed before, what changed after -->
 
