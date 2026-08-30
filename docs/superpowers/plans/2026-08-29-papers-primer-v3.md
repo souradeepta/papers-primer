@@ -48,7 +48,7 @@ uses the paper’s data; illustrative GIFs must say so.
 ## Progress
 
 - [x] Paper selection and implementation plan written.
-- [ ] 11 — SentencePiece.
+- [x] 11 — SentencePiece.
 - [ ] 12 — T5.
 - [ ] 13 — Retrieval-Augmented Generation.
 - [ ] 14 — Chain-of-Thought Prompting.

@@ -16,6 +16,7 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 | 08 | [RoFormer: Enhanced Transformer with Rotary Position Embedding](papers/08-roformer-rope/README.md) | [2104.09864](https://arxiv.org/abs/2104.09864) | done |
 | 09 | [Direct Preference Optimization](papers/09-dpo/README.md) | [2305.18290](https://arxiv.org/abs/2305.18290) | done |
 | 10 | [Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity](papers/10-switch-transformer/README.md) | [2101.03961](https://arxiv.org/abs/2101.03961) | done |
+| 11 | [SentencePiece](papers/11-sentencepiece/README.md) | [1808.06226](https://arxiv.org/abs/1808.06226) | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.
