@@ -26,6 +26,11 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 | 18 | [Deep Residual Learning for Image Recognition](papers/18-resnet/README.md) | [1512.03385](https://arxiv.org/abs/1512.03385) | done |
 | 19 | [Generative Adversarial Networks](papers/19-gan/README.md) | [1406.2661](https://arxiv.org/abs/1406.2661) | done |
 | 20 | [Learning Transferable Visual Models From Natural Language Supervision](papers/20-clip/README.md) | [2103.00020](https://arxiv.org/abs/2103.00020) | done |
+| 21 | [Auto-Encoding Variational Bayes](papers/21-vae/README.md) | [1312.6114](https://arxiv.org/abs/1312.6114) | done |
+| 22 | [Batch Normalization](papers/22-batch-normalization/README.md) | [1502.03167](https://arxiv.org/abs/1502.03167) | done |
+| 23 | [U-Net: Convolutional Networks for Biomedical Image Segmentation](papers/23-unet/README.md) | [1505.04597](https://arxiv.org/abs/1505.04597) | done |
+| 24 | [Proximal Policy Optimization Algorithms](papers/24-ppo/README.md) | [1707.06347](https://arxiv.org/abs/1707.06347) | done |
+| 25 | [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale](papers/25-vision-transformer/README.md) | [2010.11929](https://arxiv.org/abs/2010.11929) | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.
