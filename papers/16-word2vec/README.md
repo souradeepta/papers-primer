@@ -1,0 +1,202 @@
+# Efficient Estimation of Word Representations in Vector Space (word2vec)
+
+## TL;DR
+
+Mikolov and colleagues introduced two very small neural objectives, CBOW and
+skip-gram, for learning a vector for each word from its neighboring words.
+Instead of treating `coffee` and `tea` as unrelated integer IDs, training puts
+words used in similar contexts in nearby regions of a vector space. The paper's
+point was as much speed as representation quality: removing a costly hidden
+layer made it practical to learn useful vectors from very large corpora. These
+are static embeddings, so one vector cannot choose a different meaning for
+`bank` in a river sentence and a finance sentence.
+
+## Why It Matters
+
+Older count tables and one-hot encodings made vocabulary items independent:
+an application had to rediscover that `Paris` and `Rome` behave similarly.
+Neural language models could learn dense representations, but their hidden
+layers and vocabulary-wide output made large-scale training expensive. The
+2013 paper isolated the representation-learning step into simple log-linear
+models. Its authors reported training high-quality vectors from 1.6 billion
+words in under a day, then evaluated relationships such as city/country and
+singular/plural using vector offsets.
+
+That changed everyday NLP practice. A frozen embedding matrix became a cheap
+input feature for classifiers, taggers, retrieval systems, and sequence models.
+Today, transformer token embeddings are trained end-to-end and contextualize a
+token with attention, but word2vec remains the clearest introduction to why an
+embedding lookup is learnable rather than merely a table of numbers. It also
+introduced engineering ideas—sampling, frequency-aware output coding, and
+streaming corpus updates—that recur in large-scale training.
+
+## Core Intuition
+
+Imagine learning a map of a city from who regularly shares a table at lunch.
+You never receive labels such as “beverage” or “capital”; you only observe
+neighbors. If `coffee` often occurs near `tea`, `cup`, and `cafe`, their map
+locations should become useful for similar downstream decisions. A word vector
+is that location, not a dictionary definition.
+
+```mermaid
+flowchart LR
+  S["the cat sat on the mat"] --> W["choose a center and window"]
+  W --> P["observed center/context pairs"]
+  P --> E["adjust embedding vectors"]
+  E --> N["similar contexts → similar locations"]
+```
+
+CBOW takes surrounding words, averages their vectors, and predicts the middle
+word: it is the speedy “fill in the blank” version. Skip-gram reverses the
+arrow: one center word predicts each nearby context word. Neither model reads a
+whole document or understands a sentence grammar. The useful pressure comes
+from many overlapping local windows: words that substitute for one another
+receive related training signals.
+
+## The Mechanism
+
+Let each vocabulary item have an input vector \(v_w\) and an output vector
+\(u_w\). In skip-gram, a center word \(c\) and one observed neighboring word
+\(o\) should score highly through the dot product \(u_o^T v_c\). With a full
+softmax, the conditional probability is
+
+\[
+p(o\mid c)=\frac{\exp(u_o^T v_c)}{\sum_{w\in V}\exp(u_w^T v_c)}.
+\]
+
+Training maximizes the log probability of every center/context pair in a
+window. CBOW instead averages or sums its context input vectors and predicts
+the center. The original paper used a hierarchical softmax: vocabulary words
+are leaves of a Huffman binary tree, so a prediction follows a path of binary
+decisions. Frequent words receive short paths, avoiding one score for every
+vocabulary entry.
+
+```mermaid
+flowchart TD
+  C["center: 'with'"] --> V["input vector v_with"]
+  V --> O1["score context: coffee"]
+  V --> O2["score context: tea"]
+  V --> H["hierarchical-softmax path\nor sampled binary objectives"]
+  O1 --> U["update input and output vectors"]
+  O2 --> U
+```
+
+![Illustrative skip-gram pair construction](assets/skipgram_pairs.gif)
+
+The animation is illustrative, not a figure or measured result from the paper.
+It shows the later, widely used negative-sampling implementation pattern: for
+an observed pair, maximize \(\log\sigma(u_o^T v_c)\), while for a few sampled
+noise words \(n\), maximize \(\log\sigma(-u_n^T v_c)\). This turns one huge
+multiclass prediction into several binary distinctions. It is important not to
+attribute negative sampling to this particular paper's reported architecture;
+the paper presents hierarchical softmax, while negative sampling appeared in
+the follow-up word2vec paper.
+
+For a positive pair, the derivative increases its dot product. For a negative
+pair, it decreases the dot product. Updating both the center and context-side
+tables lets context statistics settle into geometry. Cosine similarity is then
+often used at query time because it compares direction rather than raw vector
+length. The famous analogy calculation, such as `Paris - France + Italy`, is a
+nearest-neighbor probe, not a law of language and not evidence that a model has
+symbolically reasoned about geography.
+
+The paper compared CBOW and skip-gram on a semantic/syntactic relationship
+test. Its 640-dimensional comparison reported stronger semantic accuracy for
+skip-gram and stronger syntactic accuracy for CBOW; results depend on corpus,
+window, vocabulary, and metric. The central contribution is the efficient
+architecture, not a claim that a single benchmark establishes understanding.
+
+## Practical Engineering Notes
+
+For production, use a maintained implementation rather than this tiny demo.
+`gensim.models.Word2Vec` provides skip-gram/CBOW training and vocabulary
+management; PyTorch's `nn.Embedding` is the usual building block when the
+embedding is part of a larger model. Keep the text normalization, tokenizer,
+vocabulary cutoff, and embedding artifact versioned together. A changed
+lowercasing rule silently changes IDs and makes an old index or classifier
+incompatible.
+
+The output table can dominate memory: two float32 tables of \(|V|\times d\)
+need roughly \(8|V|d\) bytes during basic training. Subsampling very common
+words, discarding rare words, hierarchical softmax, or negative sampling reduce
+compute, but each changes what “co-occurrence” means. Stream corpus shards and
+record the random seed and worker count; asynchronous/hogwild-style updates can
+be fast but less reproducible. For search, normalize only if the intended score
+is cosine similarity, and use an approximate-nearest-neighbor index such as
+FAISS when scans no longer fit the latency budget.
+
+Static embeddings encode corpus biases and stale language. Audit nearest
+neighbors and downstream slices instead of treating a visually pleasing analogy
+as a safety test. They also have no vector for a truly unseen word unless the
+pipeline supplies an `UNK` rule; subword methods such as SentencePiece or
+fastText address that limitation differently. Do not mix vectors trained with
+different preprocessing or dimensions in the same retrieval index.
+
+Evaluate embeddings with the job they will actually serve. Intrinsic neighbor
+lists and analogy accuracy are useful regression checks, but they do not prove
+that a ranking, moderation, or classification product improves. Pin a held-out
+downstream evaluation, watch for vocabulary coverage by language and customer
+segment, and decide explicitly how a missing token is represented. If vectors
+are exposed through nearest-neighbor search, retain document-level permission
+filters outside the vector lookup: embedding proximity is not authorization.
+
+## Runnable Code Example
+
+[`code/skipgram_negative_sampling.py`](code/skipgram_negative_sampling.py)
+implements one scalar logistic update for an observed pair and for sampled
+noise. It deliberately avoids a training framework so the invariant is visible:
+the positive pair's score rises, while the negative pair's score falls.
+
+```bash
+python3 papers/16-word2vec/code/skipgram_negative_sampling.py
+```
+
+This is a teaching fragment, not a trainer: a real model updates vector
+coordinates for many windows, samples negatives from a frequency distribution,
+and manages two embedding matrices.
+
+## Common Misconceptions & Pitfalls
+
+**“word2vec is one algorithm.”** It is commonly used as a family name. This
+paper describes CBOW and skip-gram with hierarchical softmax; negative sampling
+is a later, related optimization.
+
+**“Close vectors mean synonyms.”** Shared contexts can also make antonyms,
+topical associates, and stereotyped associations close. Similarity is a corpus
+statistic, not a lexical guarantee.
+
+**“Vector arithmetic always works.”** An analogy benchmark selects examples
+where an offset is useful and exact-match scoring is brittle. Multiword names,
+polysemy, and cultural variation routinely break it.
+
+## Interview Q&A
+
+**Q:** What is the difference between CBOW and skip-gram?
+**A:** CBOW predicts a center word from its context; skip-gram predicts context
+words from one center word. CBOW is often cheaper, while the best choice is
+empirical.
+
+**Q:** Why are there two embedding tables during training?
+**A:** A word can be a center and a context target. Separate input and output
+roles make the prediction objective simple; applications often retain input
+vectors, or combine them after checking the implementation convention.
+
+**Q:** Why not compute full softmax for every pair?
+**A:** It scores every vocabulary word, so cost grows with vocabulary size.
+Hierarchical softmax and negative sampling approximate a cheaper learning
+signal.
+
+**Q:** What does the window size trade off?
+**A:** Small windows emphasize local/syntactic context; wider windows include
+broader topical association and increase the number of training pairs.
+
+**Q:** Why do transformers reduce the need for word2vec?
+**A:** They learn token representations in task context, so `bank` can differ
+by sentence. They still use learned embedding lookups at their input.
+
+## Further Reading
+
+- [Original paper](https://arxiv.org/abs/1301.3781)
+- [Distributed Representations of Words and Phrases and their Compositionality](https://arxiv.org/abs/1310.4546)
+- [Gensim Word2Vec documentation](https://radimrehurek.com/gensim/models/word2vec.html)
+- [FAISS documentation](https://faiss.ai/)

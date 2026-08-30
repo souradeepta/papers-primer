@@ -21,6 +21,7 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 | 13 | [Retrieval-Augmented Generation](papers/13-rag/README.md) | [2005.11401](https://arxiv.org/abs/2005.11401) | done |
 | 14 | [Chain-of-Thought Prompting](papers/14-chain-of-thought/README.md) | [2201.11903](https://arxiv.org/abs/2201.11903) | done |
 | 15 | [PagedAttention: Efficient Memory Management for Large Language Model Serving](papers/15-pagedattention-vllm/README.md) | [2309.06180](https://arxiv.org/abs/2309.06180) | done |
+| 16 | [word2vec: Efficient Estimation of Word Representations in Vector Space](papers/16-word2vec/README.md) | [1301.3781](https://arxiv.org/abs/1301.3781) | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.
