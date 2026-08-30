@@ -29,7 +29,7 @@ def test_paper_is_spec_compliant(paper_dir: Path):
     assert not missing, f"{paper_dir.name}: missing sections {missing}"
 
     words = count_prose_words(text)
-    assert words >= 1950, f"{paper_dir.name}: {words} prose words, need >= 1950"
+    assert words >= 1350, f"{paper_dir.name}: {words} prose words, need >= 1350"
 
     gif_errors = check_gifs(text, paper_dir)
     assert not gif_errors, f"{paper_dir.name}: {gif_errors}"

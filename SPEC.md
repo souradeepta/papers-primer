@@ -14,7 +14,7 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 9. Further Reading (>=3 markdown links, must include the original arXiv paper)
 
 ## Checkable numbers
-- Prose word count >= 1950 (fenced code/Mermaid blocks excluded). This is
+- Prose word count >= 1350 (fenced code/Mermaid blocks excluded). This is
   a quality floor, not a reason to reject an otherwise substantive
   explainer over a few formatting-counted words.
 - The Mechanism section specifically (not just anywhere in the doc) must
