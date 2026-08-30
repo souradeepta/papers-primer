@@ -48,7 +48,7 @@ the root index and this plan. Finish with the full validator and a clean diff.
 
 - [x] Selection and plan written.
 - [x] 16 — word2vec.
-- [ ] 17 — Adam.
+- [x] 17 — Adam.
 - [ ] 18 — ResNet.
 - [ ] 19 — GAN.
 - [ ] 20 — CLIP.
