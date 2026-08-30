@@ -30,7 +30,28 @@ def check_sections(text: str) -> list[str]:
     missing = [s for s in REQUIRED_SECTIONS if f"## {s}" not in text]
     if CS_ANALOGY_MARKER not in text:
         missing.append("CS analogy")
-    return missing
+    if missing:
+        return missing
+
+    ordered_markers = [
+        "## TL;DR",
+        "## Fun Map for First Years 🧭",
+        CS_ANALOGY_MARKER,
+        "## Math Playground 🧮",
+        "## Background: What Came Before 🕰️",
+        "## Why It Matters",
+        "## Core Intuition",
+        "## The Mechanism",
+        "## Practical Engineering Notes",
+        "## Runnable Code Example",
+        "## Common Misconceptions & Pitfalls",
+        "## Interview Q&A",
+        "## Further Reading",
+    ]
+    positions = [text.index(marker) for marker in ordered_markers]
+    if positions != sorted(positions):
+        return ["sections are not in the required learner-first order"]
+    return []
 
 
 def strip_code_blocks(text: str) -> str:
