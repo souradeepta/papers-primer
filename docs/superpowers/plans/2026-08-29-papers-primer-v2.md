@@ -39,7 +39,7 @@ root `SPEC.md` validator before the next one begins.
 - [x] 06 — Chinchilla
 - [x] 07 — FlashAttention
 - [x] 08 — RoFormer / RoPE
-- [ ] 09 — DPO
+- [x] 09 — DPO
 - [ ] 10 — Switch Transformer
 
 ## Global Constraints
