@@ -51,7 +51,7 @@ uses the paper’s data; illustrative GIFs must say so.
 - [x] 11 — SentencePiece.
 - [x] 12 — T5.
 - [x] 13 — Retrieval-Augmented Generation.
-- [ ] 14 — Chain-of-Thought Prompting.
+- [x] 14 — Chain-of-Thought Prompting.
 - [ ] 15 — PagedAttention / vLLM.
 
 ## Task 1: SentencePiece (`papers/11-sentencepiece/`)
