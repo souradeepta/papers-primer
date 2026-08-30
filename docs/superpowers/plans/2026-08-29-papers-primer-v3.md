@@ -49,7 +49,7 @@ uses the paper’s data; illustrative GIFs must say so.
 
 - [x] Paper selection and implementation plan written.
 - [x] 11 — SentencePiece.
-- [ ] 12 — T5.
+- [x] 12 — T5.
 - [ ] 13 — Retrieval-Augmented Generation.
 - [ ] 14 — Chain-of-Thought Prompting.
 - [ ] 15 — PagedAttention / vLLM.
