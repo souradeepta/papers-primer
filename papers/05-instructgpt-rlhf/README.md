@@ -26,7 +26,7 @@ RLHF teaches a model from human preferences: people compare answers, a reward mo
 
 ## Math Playground 🧮
 
-The reward model learns that a chosen answer should score above a rejected one, often with `-log σ(r(chosen)-r(rejected))`. The sigmoid `σ` turns a score difference into a win probability; a bigger chosen-minus-rejected gap means the model is more confident about the preference.
+**Essential equation:** −log σ(r(chosen) − r(rejected)). Humans pick the better of two answers. The reward model gives each answer a score; subtracting scores asks whether the chosen answer is ahead. The sigmoid σ converts that difference into a number from 0 to 1, like a predicted chance of winning. Training penalizes it when the preferred answer is not predicted to win.
 
 ## Background: What Came Before 🕰️
 

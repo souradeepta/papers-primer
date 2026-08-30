@@ -16,7 +16,7 @@ FlashAttention solves an organizer problem: do attention in small tiles so the G
 
 ## Math Playground 🧮
 
-Attention still computes `softmax(QKᵀ/√d)V`; FlashAttention changes the order of calculation, not the answer. It keeps running maximum and sum statistics for each row, like computing a stable running average while reading chunks from disk instead of materializing every intermediate score.
+**Essential equation:** softmax(QKᵀ/√d)V. FlashAttention produces this exact same attention result as the original Transformer. Its trick is to keep a running maximum, running total, and running weighted sum while reading small blocks of the score table. Like adding a long column a page at a time, it avoids needing the whole enormous table in memory.
 
 ## Background: What Came Before 🕰️
 

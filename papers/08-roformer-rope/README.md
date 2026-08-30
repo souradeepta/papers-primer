@@ -14,7 +14,7 @@ RoPE gives each word a tiny spin based on where it sits. Comparing two spun vect
 
 ## Math Playground 🧮
 
-For a two-number slice `(x,y)`, RoPE applies a rotation: `(x cos θ - y sin θ, x sin θ + y cos θ)`. Rotations preserve vector length but change direction; comparing two rotated vectors makes their dot product depend on relative position.
+**Essential equation:** (x,y) → (x cos θ − y sin θ, x sin θ + y cos θ). This is the high-school formula for rotating a point around the origin. RoPE gives each word a rotation angle based on its position. A rotation keeps an arrow’s length the same but changes its direction, so comparing two word arrows can reveal how far apart their positions are.
 
 ## Background: What Came Before 🕰️
 

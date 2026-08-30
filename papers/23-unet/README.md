@@ -19,7 +19,7 @@ U-Net first zooms out to understand a whole image, then zooms back in while carr
 
 ## Math Playground 🧮
 
-Segmentation commonly uses per-pixel cross-entropy, \(-\sum_c y_c\log p_c\). Each pixel is a tiny classification task: the one-hot label \(y\) selects the correct class probability \(p\), and the loss strongly complains when that probability is small. U-Net’s math-friendly shape trick is concatenating matching-resolution encoder features with decoder features before predicting pixels.
+**Essential equation:** \(-\sum_c y_c\log p_c\), the per-pixel cross-entropy loss. For one pixel, \(p_c\) is the model’s probability for class c, while \(y_c\) is 1 only for the true class and 0 for the rest. The sum therefore picks out the probability of the correct label and penalizes it when it is small. U-Net applies this simple quiz score to every pixel in an image.
 
 ## Background: What Came Before 🕰️
 

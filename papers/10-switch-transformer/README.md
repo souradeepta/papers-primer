@@ -14,7 +14,7 @@ Switch Transformers have many expert helpers, but each token visits only one. It
 
 ## Math Playground 🧮
 
-The router computes a softmax probability for each expert, then takes the top one. Softmax converts expert scores into a distribution; the auxiliary load-balancing loss discourages all tokens from choosing the same expert, like a scheduler penalizing a hot shard.
+**Essential rule:** i = argmaxⱼ pⱼ(x), where pⱼ(x) = softmax(Wx)ⱼ. For each token x, a router gives every expert j a percentage-like score and sends the token only to the expert with the largest score. This one-winner rule is the paper’s central mathematical simplification: the model can store many experts while paying to run only one.
 
 ## Background: What Came Before 🕰️
 

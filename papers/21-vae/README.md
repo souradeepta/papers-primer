@@ -20,7 +20,7 @@ A VAE learns a tidy hidden sketch space. It compresses an example into a fuzzy p
 
 ## Math Playground 🧮
 
-The VAE maximizes an ELBO: \(\mathbb{E}_{q(z\mid x)}[\log p(x\mid z)]-\mathrm{KL}(q(z\mid x)\|p(z))\). The first term is a reconstruction score; the KL term is a tidy-code penalty that keeps each encoded cloud near a simple prior. Sampling \(z=\mu+\sigma\epsilon\) lets gradients flow through the random-looking step.
+**Essential equation:** \(\mathbb{E}_{q(z\mid x)}[\log p(x\mid z)]-\mathrm{KL}(q(z\mid x)\|p(z))\). The first part rewards rebuilding input x from a short hidden code z. The second part penalizes codes that become a messy, disconnected map; it encourages them to stay near a simple bell-shaped distribution. Together: reconstruct well, but keep the code space tidy enough that sampling a new point can make a sensible result.
 
 ## Background: What Came Before 🕰️
 

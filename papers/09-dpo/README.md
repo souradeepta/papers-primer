@@ -14,7 +14,7 @@ DPO learns from “this answer is better than that one” pairs directly. It nud
 
 ## Math Playground 🧮
 
-DPO uses a logistic loss on the difference between preferred and rejected log probabilities, relative to a reference model. Log probability is convenient because multiplying token probabilities becomes adding numbers; the loss asks for a larger preference gap without needing a separate learned reward model.
+**Essential equation:** \(-\log\sigma(\beta[\log\frac{\pi(y_w|x)}{\pi_\text{ref}(y_w|x)}-\log\frac{\pi(y_l|x)}{\pi_\text{ref}(y_l|x)}])\). \(y_w\) is the answer a human chose and \(y_l\) is the losing answer. In simple terms, DPO rewards the new model when it makes the winner more likely than the loser, but measures both changes against a frozen reference model. The sigmoid turns that gap into a 0-to-1 confidence; logs turn many word-probability multiplications into additions.
 
 ## Background: What Came Before 🕰️
 

@@ -14,7 +14,7 @@ T5 treats every language task as text in and text out. It practices repairing mi
 
 ## Math Playground 🧮
 
-T5 maximizes the probability of target tokens one by one: `∏ p(yᵢ | y<ᵢ, encoded input)`. The encoder supplies read-only context and the decoder supplies the previously written target, like a function with both immutable input data and an output buffer.
+**Essential equation:** p(y|x) = ∏ p(yᵢ | earlier y, x). To write output y from input x, T5 predicts one output token at a time. Each new prediction sees the original input and the output tokens already written. It is like completing a sentence while keeping both the question and your partial answer visible.
 
 ## Background: What Came Before 🕰️
 

@@ -19,7 +19,7 @@ ResNet lets a layer learn a small change instead of rebuilding everything. A sho
 
 ## Math Playground 🧮
 
-The key equation is \(y=F(x)+x\). Think of \(x\) as the current object and \(F(x)\) as a diff: if no change helps, the diff can be near zero and the original still passes through. During backpropagation, that direct \(+x\) path also gives gradients a short route through a deep program.
+**Essential equation:** \(y=F(x)+x\). x is the layer’s input and F(x) is the change the new layers learn. Instead of asking a layer stack to rebuild the whole answer, ResNet asks it to learn only a correction. If no correction helps, F(x) can be near zero and x passes through unchanged—like applying an empty code diff.
 
 ## Background: What Came Before 🕰️
 

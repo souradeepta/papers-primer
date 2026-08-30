@@ -19,7 +19,7 @@ BatchNorm gives a layer numbers on a more predictable scale, like converting man
 
 ## Math Playground 🧮
 
-For a mini-batch, BatchNorm computes \(\hat{x}=(x-\mu_B)/\sqrt{\sigma_B^2+\epsilon}\), then returns \(y=\gamma\hat{x}+\beta\). Subtracting the mean centers the batch; dividing by its spread makes values comparable. The learned \(\gamma,\beta\) are an escape hatch: the network can restore whatever scale or shift it needs.
+**Essential equation:** \(\hat{x}=(x-\mu_B)/\sqrt{\sigma_B^2+\epsilon}\), followed by \(y=\gamma\hat{x}+\beta\). First subtract the batch average \(\mu_B\), so values are centered around zero. Then divide by the spread (standard deviation), so a wide-ranging batch and narrow-ranging batch use a comparable scale. The learned γ and β can scale and shift the result back if that helps the network.
 
 ## Background: What Came Before 🕰️
 

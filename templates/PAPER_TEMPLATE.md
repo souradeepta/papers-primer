@@ -13,7 +13,8 @@ input → transformation → useful result. -->
 💻 **CS analogy:** <!-- connect the idea to a familiar programming or systems concept -->
 
 ## Math Playground 🧮
-<!-- Give the paper's central equation/rule, then explain every important part simply. -->
+<!-- Give the single most essential equation (or central mathematical concept), define
+important symbols plainly, and explain it for a high-school-math reader. -->
 
 ## Background: What Came Before 🕰️
 <!-- What did practitioners do before? What limitation made this new idea necessary? -->

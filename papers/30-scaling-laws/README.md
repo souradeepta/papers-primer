@@ -19,7 +19,7 @@ Scaling laws use small experiments to estimate what larger training runs may do,
 
 ## Math Playground 🧮
 
-The paper models loss with a power-law-shaped curve such as \(L(N)\approx L_\infty+aN^{-\alpha}\). \(L_\infty\) is the floor the fitted curve approaches, while \(\alpha\) says how quickly extra parameters help. This resembles Big-O intuition, but it is a measured fit over a range of experiments—not a universal law or a guarantee outside that range.
+**Essential equation:** \(L(N)\approx L_\infty+aN^{-\alpha}\). L is error and N is model size. \(L_\infty\) is the floor the fitted curve approaches; α says how quickly extra parameters help. The negative exponent means diminishing returns: a larger model can improve performance, but each further increase normally buys less. This is a measured fit to experiments, not a universal guarantee.
 
 ## Background: What Came Before 🕰️
 

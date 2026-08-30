@@ -16,7 +16,7 @@ Chinchilla says a big brain also needs enough books. Spending all compute on a g
 
 ## Math Playground 🧮
 
-Scaling studies fit power laws such as `L(C) ≈ aC⁻ᵝ + c`, where `L` is loss and `C` is compute. A negative exponent means more compute helps but each doubling buys a smaller improvement, like cache-hit gains that flatten after the obvious bottlenecks are fixed.
+**Essential equation:** L(C) ≈ aC⁻ᵝ + c. L means error (lower is better) and C means training compute. The negative exponent says more compute reduces error, but with diminishing returns: doubling the budget helps, yet usually not by twice as much. The fitted curve helped compare how to split one fixed budget between a bigger model and more training tokens.
 
 ## Background: What Came Before 🕰️
 

@@ -30,7 +30,7 @@ BERT is a reading student who practices filling in missing words while looking b
 
 ## Math Playground 🧮
 
-BERT minimizes cross-entropy for masked tokens: `-log p(correct token | context)`. In plain terms, it pays a larger penalty when the correct missing word gets a tiny probability. Cross-entropy is like a grading rule that rewards placing the real answer near the top of a probability-ranked list.
+**Essential equation:** −log p(correct missing word | surrounding words). BERT fills in a hidden word and gives every possible word a probability. If it gives the real word 90%, the penalty is small; if it gives it 1%, the penalty is large. Training lowers this penalty, like grading a multiple-choice guess much more harshly when the correct answer was ranked last.
 
 ## Background: What Came Before 🕰️
 

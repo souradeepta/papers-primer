@@ -28,7 +28,7 @@ LoRA teaches a huge model a small new habit without repainting its entire brain.
 
 ## Math Playground 🧮
 
-LoRA replaces a weight matrix with `W' = W + BA`, where `B` and `A` are thin matrices. Their product is a low-rank update: it can express a focused set of directions while storing far fewer numbers than a full replacement for `W`.
+**Essential equation:** W′ = W + BA. W is the original large table of model weights; instead of changing every cell, LoRA learns two skinny tables, B and A. Multiplying the skinny tables makes a compact change table, then adding it to W adapts the model. Think of storing a small patch file rather than a complete second copy of a program.
 
 ## Background: What Came Before 🕰️
 

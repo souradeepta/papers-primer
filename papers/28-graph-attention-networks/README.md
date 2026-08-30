@@ -18,7 +18,7 @@ GAT lets each dot in a network listen to nearby dots with different volumes, rat
 
 ## Math Playground 🧮
 
-For neighbor \(j\), GAT computes a score, normalizes it with \(\alpha_{ij}=\operatorname{softmax}_j(e_{ij})\), then forms \(\sum_j\alpha_{ij}Wh_j\). Softmax makes the incoming weights add to one, like dividing a fixed attention budget among messages. \(W\) first puts every node feature in a shared representation space.
+**Essential equation:** \(\sum_j\alpha_{ij}Wh_j\), with \(\alpha_{ij}=\operatorname{softmax}_j(e_{ij})\). Node i receives a message from every neighbor j. The softmax turns the neighbor scores into weights that add to 1, like splitting a fixed 100% attention budget among messages. The result is a weighted average, so useful neighbors can count more than irrelevant ones.
 
 ## Background: What Came Before 🕰️
 

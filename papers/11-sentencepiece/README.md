@@ -14,7 +14,7 @@ SentencePiece turns raw text into reusable word pieces, including a visible mark
 
 ## Math Playground 🧮
 
-The unigram model scores a segmentation by multiplying piece probabilities, or equivalently adding negative log probabilities. Dynamic programming finds the lowest-cost path through the text. Taking logs turns products into sums, which is why familiar graph algorithms can solve tokenization efficiently.
+**Essential equation:** p(text) = ∏ p(pieceᵢ). A spelling can be split in many ways; SentencePiece gives each possible piece a probability and prefers the split whose multiplied probabilities are largest. Computers use −log p instead, because multiplying many small decimals is awkward but adding costs is easy. Dynamic programming then finds the cheapest complete split, like finding the shortest route through a map.
 
 ## Background: What Came Before 🕰️
 

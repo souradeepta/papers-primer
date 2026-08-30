@@ -6,7 +6,7 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 1. TL;DR (3-5 sentences, plain language)
 2. Fun Map for First Years 🧭 (a simple emoji flow diagram and an accessible explanation)
 3. CS analogy (a compact, explicit analogy to a familiar computing idea)
-4. Math Playground 🧮 (the paper's key equation or rule, with a plain-language explanation)
+4. Math Playground 🧮 (the paper's single most essential equation, or central mathematical concept when no equation is appropriate; explain it for a reader with high-school mathematics)
 5. Background: What Came Before 🕰️ (the previous approach, its limitation, and why this paper was needed)
 6. Why It Matters (context: before/after this paper)
 7. Core Intuition (analogy, no math, >=1 diagram)
@@ -18,9 +18,11 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 13. Further Reading (>=3 markdown links, must include the original arXiv paper)
 
 The first four learner-first sections are short bridges into the deeper
-explanation, not filler. Use a CS analogy wherever it makes the mechanism or
-math more intuitive. Prefer a tiny diagram that explains a relationship over a
-decorative image.
+explanation, not filler. In Math Playground, name the equation or concept,
+define its important symbols in ordinary language, and explain what changing
+the values does before using specialist vocabulary. Use a CS analogy wherever
+it makes the mechanism or math more intuitive. Prefer a tiny diagram that
+explains a relationship over a decorative image.
 
 ## Checkable numbers
 - Prose word count >= 1350 (fenced code/Mermaid blocks excluded). This is

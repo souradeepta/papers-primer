@@ -20,7 +20,7 @@ Adam is a careful downhill walker: it remembers the usual slope and slows down o
 
 ## Math Playground 🧮
 
-Adam keeps moving averages of the gradient \(g_t\): \(m_t=\beta_1m_{t-1}+(1-\beta_1)g_t\) and \(v_t=\beta_2v_{t-1}+(1-\beta_2)g_t^2\). The first is a direction vote; the second is a per-coordinate speed-limit estimate. Its update divides the first by \(\sqrt{v_t}+\epsilon\), so a coordinate that has been wildly noisy takes smaller steps.
+**Essential equations:** \(m_t=\beta_1m_{t-1}+(1-\beta_1)g_t\) and \(v_t=\beta_2v_{t-1}+(1-\beta_2)g_t^2\). A gradient g tells which way to change a weight now. m is a smoothed direction vote from recent gradients; v measures how wildly that direction has varied. Adam divides by \(\sqrt{v_t}\), so a noisy coordinate gets smaller, safer steps.
 
 ## Background: What Came Before 🕰️
 

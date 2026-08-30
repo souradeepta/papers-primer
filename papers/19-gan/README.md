@@ -19,7 +19,7 @@ A GAN is a game between an artist who makes fakes and a detective who spots them
 
 ## Math Playground 🧮
 
-The game is \(\min_G\max_D\;E[\log D(x)]+E[\log(1-D(G(z)))]\). The discriminator \(D\) wants real examples \(x\) to score near 1 and generated ones \(G(z)\) near 0; the generator wants to fool it. This is a game objective, not a single normal loss minimization, which explains why balance can be difficult.
+**Essential equation:** \(\min_G\max_D\;E[\log D(x)]+E[\log(1-D(G(z)))]\). D is a judge that wants real examples x to score near 1 and generated examples G(z) near 0. G is a creator trying to fool that judge. The min and max mean they have opposite goals, like two players in a game rather than one student minimizing one error score.
 
 ## Background: What Came Before 🕰️
 

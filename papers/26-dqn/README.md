@@ -19,7 +19,7 @@ DQN learns which game move is worth most by remembering past moves and their rew
 
 ## Math Playground 🧮
 
-Its target is \(y=r+\gamma\max_{a'}Q_{\text{target}}(s',a')\). Reward \(r\) is today’s score; \(\gamma\) discounts a future score; the max picks the best next action. A separate target network makes the cached answer change more slowly, so the learner is not continuously chasing a value it just rewrote.
+**Essential equation:** \(y=r+\gamma\max_{a'}Q_{\text{target}}(s',a')\). r is the reward received now. The second term is the best predicted future reward from the next situation s′, reduced by γ because future rewards are less certain or less immediate. Adding them teaches the agent: a move is good not only for today’s score, but also for where it leads.
 
 ## Background: What Came Before 🕰️
 

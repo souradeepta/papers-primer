@@ -20,7 +20,7 @@ PPO teaches an agent from rewards but stops it from changing its behavior too wi
 
 ## Math Playground 🧮
 
-PPO uses \(\min(r_tA_t,\operatorname{clip}(r_t,1-\epsilon,1+\epsilon)A_t)\), where \(r_t\) is the new-policy probability divided by the old one. Advantage \(A_t\) says whether an action beat expectation. Clipping says “do not get extra credit for changing this probability too much in one release.”
+**Essential equation:** \(\min(r_tA_t,\operatorname{clip}(r_t,1-\epsilon,1+\epsilon)A_t)\). rₜ compares the new policy’s probability of an action with the old policy’s probability; Aₜ says whether that action turned out better or worse than expected. Clipping limits rₜ to a small range around 1. It is a safety rail: one training update cannot claim a huge reward by changing its mind too drastically.
 
 ## Background: What Came Before 🕰️
 

@@ -14,7 +14,7 @@ PagedAttention stores a model’s growing memory in small blocks, like library b
 
 ## Math Playground 🧮
 
-With block size `B`, token index `t` maps to logical block `floor(t/B)` and offset `t mod B`. This is integer division and remainder, the same arithmetic used to find a page number and byte offset in memory systems.
+**Essential equation:** block = floor(t/B), offset = t mod B. If each memory block holds B tokens, divide token number t by B: the whole-number part tells you which block to use, and the remainder tells you the slot inside it. For token 23 in blocks of 8, that is block 2, slot 7. This is the same page-number-and-offset arithmetic used by virtual memory.
 
 ## Background: What Came Before 🕰️
 

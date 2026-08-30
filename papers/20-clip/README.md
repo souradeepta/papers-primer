@@ -19,7 +19,7 @@ CLIP puts pictures and captions on one shared map. A photo of a dog should land 
 
 ## Math Playground 🧮
 
-For a batch, CLIP forms a score table \(S_{ij}=\tau\,I_i^T T_j\): every image vector compares with every text vector. The diagonal pairs are the correct matches, and cross-entropy teaches each row and column to rank its partner highest. It is like testing all query–document pairs in a small search benchmark at once.
+**Essential equation:** \(S_{ij}=\tau I_i^TT_j\). Iᵢ is image i turned into an arrow of numbers and Tⱼ is text j turned into another arrow. Their dot product is high when they point in similar directions; τ adjusts how sharply scores differ. In a batch, every image is compared with every caption, and training teaches the real paired image and caption to score highest.
 
 ## Background: What Came Before 🕰️
 

@@ -21,8 +21,7 @@ word2vec learns a map where words used in similar neighborhoods stand near each 
 
 ## Math Playground 🧮
 
-For skip-gram, the paper scores a possible neighbor with a dot product and turns those scores into probabilities:
-\(p(o\mid c)=\exp(u_o^T v_c)/\sum_w\exp(u_w^T v_c)\). A dot product is a “how well do these two direction arrows agree?” score; softmax is the familiar step that converts a list of scores into percentages. Training raises the percentage for words that really appear nearby.
+**Essential equation:** \(p(o\mid c)=\exp(u_o^Tv_c)/\sum_w\exp(u_w^Tv_c)\). c is a center word and o a nearby word. Their dot product is a “how well do these arrows point together?” score. Exponentials make high scores stand out, and dividing by the sum converts all candidate scores into probabilities that add to 1. Training raises the probability of words that really occur nearby.
 
 ## Background: What Came Before 🕰️
 

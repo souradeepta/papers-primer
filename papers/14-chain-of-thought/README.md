@@ -14,7 +14,7 @@ Chain-of-thought prompting shows worked examples, so a model can write intermedi
 
 ## Math Playground 🧮
 
-Generating a rationale factorizes a hard answer into more token predictions: `p(steps, answer | prompt)`. This does not prove the steps are faithful, but it gives the model extra intermediate symbols—like temporary variables in a program—before it must output the final value.
+**Essential concept:** p(steps, answer | prompt). The model does not solve arithmetic using a special calculator equation; it predicts a longer sequence: intermediate words first, final answer last. Those steps act like scratch-paper lines or temporary variables in a program. They can make a hard answer easier to reach, but convincing-looking steps are still not proof that every step is correct.
 
 ## Background: What Came Before 🕰️
 

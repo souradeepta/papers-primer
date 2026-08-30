@@ -19,7 +19,7 @@ DDPM learns to remove a little noise at a time. It practices on messy data, then
 
 ## Math Playground 🧮
 
-The forward process can be sampled directly as \(x_t=\sqrt{\bar\alpha_t}x_0+\sqrt{1-\bar\alpha_t}\epsilon\). It mixes the clean image \(x_0\) with known random noise \(\epsilon\); \(\bar\alpha_t\) says how much signal remains after \(t\) steps. The network learns to predict that noise, so reverse-time generation repeatedly subtracts its estimate.
+**Essential equation:** \(x_t=\sqrt{\bar\alpha_t}x_0+\sqrt{1-\bar\alpha_t}\epsilon\). x₀ is a clean image and ε is random static. The formula mixes them: \(\bar\alpha_t\) says how much original image remains at time t, while the rest becomes noise. The model learns to predict the static, so generation can repeatedly remove its estimate from a noisy image.
 
 ## Background: What Came Before 🕰️
 

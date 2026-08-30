@@ -20,7 +20,7 @@ ViT cuts an image into square patches and treats them like word tokens, letting 
 
 ## Math Playground 🧮
 
-An \(H\times W\) image with square patches of side \(P\) becomes \(N=HW/P^2\) patch tokens. Each token uses the same attention rule, \(\operatorname{softmax}(QK^T/\sqrt d)V\), as a text transformer. The patch size is a trade-off: smaller chunks preserve detail but create more pairwise comparisons.
+**Essential equation:** \(N=HW/P^2\). An image that is H pixels high and W pixels wide is cut into square patches with side length P; each patch has \(P^2\) pixels, so the image becomes N patch tokens. For a 224×224 image with 16×16 patches, N = 196. Smaller patches preserve more detail but create more tokens for attention to compare.
 
 ## Background: What Came Before 🕰️
 

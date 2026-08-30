@@ -23,9 +23,10 @@ requirements, each paper now starts with four learner-first sections before
 2. A **CS analogy** — connects the concept to a familiar programming or
    systems idea (for example, a database query, patch, cache, rate limiter,
    or priority inbox).
-3. **Math Playground 🧮** — the paper’s core equation or rule followed by a
-   simple explanation of its parts and purpose. This is a bridge into, not a
-   replacement for, the formal treatment in **The Mechanism**.
+3. **Math Playground 🧮** — the paper’s single most essential equation or
+   mathematical concept, followed by a high-school-level explanation of its
+   parts and purpose. Define important symbols plainly; this bridges into, but
+   does not replace, the formal treatment in **The Mechanism**.
 4. **Background: What Came Before 🕰️** — explains the previous approach,
    its limitation, and why the paper’s idea became necessary.
 

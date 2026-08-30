@@ -23,7 +23,7 @@ Words are like students in a group project: each word can look around and decide
 
 ## Math Playground 🧮
 
-The paper's core rule is `softmax(QKᵀ / √d) V`. `Q` asks questions, `K` labels what each token offers, and `V` stores what can be copied. Softmax turns raw match scores into percentages that add to one; dividing by `√d` keeps scores from becoming too extreme as vectors grow.
+**Essential equation:** softmax(QKᵀ/√d)V. First, each question vector Q scores every key K: a large score means “pay attention here.” Softmax turns scores into percentages that add to 100%; those percentages average the value vectors V. The √d divisor prevents large vectors from making one percentage unfairly close to 100%.
 
 ## Background: What Came Before 🕰️
 

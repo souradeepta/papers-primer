@@ -20,7 +20,7 @@ SimCLR shows a model two altered versions of the same picture and says “these 
 
 ## Math Playground 🧮
 
-SimCLR’s NT-Xent loss raises the cosine similarity of a positive pair above the other batch similarities: \(-\log\frac{\exp(\mathrm{sim}(i,j)/\tau)}{\sum_{k\ne i}\exp(\mathrm{sim}(i,k)/\tau)}\). Cosine compares directions; temperature \(\tau\) controls how sharply the softmax cares about the best match. The denominator makes a batch act like a small retrieval contest.
+**Essential equation:** \(-\log\frac{\exp(\mathrm{sim}(i,j)/\tau)}{\sum_{k\ne i}\exp(\mathrm{sim}(i,k)/\tau)}\). i and j are two altered views of the same image. The top says “how similar is the true partner?”; the bottom compares it with every other image in the batch. Training wants the true pair to win this retrieval contest. Temperature τ controls how strongly the contest favors the highest score.
 
 ## Background: What Came Before 🕰️
 

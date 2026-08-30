@@ -14,7 +14,7 @@ RAG lets a language model open a library before answering. It finds useful passa
 
 ## Math Playground 🧮
 
-RAG marginalizes documents: `p(y|x)=Σ_z p(z|x)p(y|x,z)`. Think of `z` as an unknown branch in a program: instead of committing to one passage immediately, the model adds each branch's answer likelihood weighted by how likely retrieval says that passage is.
+**Essential equation:** \(p(y|x)=\sum_z p(z|x)p(y|x,z)\). x is the question, z is a retrieved document, and y is the answer. Rather than trust only one document, RAG treats each document as a possible source: its contribution is its answer probability times retrieval’s confidence in it, then the contributions are added. It is a weighted average over evidence branches.
 
 ## Background: What Came Before 🕰️
 

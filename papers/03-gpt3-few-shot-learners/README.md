@@ -28,7 +28,7 @@ GPT-3 is a next-word machine that can learn a pattern from examples placed in it
 
 ## Math Playground 🧮
 
-GPT assigns a sequence probability by multiplying next-token probabilities: `p(x₁,…,xₙ)=∏ p(xᵢ | x₁,…,xᵢ₋₁)`. This is a chain rule: like processing a log one event at a time, each prediction uses the history already written.
+**Essential equation:** p(x₁,…,xₙ) = ∏ p(xᵢ | x₁,…,xᵢ₋₁). The probability of a whole sentence is found by multiplying the chance of each next word after the earlier words. It is like calculating a sequence of dependent events: predict word 1, then word 2 given word 1, and so on. Few-shot learning comes from putting examples in that earlier-word history.
 
 ## Background: What Came Before 🕰️
 
