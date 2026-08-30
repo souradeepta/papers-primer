@@ -1,18 +1,64 @@
-"""Tiny scalar GAN objective directions; no ML framework required."""
+"""A compact GAN with alternating discriminator and generator optimization.
 
-# Reading guide: follow the named helpers in data-flow order, then inspect the
-# assertions at the bottom. Change one toy input at a time and rerun the file.
+This program implements the minimax game's practical non-saturating variant:
+the discriminator classifies real data and generated samples, then the
+generator updates through the frozen discriminator to make fakes look real.
+The distribution is one-dimensional so the full training loop is CPU-runnable.
+"""
+
 from __future__ import annotations
-import math
-def sigmoid(x: float) -> float: return 1/(1+math.exp(-x))
-def main() -> None:
-    d_real, d_fake = sigmoid(1.0), sigmoid(-1.0)
-    discriminator_real_gradient = 1-d_real
-    discriminator_fake_gradient = -d_fake
-    generator_non_saturating_gradient = 1-d_fake
-    print(f"D(real)={d_real:.3f}, D(fake)={d_fake:.3f}")
-    assert discriminator_real_gradient > 0 and discriminator_fake_gradient < 0
-    assert generator_non_saturating_gradient > 0
-    print('ok: D raises real scores, lowers fake scores; G raises fake scores')
-if __name__ == '__main__': main()
 
+import torch
+import torch.nn.functional as functional
+
+
+class Generator(torch.nn.Module):
+    """Map Gaussian noise to a scalar synthetic data point."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.network = torch.nn.Sequential(torch.nn.Linear(1, 16), torch.nn.ReLU(), torch.nn.Linear(16, 1))
+
+    def forward(self, noise: torch.Tensor) -> torch.Tensor:
+        return self.network(noise)
+
+
+class Discriminator(torch.nn.Module):
+    """Return a real-data logit for a scalar input."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.network = torch.nn.Sequential(torch.nn.Linear(1, 16), torch.nn.LeakyReLU(.2), torch.nn.Linear(16, 1))
+
+    def forward(self, data: torch.Tensor) -> torch.Tensor:
+        return self.network(data)
+
+
+def main() -> None:
+    torch.manual_seed(19)
+    generator, discriminator = Generator(), Discriminator()
+    generator_optimizer = torch.optim.Adam(generator.parameters(), lr=.02)
+    discriminator_optimizer = torch.optim.Adam(discriminator.parameters(), lr=.02)
+
+    for _ in range(120):
+        real = torch.randn(64, 1) * .5 + 2.0
+        noise = torch.randn(64, 1)
+        fake = generator(noise)
+        # Maximize log D(real)+log(1-D(fake)) by minimizing BCE labels.
+        discriminator_loss = (functional.binary_cross_entropy_with_logits(discriminator(real), torch.ones_like(real))
+                              + functional.binary_cross_entropy_with_logits(discriminator(fake.detach()), torch.zeros_like(fake)))
+        discriminator_optimizer.zero_grad(); discriminator_loss.backward(); discriminator_optimizer.step()
+
+        fake = generator(noise)
+        # Non-saturating generator loss: maximize log D(G(z)).
+        generator_loss = functional.binary_cross_entropy_with_logits(discriminator(fake), torch.ones_like(fake))
+        generator_optimizer.zero_grad(); generator_loss.backward(); generator_optimizer.step()
+
+    generated_mean = generator(torch.randn(512, 1)).mean().item()
+    print(f"generated mean after alternating updates: {generated_mean:.3f}")
+    assert 0.5 < generated_mean < 3.5
+    print("ok: generator and discriminator perform alternating adversarial updates")
+
+
+if __name__ == "__main__":
+    main()

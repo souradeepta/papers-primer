@@ -14,7 +14,7 @@ Completed: 08 RoPE, 09 DPO.
 - [x] 03 GPT-3 — causal decoder, positional embeddings, in-context prompt
 - [x] 04 LoRA — frozen linear layer plus trainable low-rank adapters
 - [x] 05 InstructGPT — reward model, PPO-style policy update, KL control
-- [ ] 06 Chinchilla — fitted scaling-law compute allocation sweep
+- [x] 06 Chinchilla — compute-optimal parameter/data allocation sweep
 - [x] 07 FlashAttention — tiled forward and causal/masked case
 - [x] 10 Switch Transformer — top-1 MoE dispatch, capacity, balancing loss
 - [x] 11 SentencePiece — unigram model scoring and Viterbi decode
@@ -24,16 +24,16 @@ Completed: 08 RoPE, 09 DPO.
 - [x] 15 PagedAttention — logical/physical KV blocks, sharing, copy-on-write
 - [x] 16 word2vec — skip-gram minibatches and negative-sampling objective
 - [x] 17 Adam — multi-step moments, bias correction, parameter update
-- [ ] 30 Scaling Laws — regression fit and held-out compute extrapolation
+- [x] 30 Scaling Laws — regression fit and held-out compute extrapolation
 
 ## Vision and generative models
 
-- [ ] 18 ResNet — residual stage, downsample shortcut, short classifier step
-- [ ] 19 GAN — generator/discriminator alternating optimization
-- [ ] 20 CLIP — dual encoders, normalized similarities, symmetric contrastive loss
-- [ ] 21 VAE — encoder, reparameterization, decoder, ELBO training step
+- [x] 18 ResNet — residual block and projection shortcut
+- [x] 19 GAN — generator/discriminator alternating optimization
+- [x] 20 CLIP — dual encoders, normalized similarities, symmetric contrastive loss
+- [x] 21 VAE — encoder, reparameterization, decoder, ELBO training step
 - [x] 22 Batch Normalization — train/eval running statistics and affine transform
-- [ ] 23 U-Net — contracting path, skip joins, expanding path, segmentation loss
+- [x] 23 U-Net — contracting path, skip joins, expanding path, segmentation loss
 - [ ] 25 Vision Transformer — patch embed, class token, Transformer encoder
 - [ ] 27 SimCLR — augmentations, encoder/projection head, NT-Xent loss
 - [ ] 29 DDPM — forward diffusion, noise predictor, reverse sampling step
