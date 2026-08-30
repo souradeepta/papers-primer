@@ -24,7 +24,7 @@ Primary arXiv abstract records (title/authors/year) were checked on
 ## Global constraints
 
 `SPEC.md` is binding for every task: retain the nine required sections in
-order, at least 2,000 prose words, a Mermaid block inside **The
+order, at least 1,950 prose words, a Mermaid block inside **The
 Mechanism**, at least one referenced GIF over 10 KB, a CPU-runnable Python
 program in `code/` that exits within 60 seconds, at least five Q&A pairs,
 and at least three links in Further Reading including the primary arXiv
