@@ -24,9 +24,10 @@ RLHF teaches a model from human preferences: people compare answers, a reward mo
 
 People do not need to write a perfect numerical score for every answer. Choosing “A is better than B” is often enough to teach a model what people prefer.
 
+If two replies are factually similar but one is concise and polite, an annotator can choose it without explaining a numeric scoring formula. Many such choices teach the reward model a pattern.
+
 💻 **CS analogy:** RLHF resembles training a ranking service from A/B preference logs, then optimizing a policy against that learned scorer.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -39,11 +40,15 @@ The essential equation or rule is:
 
 If the chosen answer scores much higher, the sigmoid is near 1 and the penalty is low. If the rejected answer wins, the model gets a large penalty.
 
+The score difference is all that matters: adding 10 to both answer scores changes nothing. The sigmoid only asks whether the chosen answer is ahead, and by how confidently.
+
 ## Background: What Came Before 🕰️
 
 Next-token pretraining teaches a model to imitate internet text, not necessarily to follow a helpful, safe instruction. Supervised prompts helped, but they could not capture every quality judgment with one target answer. InstructGPT was needed to turn human preference comparisons into an optimization signal that steers a pretrained model’s behavior.
 
 The new idea connected subjective human judgments to a training signal, so usefulness could be optimized rather than assumed from internet text.
+
+This made product-quality preferences—helpfulness, tone, and harmlessness—part of the training loop, while also creating the need to guard against reward hacking.
 
 ## Why It Matters
 

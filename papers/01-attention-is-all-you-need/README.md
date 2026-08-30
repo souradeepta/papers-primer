@@ -21,9 +21,10 @@ Words are like students in a group project: each word can look around and decide
 
 Instead of passing one message along a single line, every word can directly inspect the other words. That makes “it” easier to connect to the right earlier noun, even when they are far apart.
 
+In “The animal did not cross the street because it was tired,” attention can give “it” a large connection to “animal.” The resulting representation carries that useful relationship forward.
+
 💻 **CS analogy:** attention is a database query: each word asks which records are most relevant, then combines their values.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 **Essential equation:** softmax(QKᵀ/√d)V. First, each question vector Q scores every key K: a large score means “pay attention here.” Softmax turns scores into percentages that add to 100%; those percentages average the value vectors V. The √d divisor prevents large vectors from making one percentage unfairly close to 100%.
@@ -36,11 +37,15 @@ softmax(QKᵀ / √d) V
 
 You can read the equation left to right: score possible connections, turn scores into fair shares, then blend information using those shares. The symbols are learned number lists, not words themselves.
 
+For one query, the row of softmax values is a set of weights that sums to 1. If one key scores far above the rest, its value contributes most; if scores are similar, the result blends several values.
+
 ## Background: What Came Before 🕰️
 
 Before this paper, translation models usually processed text one word at a time with recurrent networks, sometimes aided by convolutional layers and an attention add-on. Long paths made distant relationships hard to learn and limited parallel training. The Transformer was needed to make attention itself the main computation, so every token could connect directly to the others.
 
 This direct connection path let the architecture handle distant relationships while doing much more work in parallel than recurrent models.
+
+This direct path changed the cost of relating distant words from walking through many recurrent steps to a single attention comparison.
 
 ## Why It Matters
 

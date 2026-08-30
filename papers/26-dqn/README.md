@@ -17,9 +17,10 @@ DQN learns which game move is worth most by remembering past moves and their rew
 
 DQN learns a score for each possible action. It updates the score using both the reward it got now and an estimate of what happens next.
 
+After moving right in a game, the immediate reward may be zero but the next state may contain a valuable item. The target credits the current action for that promising future.
+
 💻 **CS analogy:** DQN is dynamic programming with a learned cache: store an estimate of each state–action value, then update it from the best estimate of the next state.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -32,11 +33,15 @@ y = r + γ max_a′ Q_target(s′, a′)
 
 r is today’s reward; the max term is the best predicted future reward from the next state. γ discounts that future because it is less immediate.
 
+If γ is 0, the agent only cares about immediate reward; if γ is near 1, it values long-term outcomes more. The max says it assumes it will choose the best next action.
+
 ## Background: What Came Before 🕰️
 
 Q-learning had strong tabular results, but a table cannot cover every possible video-game screen. Deep neural networks could read pixels yet combining them directly with bootstrapped value targets was unstable. DQN was needed to make one agent learn Atari control from high-dimensional observations using replay memory and a stabilized target.
 
 This extended reinforcement learning from small hand-designed tables to high-dimensional inputs such as game pixels.
+
+This introduced a practical bridge between value-learning theory and deep networks, while target networks and replay buffers addressed instability from changing targets and correlated data.
 
 ## Why It Matters
 

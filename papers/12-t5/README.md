@@ -12,9 +12,10 @@ T5 treats every language task as text in and text out. It practices repairing mi
 
 The same interface handles translation, summarization, and classification: give text in and ask for text out. A task prefix tells the model which job the input requests.
 
+A classification input can be written as “sentiment: this film is great” and the output as “positive”; translation and summarization use the same input-to-output contract. The architecture need not change for each case.
+
 💻 **CS analogy:** span corruption is like replacing missing substrings with numbered placeholders, then asking a decoder to emit the patch file in order.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ p(y|x) = ∏ p(yᵢ | earlier y, x)
 
 The ∏ sign means predict every output token in order. Each prediction sees both the original input and the answer already written.
 
+For each output position, the model conditions on x and all earlier y tokens. That is why decoding is sequential: it cannot know the next output token until it has chosen the previous one.
+
 ## Background: What Came Before 🕰️
 
 NLP systems used many different architectures and objectives for classification, translation, question answering, and summarization. That made transfer experiments hard to compare and implementations hard to reuse. T5 was needed to frame every task as text-to-text, so one encoder–decoder recipe and one training objective could cover them all.
 
 This was needed because task-specific output heads and formats made transfer-learning systems harder to compare and reuse.
+
+The text-to-text framing made experiments more comparable and made one model family easier to reuse across many NLP tasks.
 
 ## Why It Matters
 

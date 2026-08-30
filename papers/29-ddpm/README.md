@@ -17,9 +17,10 @@ DDPM learns to remove a little noise at a time. It practices on messy data, then
 
 Diffusion starts with a real image, adds more static, then learns how to remove the static. Starting from pure noise and reversing the process can create a new image.
 
+A clean image becomes increasingly hard to recognize as noise is added. The network is trained on many noise levels, so it learns a small cleanup move that can be repeated from random static.
+
 💻 **CS analogy:** it is like learning a robust cleanup function: first deliberately corrupt a file in many tiny steps, then train a program to undo one step at a time.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -32,11 +33,15 @@ x_t = √ᾱ_t x_0 + √(1 − ᾱ_t) ε
 
 x₀ is a clean image, ε is random static, and ᾱ controls how much signal remains. The weights mix them without changing scale too much.
 
+At early t, ᾱ is close to 1 so most signal remains; later it is close to 0 so noise dominates. Predicting ε is convenient because the exact noise added during training is known.
+
 ## Background: What Came Before 🕰️
 
 GANs could make sharp images but their adversarial game could collapse or miss parts of the data distribution. Likelihood-based alternatives often had other architectural constraints. DDPM was needed to offer a stable, simple generative recipe: turn data into noise gradually and learn the reverse denoising process.
 
 This provided a stable alternative to adversarial generation, using a direct prediction task rather than a two-player game.
+
+This turned generation into many stable denoising predictions, avoiding some adversarial-game failures at the cost of a slower multi-step sampling process.
 
 ## Why It Matters
 

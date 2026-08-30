@@ -37,6 +37,10 @@ analogies to make both the Fun Map and Math Playground lucid. Extra sections
 may appear before **Why It Matters**; preserve the required SPEC.md section
 order after that.
 
+Every learner paragraph must be paper-specific: use a concrete mini-example,
+an effect of varying the equation, or a practical consequence. Do not use
+generic filler that could be copied into any paper.
+
 ## Current status
 
 Papers 01-30 are done and pass validation. The table below is retained as the

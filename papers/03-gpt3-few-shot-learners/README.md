@@ -26,9 +26,10 @@ GPT-3 is a next-word machine that can learn a pattern from examples placed in it
 
 Nothing inside the model is retrained when it sees those examples. The prompt acts like a temporary instruction sheet: show a few input-output pairs, then ask it to complete the next one.
 
+A prompt can show “red → rojo” and “blue → azul,” then ask “green →”. The model continues a visible pattern, using its next-token skill rather than a new training update.
+
 💻 **CS analogy:** autoregressive generation is a loop whose next iteration receives every previous output as state.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 **Essential equation:** p(x₁,…,xₙ) = ∏ p(xᵢ | x₁,…,xᵢ₋₁). The probability of a whole sentence is found by multiplying the chance of each next word after the earlier words. It is like calculating a sequence of dependent events: predict word 1, then word 2 given word 1, and so on. Few-shot learning comes from putting examples in that earlier-word history.
@@ -41,11 +42,15 @@ p(x₁,…,xₙ) = ∏ p(xᵢ | x₁,…,xᵢ₋₁)
 
 The ∏ sign means “multiply all these pieces.” A good next-word predictor can use the examples in the prompt as clues about what continuation the user wants.
 
+If each next word has a probability, a sentence’s probability shrinks when any one necessary word is very unlikely. Training improves the whole chain by improving many local next-word predictions.
+
 ## Background: What Came Before 🕰️
 
 After pretraining, NLP systems commonly needed labeled task data and gradient-based fine-tuning for each new job. Earlier language models showed transfer, but their in-context abilities were less broadly demonstrated. GPT-3 was needed to test whether scale alone could let one next-token model pick up a task from instructions and examples placed in its prompt.
 
 It showed a route to task adaptation at use time: describe the task with examples instead of changing the model’s weights.
+
+This turned prompts into a practical adaptation interface, although results still depend heavily on wording, examples, and model scale.
 
 ## Why It Matters
 

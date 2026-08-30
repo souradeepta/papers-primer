@@ -12,9 +12,10 @@ SentencePiece turns raw text into reusable word pieces, including a visible mark
 
 Common pieces can be stored as larger chunks, while rare words can be assembled from smaller chunks. That avoids an unknown-word failure for unfamiliar spellings.
 
+The word “unhappiness” might stay whole if common, or become “un”, “happi”, “ness” if those pieces explain the data better. Both training and inference use the same learned vocabulary.
+
 💻 **CS analogy:** choosing subword pieces is a shortest-path problem over string positions, where each valid piece is an edge with a cost.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ p(text) = ∏ p(pieceᵢ)
 
 The ∏ sign means multiply. Programs use −log p instead because adding costs is easier than multiplying many tiny decimals; dynamic programming finds the cheapest split.
 
+A segmenter compares complete paths, not individual pieces alone: a high-probability prefix can be a bad choice if it leaves an impossible suffix. Dynamic programming keeps the best cost for each text position.
+
 ## Background: What Came Before 🕰️
 
 Word tokenizers often depended on language-specific rules and produced unknown tokens for rare or misspelled words. Character tokenization avoids unknowns but makes sequences long. SentencePiece was needed to learn a language-agnostic subword vocabulary directly from raw text and make tokenization reproducible as part of a model artifact.
 
 This supplied a language-independent middle ground between brittle whole-word vocabularies and very long character sequences.
+
+This removed a hidden English-centric assumption that text must be split into words before a subword model can be trained.
 
 ## Why It Matters
 

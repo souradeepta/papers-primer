@@ -18,9 +18,10 @@ Adam is a careful downhill walker: it remembers the usual slope and slows down o
 
 Training is like walking downhill in fog. Adam remembers the recent downhill direction but slows down on bumpy, unreliable directions.
 
+If recent gradients repeatedly point left, Adam keeps moving left; if they are large and erratic, it reduces the step size. It combines momentum with a per-weight caution signal.
+
 💻 **CS analogy:** Adam is like monitoring a noisy service: keep a smoothed recent trend and a smoothed “how jumpy is it?” metric before changing a setting.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -34,11 +35,15 @@ v_t = β₂v_(t−1) + (1−β₂)g_t²
 
 m is a smoothed direction vote; v measures recent squared gradient size. Dividing by √v makes unusually noisy coordinates take smaller steps.
 
+β values close to 1 remember more history, while values closer to 0 react faster to new gradients. Squaring g removes its sign so v measures size rather than direction.
+
 ## Background: What Came Before 🕰️
 
 Plain SGD used the latest gradient as its whole steering signal, while momentum helped smooth it and RMSProp scaled coordinates by recent squared gradients. Tuning either method still required care. Adam was needed as a simple default that combines both ideas and works well across many neural-network jobs.
 
 Adam was needed because one fixed learning-rate rule can be slow or unstable when weights receive gradients of very different sizes.
+
+This gave deep-learning practitioners a robust default optimizer, although learning rate, weight decay, and data scale still need deliberate tuning.
 
 ## Why It Matters
 

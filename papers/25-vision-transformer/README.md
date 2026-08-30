@@ -18,9 +18,10 @@ ViT cuts an image into square patches and treats them like word tokens, letting 
 
 A Vision Transformer treats an image as a sequence of small square patches. Attention can then compare distant image regions just as it compares distant words.
 
+A 224×224 image split into 16×16 patches produces 196 tokens. A patch containing a wheel can attend directly to a patch containing a car body even when they are far apart.
+
 💻 **CS analogy:** split an image file into fixed-size chunks, turn each chunk into a record, and let an attention-based service decide which records should exchange information.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -33,11 +34,15 @@ N = HW / P²
 
 H and W are image height and width, while P is patch side length. Dividing image area by patch area gives the number of tokens N.
 
+Halving patch side P creates four times as many patches because area grows with P². More tokens preserve finer detail but attention must compare many more pairs.
+
 ## Background: What Came Before 🕰️
 
 Convolutional networks dominated vision because locality and translation assumptions made them data-efficient. Transformers had succeeded in language but their all-pairs attention seemed ill-suited to raw image pixels. ViT was needed to test whether a nearly unchanged transformer could become a strong vision model when images were represented as patches and enough data was available.
 
 This tested whether Transformer attention could replace vision-specific convolutional assumptions.
+
+This questioned the assumption that local convolutions were necessary for vision, while showing that enough data and regularization make a general Transformer competitive.
 
 ## Why It Matters
 

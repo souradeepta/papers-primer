@@ -12,9 +12,10 @@ RoPE gives each word a tiny spin based on where it sits. Comparing two spun vect
 
 Imagine every word holds an arrow. RoPE turns the arrow a little more for later positions, so attention can sense both matching content and relative order.
 
+Two identical token embeddings at positions 2 and 20 receive different rotations. When attention compares them with another rotated vector, their angle difference carries the relative distance.
+
 💻 **CS analogy:** RoPE is like encoding an array index as an angle, so subtracting positions becomes a simple relative phase comparison.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ The essential equation or rule is:
 
 x and y are two coordinates of an arrow, while θ is its turn angle. Sine and cosine describe the horizontal and vertical parts after a turn.
 
+A 90-degree rotation turns (1,0) into (0,1), so the formula is a familiar geometry operation rather than mysterious new arithmetic. RoPE applies many such two-number rotations at different frequencies.
+
 ## Background: What Came Before 🕰️
 
 Transformers need position information because attention alone does not know token order. Absolute position embeddings worked but did not naturally express a relative distance inside an attention score or extrapolate gracefully. RoPE was needed to encode position as a rotation, so the query–key interaction directly reflects relative offset.
 
 RoPE answered the need for position information that naturally appears inside attention comparisons rather than as a separate position label.
+
+This gave later Transformer builders a compact positional mechanism that preserves vector length while changing the attention score in a distance-aware way.
 
 ## Why It Matters
 

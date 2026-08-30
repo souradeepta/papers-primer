@@ -17,9 +17,10 @@ U-Net first zooms out to understand a whole image, then zooms back in while carr
 
 U-Net shrinks an image to understand broad context, then expands it back to label every pixel. Shortcuts carry fine detail to the expanding side.
 
+For a medical scan, broad context can say “this is likely an organ,” while the shortcut carries sharp boundary detail needed to label each individual pixel. Both kinds of information are required.
+
 💻 **CS analogy:** the encoder is a compressed index, while skip connections are direct links back to the full-resolution source records needed for precise output.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -32,11 +33,15 @@ The essential equation or rule is:
 
 For a pixel, y is 1 for the correct class and 0 otherwise, so the loss focuses on the model’s probability p for the true label.
 
+If the true pixel class has probability 0.9, the loss is low; if it has 0.01, the loss is high. Summing across classes is a compact way to select the one true label.
+
 ## Background: What Came Before 🕰️
 
 Classifiers could say what was in an image but discarded spatial detail as they pooled down to one label. Sliding-window methods preserved locality but repeated expensive work. U-Net was needed to combine broad context with exact localization, especially when labeled medical images were scarce.
 
 This was needed because classifiers could recognize an object but often lost the exact location and boundary needed for segmentation.
+
+This made dense prediction feasible with limited labeled data and established an encoder-decoder pattern now common in segmentation tasks.
 
 ## Why It Matters
 

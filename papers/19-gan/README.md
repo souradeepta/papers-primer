@@ -17,9 +17,10 @@ A GAN is a game between an artist who makes fakes and a detective who spots them
 
 A generator tries to make convincing examples while a discriminator tries to spot fakes. Each side improves because the other side exposes its weaknesses.
 
+If the discriminator easily catches fake images, the generator receives a learning signal about what looks unrealistic. If the generator improves, the discriminator must learn a sharper test.
+
 💻 **CS analogy:** it resembles a red-team test loop: one program creates tricky cases while another program tries to detect them, and each forces the other to improve.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -32,11 +33,15 @@ min_G max_D E[log D(x)] + E[log(1 − D(G(z)))]
 
 D is the judge, G is the creator, x is real data, and z is random input. Min and max show they want opposite outcomes.
 
+Expectation E means average over many examples, not one picture. The logarithms create a loss that heavily penalizes confident mistakes by the discriminator.
+
 ## Background: What Came Before 🕰️
 
 Earlier generative models often had to specify a tractable likelihood or carefully approximate one, which limited the kinds of image generators people could train. They could be mathematically neat but produce blurry outputs. GANs were needed as a new route: learn to generate by competing against a learned judge rather than explicitly scoring every pixel configuration.
 
 GANs were needed to learn rich data generation without requiring one hand-written similarity score for every possible image.
+
+GANs produced striking samples but also revealed that a two-player optimization game can oscillate, collapse to few outputs, or be hard to evaluate.
 
 ## Why It Matters
 

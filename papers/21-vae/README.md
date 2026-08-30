@@ -18,9 +18,10 @@ A VAE learns a tidy hidden sketch space. It compresses an example into a fuzzy p
 
 A VAE compresses an input into a small, slightly random code, then rebuilds it. Keeping nearby codes meaningful lets us sample a new code to generate a result.
 
+A photo of a face can become a point in a smooth hidden map. Nearby points decode to similar faces, so sliding or sampling in that map can create variations instead of only memorizing training images.
+
 💻 **CS analogy:** a VAE is a lossy compressor with a random, structured code: it must reconstruct an input while keeping its codes organized enough to sample later.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -33,11 +34,15 @@ E_q(z|x)[log p(x|z)] − KL(q(z|x) || p(z))
 
 The first term rewards good reconstruction. The second keeps the code space near a simple bell-shaped pattern, so it stays organized instead of scattered.
 
+KL is a measure of how different two probability distributions are. Penalizing it prevents every input from hiding in its own isolated code region, which would make random sampling fail.
+
 ## Background: What Came Before 🕰️
 
 Autoencoders could compress and reconstruct data, but their latent spaces could be irregular: picking a random point might decode to nonsense. Probabilistic latent-variable models supplied structure but were hard to train with modern neural networks. VAEs were needed to connect neural encoders and decoders with a latent space that supports both reconstruction and sampling.
 
 This was needed to combine compression and generation in one model whose hidden space could be sampled smoothly.
+
+This supplied a principled probabilistic latent-variable model, trading some sample sharpness for a structured and controllable hidden space.
 
 ## Why It Matters
 

@@ -19,9 +19,10 @@ word2vec learns a map where words used in similar neighborhoods stand near each 
 
 Words that appear in similar neighborhoods get similar coordinates. That turns text patterns into numbers that simple programs can compare quickly.
 
+In “I drink coffee” and “I drink tea,” coffee and tea see similar neighboring words. Training moves their vectors so a later program can recognize that similarity.
+
 💻 **CS analogy:** this is an embedding table plus a vector-search score: a word ID looks up a row, and dot products rank candidate neighbors.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -34,11 +35,15 @@ p(o|c) = exp(u_oᵀv_c) / Σ_w exp(u_wᵀv_c)
 
 The dot product measures how well two word arrows agree. Dividing by the total turns all candidate scores into probabilities that add to 1.
 
+If two vectors point in similar directions, their dot product is large. The exponential makes that large score stand out before the division converts all candidates into a probability distribution.
+
 ## Background: What Came Before 🕰️
 
 Before word2vec, programs often represented a word as a huge one-hot ID or counted co-occurrences in a table. Those representations made related words look unrelated and were costly to use at scale. This paper was needed to make compact, reusable word features practical on very large text collections.
 
 This gave NLP compact features where related words could be discovered from usage instead of manually coded.
+
+This made word meaning usable as a compact numeric feature, though one static vector still cannot separate every sense of a word.
 
 ## Why It Matters
 

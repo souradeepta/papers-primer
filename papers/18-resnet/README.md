@@ -17,9 +17,10 @@ ResNet lets a layer learn a small change instead of rebuilding everything. A sho
 
 A residual block preserves the original signal and learns only a small correction. That makes a very deep stack less likely to forget useful information.
 
+A block can preserve a clear edge detector and only add a small correction for a more useful pattern. The shortcut means deeper layers do not have to recreate what earlier layers already know.
+
 💻 **CS analogy:** a residual block is a patch or decorator: keep the original value and add only the small correction a function has learned.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -32,11 +33,15 @@ y = F(x) + x
 
 x is the incoming value and F(x) is the correction. If no correction helps, F(x) can be near zero and x still passes through.
 
+When F(x) is zero, y equals x exactly. The plus sign also creates a short route for error signals during training, helping them reach earlier layers.
+
 ## Background: What Came Before 🕰️
 
 Researchers could make image networks deeper, but simply stacking layers eventually made even the training error worse, not just the test error. Better initialization and normalization helped, yet optimization paths were still fragile. ResNet was needed to let a deep stack learn incremental corrections instead of forcing every block to relearn its entire input.
 
 This solved the problem that adding more ordinary layers could make a network train worse, not better.
+
+This made very deep vision networks practical and turned residual connections into a general pattern used far beyond image classification.
 
 ## Why It Matters
 

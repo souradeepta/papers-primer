@@ -14,9 +14,10 @@ FlashAttention solves an organizer problem: do attention in small tiles so the G
 
 The result does not approximate attention or skip information. It is the same answer as ordinary attention, but the computer visits data in an order that fits GPU memory better.
 
+A long prompt can create millions of query-key scores. FlashAttention processes one tile, keeps only the needed running summaries, then continues to the next tile without storing every score.
+
 💻 **CS analogy:** FlashAttention is cache-aware blocked matrix multiplication, except it also maintains a streaming softmax result.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -29,11 +30,15 @@ softmax(QKᵀ / √d) V
 
 Q, K, and V have the same roles as normal attention: ask, match, and carry information. The innovation is calculating the formula safely piece by piece.
 
+The running maximum is needed because softmax uses exponentials, which can overflow for large scores. Rescaling each tile against that maximum keeps the final percentages mathematically exact and numerically safe.
+
 ## Background: What Came Before 🕰️
 
 Standard attention was mathematically simple but materialized a huge score matrix, so memory traffic—not only arithmetic—became the bottleneck for long sequences. Faster hardware did not solve wasteful reads and writes by itself. FlashAttention was needed to preserve exact attention while reorganizing the computation around fast on-chip tiles.
 
 This was needed because standard attention’s giant intermediate table became the bottleneck for long inputs, even when the arithmetic itself was manageable.
+
+This enabled much longer contexts on the same hardware by attacking memory traffic, a constraint that often mattered more than raw FLOP count.
 
 ## Why It Matters
 

@@ -12,9 +12,10 @@ DPO learns from “this answer is better than that one” pairs directly. It nud
 
 DPO learns directly from paired choices. It avoids training a separate reward model and a reinforcement-learning loop, which makes the recipe simpler.
 
+Given one prompt and two responses, DPO only needs the label “this one is preferred.” It raises the probability of that response relative to the rejected one, anchored to an earlier model.
+
 💻 **CS analogy:** DPO is a direct ranking-loss update, similar to teaching a search ranker from clicked-versus-skipped result pairs.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ The essential equation or rule is:
 
 π means the new model’s answer probability, π_ref is the frozen reference, and β is a strength dial. The equation favors the winning answer without drifting too far.
 
+The two fractions compare the new policy with the reference separately for winner and loser. Subtracting them asks whether the new model improved the winner more than it improved the loser.
+
 ## Background: What Came Before 🕰️
 
 RLHF could align a model with preferences, but it required training a separate reward model and running a delicate PPO loop. That pipeline adds moving parts and opportunities for instability. DPO was needed to learn directly from preferred-versus-rejected response pairs while keeping a reference model as an anchor.
 
 It was needed to keep the useful preference data of RLHF while removing several moving parts that can make RL training fragile.
+
+This simplified alignment experiments and deployment pipelines, though the quality of the outcome remains limited by the preference data and the chosen reference.
 
 ## Why It Matters
 

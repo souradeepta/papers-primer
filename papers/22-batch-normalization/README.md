@@ -17,9 +17,10 @@ BatchNorm gives a layer numbers on a more predictable scale, like converting man
 
 BatchNorm gives each layer inputs with a more predictable scale during training. The layer can still learn the scale it wants afterward.
 
+If one minibatch produces values around 1,000 and the next around 0.01, later layers see a moving target. BatchNorm standardizes each batch before letting the model choose a useful scale again.
+
 💻 **CS analogy:** it is like standardizing measurements before a shared service consumes them, then allowing each caller to choose a scale and offset again.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -33,11 +34,15 @@ y = γx̂ + β
 
 Subtracting μ centers values around zero; dividing by the spread makes batches comparable. γ and β are learned knobs that can rescale and shift the result.
 
+ε is a tiny positive number that prevents division by zero when a batch has almost no variation. The square root turns variance into standard deviation, measured in the same units as x.
+
 ## Background: What Came Before 🕰️
 
 Deep networks were increasingly hard to optimize because a layer kept receiving differently distributed inputs as earlier layers changed. Smaller learning rates and careful initialization helped but slowed experiments. Batch Normalization was needed to make training more stable and permit more aggressive optimization settings.
 
 It addressed unstable deep-network training, where changing earlier layers constantly changed the scale seen by later layers.
+
+This stabilized many training recipes and allowed larger learning rates, while also making batch size and train-versus-inference behavior important implementation details.
 
 ## Why It Matters
 

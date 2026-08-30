@@ -17,9 +17,10 @@ Scaling laws use small experiments to estimate what larger training runs may do,
 
 Scaling laws use small experiments to estimate what bigger training runs may do. They are planning tools, not promises that more compute automatically creates a better product.
 
+A team can train several smaller models, plot their losses, then estimate whether an expensive larger run is likely to be worthwhile. The curve guides a decision before spending the full budget.
+
 💻 **CS analogy:** it is empirical capacity planning: benchmark several system sizes, fit a trend, then use the curve to decide where the next compute budget should go.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -32,11 +33,15 @@ L(N) ≈ L_∞ + aN^−α
 
 L is error and N is model size. The negative exponent means diminishing returns: each further increase normally buys less improvement.
 
+L∞ represents the fitted floor, not necessarily an absolute limit of intelligence. α controls how quickly the curve falls; different data, architectures, and metrics can have different values.
+
 ## Background: What Came Before 🕰️
 
 Teams knew larger language models often improved, but compute budgets were allocated with scattered rules of thumb: scale parameters, data, or training steps without a shared quantitative guide. That made expensive runs easy to undertrain or mis-size. Scaling-laws studies were needed to turn repeated measurements into forecasts for planning the next training run.
 
 This gave teams a quantitative way to plan expensive runs instead of relying only on scattered rules of thumb.
+
+This made empirical measurement part of model planning, while also warning teams not to extrapolate a smooth curve far beyond the conditions they actually tested.
 
 ## Why It Matters
 

@@ -12,9 +12,10 @@ Switch Transformers have many expert helpers, but each token visits only one. It
 
 Different tokens may need different processing. The router makes a quick choice so the model gets many specialists without asking every specialist to work on every token.
 
+A token about Python syntax might be routed to one expert while a multilingual phrase goes to another. Only the selected expert runs, so capacity increases without every token paying for every expert.
+
 💻 **CS analogy:** the router is a load balancer that picks one worker for each request while trying not to overload one machine.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ i = argmaxⱼ pⱼ(x),  pⱼ(x) = softmax(Wx)ⱼ
 
 argmax means “choose the biggest.” Softmax changes raw router scores into percentages, so the chosen expert is simply the expert with the largest percentage.
 
+argmax ignores every score except the largest one after routing. That makes the forward pass cheap, but it also means training needs a balancing term so all tokens do not choose the same expert.
+
 ## Background: What Came Before 🕰️
 
 Dense Transformers use every parameter for every token, so expanding parameter count also expands compute. Earlier mixture-of-experts designs existed but routing multiple experts made training and communication harder. Switch Transformer was needed to scale capacity with a simple one-expert-per-token routing rule.
 
 The paper made sparse models easier to scale by reducing a multi-expert routing problem to one clear routing choice per token.
+
+The paper showed that conditional computation can scale parameter count separately from per-token work, with networking and load balance becoming central engineering concerns.
 
 ## Why It Matters
 

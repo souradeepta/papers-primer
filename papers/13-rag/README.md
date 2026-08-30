@@ -12,9 +12,10 @@ RAG lets a language model open a library before answering. It finds useful passa
 
 The model does not have to keep every fact inside fixed weights. It can first look up useful notes, then use them while composing an answer.
 
+For a question with two retrieved passages, one may strongly support “Paris” and the other weakly support “Lyon.” The weighted sum lets the stronger retrieval-and-generation path dominate without pretending the other does not exist.
+
 💻 **CS analogy:** RAG is a weighted fan-out query: several retrieved documents each contribute an answer probability, then the system combines them.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ p(y|x) = Σ_z p(z|x)p(y|x,z)
 
 Σ means add across documents. Each document contributes according to both retrieval’s confidence and how well it supports the answer.
 
+If a document gets retrieval probability 0.8 and gives an answer probability 0.9, its contribution is 0.72. Summing contributions is ordinary weighted averaging over possible evidence sources.
+
 ## Background: What Came Before 🕰️
 
 Parametric language models store knowledge only in their fixed weights, so facts can be stale, hard to audit, and expensive to update. Search systems can retrieve current documents but do not by themselves compose fluent answers. RAG was needed to couple retrieval with generation so a model can consult external evidence at answer time.
 
 RAG addressed the need for knowledge that can be updated and inspected without retraining every parameter in a language model.
+
+This added an external, replaceable memory to generation, enabling provenance and updates but also introducing risks from missing, stale, or malicious documents.
 
 ## Why It Matters
 

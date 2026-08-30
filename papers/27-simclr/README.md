@@ -18,9 +18,10 @@ SimCLR shows a model two altered versions of the same picture and says “these 
 
 SimCLR makes two altered views of the same picture agree, while making views from different pictures less similar. It learns image features without human labels.
 
+Take one photo, crop it twice, and adjust colors differently. The two views should still describe the same object, while views from other photos should remain distinguishable.
+
 💻 **CS analogy:** treat two transformed copies as duplicate records that must hash nearby, while every other record in the batch is a temporary negative test case.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -33,11 +34,15 @@ The essential equation or rule is:
 
 The top is the true pair’s similarity and the bottom includes all competing images in the batch. Training makes the true pair win this retrieval contest.
 
+Cosine similarity compares vector direction rather than length. A smaller temperature τ makes the softmax contest sharper, so the model is punished more for confusing close competitors.
+
 ## Background: What Came Before 🕰️
 
 Image representations usually relied on manual labels, while earlier self-supervised approaches used hand-designed pretext tasks whose benefit did not always transfer. Contrastive ideas existed but their training recipes were complicated. SimCLR was needed to show that strong augmentations, a projection head, and a simple contrastive objective could learn highly useful visual features without labels.
 
 This was needed because labeled images are costly, while simple image augmentations can create learning signals for free.
+
+This showed that strong image representations can emerge from instance discrimination, provided augmentations are chosen carefully enough to preserve identity.
 
 ## Why It Matters
 

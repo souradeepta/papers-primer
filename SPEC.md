@@ -24,6 +24,10 @@ the values does before using specialist vocabulary. Use a CS analogy wherever
 it makes the mechanism or math more intuitive. Prefer a tiny diagram that
 explains a relationship over a decorative image.
 
+Each learner section must earn its space: include a paper-specific concrete
+example, a consequence, or a useful comparison. Do not pad sections with
+generic study advice that could describe any paper.
+
 ## Checkable numbers
 - Prose word count >= 1350 (fenced code/Mermaid blocks excluded). This is
   a quality floor, not a reason to reject an otherwise substantive

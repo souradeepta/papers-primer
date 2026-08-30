@@ -12,9 +12,10 @@ Chain-of-thought prompting shows worked examples, so a model can write intermedi
 
 Writing intermediate steps gives the model more places to keep track of numbers and decisions. It is useful scratch work, but it still needs checking.
 
+For 17 + 25, a trace can write “17 + 20 = 37; plus 5 = 42” before the final answer. The extra tokens act as visible state that can reduce the difficulty of one large jump.
+
 💻 **CS analogy:** a reasoning trace is an execution trace: intermediate state can make a hard final result easier to compute and debug.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ p(steps, answer | prompt)
 
 The comma means the model predicts the steps and final answer together. The vertical bar means both depend on the earlier prompt.
 
+The expression is a joint probability, not a proof rule: the model can assign high probability to plausible but wrong steps. That is why verification tools and answer checks remain important.
+
 ## Background: What Came Before 🕰️
 
 Large language models could answer many questions from a direct prompt, yet multi-step arithmetic and symbolic tasks often failed because the final answer had to appear in one jump. Fine-tuning a reasoning model was not always available. Chain-of-thought prompting was needed to show that demonstrations containing intermediate steps can unlock better in-context problem solving.
 
 It was needed because direct prompts often forced a multi-step problem into one jump with too little room for intermediate state.
+
+This made prompting a more capable problem-solving interface, and it motivated later work on sampling multiple traces, tools, and verifiers.
 
 ## Why It Matters
 

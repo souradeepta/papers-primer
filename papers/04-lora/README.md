@@ -26,9 +26,10 @@ LoRA teaches a huge model a small new habit without repainting its entire brain.
 
 The base model stays unchanged, so many tasks can share it. Each task only needs its own small patch, which saves training memory and storage.
 
+For a customer-support task, one LoRA patch can teach a response style while the shared base remains available for translation or coding. Swapping a patch changes behavior without downloading a whole new model.
+
 💻 **CS analogy:** LoRA is a small patch file applied at runtime instead of copying and editing an entire large binary.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -41,11 +42,15 @@ W′ = W + BA
 
 The prime means “new version.” Low rank means the patch is built from a small number of reusable patterns, so B and A can be much smaller than W.
 
+Matrix multiplication BA combines a small number of directions from A with a small number from B. The result can change a large W, but only along those selected directions.
+
 ## Background: What Came Before 🕰️
 
 Full fine-tuning copies and changes every weight for every task, which is expensive to store, train, and deploy as base models grow. Earlier adapter methods added task modules but could introduce inference overhead. LoRA was needed to express a useful weight update as a small, mergeable low-rank patch.
 
 This made adapting giant models practical for many teams and tasks instead of requiring a full private copy for each job.
+
+The key systems consequence is that adapters can be stored, versioned, reviewed, and rolled back like small artifacts rather than full model checkpoints.
 
 ## Why It Matters
 

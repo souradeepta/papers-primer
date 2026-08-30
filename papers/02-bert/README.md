@@ -28,9 +28,10 @@ BERT is a reading student who practices filling in missing words while looking b
 
 BERT practices a fill-in-the-blank game millions of times. Because it can look left and right, it learns that the same word can mean different things in different sentences.
 
+For “The bank approved the loan,” the words “approved” and “loan” help BERT fill a blank with the financial meaning of bank. A surrounding context can disambiguate the same spelling.
+
 💻 **CS analogy:** masked-language training is like a unit test with a deliberately deleted variable that the program must reconstruct from surrounding context.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 **Essential equation:** −log p(correct missing word | surrounding words). BERT fills in a hidden word and gives every possible word a probability. If it gives the real word 90%, the penalty is small; if it gives it 1%, the penalty is large. Training lowers this penalty, like grading a multiple-choice guess much more harshly when the correct answer was ranked last.
@@ -43,11 +44,15 @@ The essential equation or rule is:
 
 The vertical bar means “given”: predict the missing word given its context. The log is a scoring trick that makes many small probabilities easier for a computer to add during training.
 
+If BERT assigns 0.8 probability to the correct word, −log(0.8) is a small cost; at 0.01 it is much larger. The loss therefore rewards confidence on the right answer, not merely a correct top guess.
+
 ## Background: What Came Before 🕰️
 
 Language models were often trained left-to-right, so a word representation could not use the words after it during pretraining. Task-specific models also had to be built from scratch for each benchmark. BERT was needed to learn reusable bidirectional language features from unlabeled text, then adapt them with a small supervised fine-tuning step.
 
 This made it possible to pretrain one general language model and adapt it cheaply to many benchmarks instead of building a separate model for each.
+
+Bidirectional pretraining became a reusable starting point: later task data could teach a small final adjustment instead of teaching language from scratch.
 
 ## Why It Matters
 

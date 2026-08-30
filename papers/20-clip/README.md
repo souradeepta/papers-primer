@@ -17,9 +17,10 @@ CLIP puts pictures and captions on one shared map. A photo of a dog should land 
 
 CLIP learns a shared map where a photo and its matching caption land close together. New label names can later be used as prompts without retraining a classifier.
 
+A batch might pair a dog photo with “a photo of a dog” and a car photo with “a photo of a car.” Each image must rank its own caption above the other caption, and vice versa.
+
 💻 **CS analogy:** CLIP builds a shared search index: a picture query and a text query should retrieve the same matching record.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -32,11 +33,15 @@ S_ij = τ I_iᵀT_j
 
 I is an image arrow and T is a text arrow; their dot product is high when they point in similar directions. τ adjusts how sharply scores differ.
 
+The score matrix has one row per image and one column per text. The diagonal entries are true pairs; contrastive training makes those diagonal scores win against off-diagonal mismatches.
+
 ## Background: What Came Before 🕰️
 
 Vision models were commonly trained on fixed human-written class labels, so adding a new label set required a new supervised dataset and training run. Text and image systems also tended to live in separate pipelines. CLIP was needed to use plentiful captioned web data to connect the two modalities and make text-defined, zero-shot classification possible.
 
 This was needed to escape fixed class lists and use the broader supervision in image-caption pairs.
+
+This made text a flexible classifier interface: new categories can be described in language, though prompt wording and web-data biases affect results.
 
 ## Why It Matters
 

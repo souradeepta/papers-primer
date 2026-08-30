@@ -12,9 +12,10 @@ PagedAttention stores a model’s growing memory in small blocks, like library b
 
 Long conversations produce a growing cache of past-token information. PagedAttention keeps that cache in small reusable blocks, so one request does not need one giant unbroken memory region.
 
+If two requests begin with the same system prompt, their logical block tables can point to shared physical blocks. They only need separate blocks once the requests diverge.
+
 💻 **CS analogy:** PagedAttention uses virtual-memory-style indirection: a logical token address maps through a table to a physical memory block.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -27,11 +28,15 @@ block = floor(t/B),  offset = t mod B
 
 The whole-number quotient chooses a block and the remainder chooses a slot inside it. For token 23 with blocks of 8, that is block 2, slot 7.
 
+Integer division answers “which page?” and modulo answers “where inside that page?” These operations are constant-time, so indirection adds little computation compared with the memory it saves.
+
 ## Background: What Came Before 🕰️
 
 Autoregressive serving stores a growing key–value cache for every request, and conventional contiguous allocation wastes memory when requests have different lengths. That waste restricts batch size and throughput. PagedAttention was needed to manage KV cache memory in fixed blocks, much like virtual memory, so more requests fit safely.
 
 This was needed to serve many variable-length requests without wasting memory on large contiguous allocations.
+
+This let a serving engine handle a changing mix of request lengths with less fragmentation, increasing practical throughput rather than changing model accuracy.
 
 ## Why It Matters
 

@@ -14,9 +14,10 @@ Chinchilla says a big brain also needs enough books. Spending all compute on a g
 
 The key lesson is balance. A giant model that reads too little is like buying a huge hard drive but never filling it; a tiny model that reads everything may not have enough room to learn.
 
+Suppose a team can afford one fixed number of training operations. Spending them on more parameters leaves fewer tokens to read; spending them on more tokens leaves fewer parameters to represent what was learned.
+
 💻 **CS analogy:** compute-optimal training is capacity planning: CPU cores and input records must be provisioned together, not independently maxed out.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -29,11 +30,15 @@ L(C) ≈ aC⁻ᵝ + c
 
 The ≈ sign means fitted estimate, not an exact rule. The constants a, β, and c are measured from experiments and control the curve’s height, bend, and lower limit.
 
+On a power-law curve, moving C from 1 to 2 may reduce loss a lot, while moving it from 100 to 101 changes little. That bend is the mathematical picture of diminishing returns.
+
 ## Background: What Came Before 🕰️
 
 Scaling practice had emphasized making models larger, and compute-optimal rules based on earlier evidence encouraged parameter-heavy training. Many large models consequently saw too few tokens for their size. Chinchilla was needed to show, under a fixed compute budget, that model parameters and training data should grow together.
 
 This shifted planning from “always make it bigger” to testing how model size and data should share a fixed compute budget.
+
+The study made data tokens a first-class scaling decision, not merely fuel to be consumed after model size had already been chosen.
 
 ## Why It Matters
 

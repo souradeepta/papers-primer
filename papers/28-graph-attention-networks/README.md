@@ -16,9 +16,10 @@ GAT lets each dot in a network listen to nearby dots with different volumes, rat
 
 A graph node can listen to its neighbors, but not every neighbor deserves equal attention. GAT learns which incoming messages matter most.
 
+In a citation graph, a paper may care more about a closely related citation than a generic survey. Attention weights let the node choose rather than averaging every neighbor equally.
+
 💻 **CS analogy:** each node runs a priority inbox: it reads messages from neighbors but turns their relevance scores into per-neighbor weights before combining them.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -31,11 +32,15 @@ The essential equation or rule is:
 
 α is a percentage-like attention weight for neighbor j. The weighted sum lets useful neighbors contribute more than irrelevant ones.
 
+Softmax makes all α weights positive and sum to 1, so the update is a weighted average. W first transforms all features into a shared space where those comparisons are meaningful.
+
 ## Background: What Came Before 🕰️
 
 Graph neural networks could average or sum neighbor features, but that treats every neighbor as equally useful and can blur distinct roles. Fixed graph filters also made it hard to adapt importance across nodes. GAT was needed to learn which neighboring messages deserve more weight while remaining usable on graphs with varying degrees.
 
 This improved on graph methods that treated every neighbor alike, even in noisy graphs.
+
+This added adaptive neighbor importance to graph learning and made the model more interpretable, though attention weights are not automatically causal explanations.
 
 ## Why It Matters
 

@@ -18,9 +18,10 @@ PPO teaches an agent from rewards but stops it from changing its behavior too wi
 
 An agent tries actions, receives feedback, then improves its behavior a little. PPO prevents one surprising result from causing an enormous policy change.
 
+An agent that discovers a good jump in a game should become more likely to jump, but not immediately change from 10% to 100% confidence from one lucky trial. PPO makes that update gradual.
+
 💻 **CS analogy:** PPO is a rate limiter around a policy update: a promising change is allowed, but a giant jump is capped before it destabilizes the running system.
 
-## Math Playground 🧮
 ## Math Playground 🧮
 
 The essential equation or rule is:
@@ -33,11 +34,15 @@ min(r_tA_t, clip(r_t,1−ε,1+ε)A_t)
 
 r compares a new action probability with its old probability; A says whether the action beat expectation. Clip limits r near 1 as a safety rail.
 
+When r stays between 1−ε and 1+ε, the unclipped improvement is used. Outside that range, clipping removes the incentive for an excessively large probability change.
+
 ## Background: What Came Before 🕰️
 
 Policy-gradient methods could learn directly from rewards but often made updates so large that a previously useful policy collapsed. Trust-region methods improved stability but needed more complicated constrained optimization. PPO was needed as a practical approximation that keeps the update guardrail simple enough for broad adoption.
 
 PPO made policy-gradient reinforcement learning more stable and easier to use than earlier methods with delicate update constraints.
+
+This gave practitioners a simple trust-region-like safety mechanism and became a common baseline for control and later preference optimization.
 
 ## Why It Matters
 

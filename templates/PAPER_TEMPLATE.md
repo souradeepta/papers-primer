@@ -8,18 +8,21 @@
 
 ## Fun Map for First Years 🧭
 <!-- Explain the central idea with an emoji flow, then add a second short
-paragraph that makes the flow concrete. -->
+paragraph that makes the flow concrete. Add a paper-specific example or
+consequence; avoid generic study advice. -->
 
 💻 **CS analogy:** <!-- connect the idea to a familiar programming or systems concept -->
 
 ## Math Playground 🧮
 <!-- Give the single most essential equation (or central mathematical concept) in a
 fenced text block. Follow with two short paragraphs: define important symbols
-plainly, then explain the equation's practical meaning for a high-school-math reader. -->
+plainly, then explain the equation's practical meaning with a concrete effect
+or example for a high-school-math reader. -->
 
 ## Background: What Came Before 🕰️
 <!-- Use two short paragraphs: what practitioners did before and its limitation;
-then why that limitation made this new idea necessary. -->
+then why that limitation made this new idea necessary. Include a concrete
+practical consequence of the change. -->
 
 ## Why It Matters
 <!-- context: what problem existed before, what changed after -->
