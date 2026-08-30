@@ -1,7 +1,7 @@
 # Handoff: continuing papers-primer (Codex)
 
-Date: 2026-08-29. Written for a fresh agent (no prior context on this repo)
-picking up where a Claude Code session left off after finishing paper 07.
+Date: 2026-08-30. Written for a fresh agent continuing the complete 30-paper
+collection.
 
 ## What this repo is
 
@@ -12,9 +12,35 @@ engineer. Every paper lives at `papers/NN-slug/` and must satisfy
 order, word count, diagram/GIF/code/Q&A requirements). `templates/PAPER_TEMPLATE.md`
 is the section skeleton to copy.
 
+## Current collection standard (carry this forward)
+
+All papers 01–30 are complete. In addition to the binding SPEC.md
+requirements, each paper now starts with three learner-first sections before
+**Why It Matters**:
+
+1. **Fun Map for First Years 🧭** — a compact emoji flow diagram and a
+   plain-language explanation of the central idea.
+2. A **CS analogy** — connects the concept to a familiar programming or
+   systems idea (for example, a database query, patch, cache, rate limiter,
+   or priority inbox).
+3. **Math Playground 🧮** — the paper’s core equation or rule followed by a
+   simple explanation of its parts and purpose. This is a bridge into, not a
+   replacement for, the formal treatment in **The Mechanism**.
+4. **Background: What Came Before 🕰️** — explains the previous approach,
+   its limitation, and why the paper’s idea became necessary.
+
+Keep these sections accurate, approachable to a first-year student, and
+concrete. Prefer tiny inline diagrams, Mermaid diagrams, or existing GIFs
+whenever they clarify a relationship; do not add decorative visuals. Use CS
+analogies to make both the Fun Map and Math Playground lucid. Extra sections
+may appear before **Why It Matters**; preserve the required SPEC.md section
+order after that.
+
 ## Current status
 
-Papers 01-07 are done, committed, and pass validation:
+Papers 01-30 are done and pass validation. The table below is retained as the
+original handoff snapshot; consult the root README.md for the current full
+index.
 
 | # | Paper | Status |
 |---|-------|--------|

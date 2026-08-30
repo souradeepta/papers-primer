@@ -9,6 +9,22 @@ This avoids writing down an explicit likelihood for the generator, but makes
 training sensitive because both players move at once. GANs can generate sharp
 samples, yet they do not guarantee coverage of every mode in the data.
 
+## Fun Map for First Years 🧭
+
+A GAN is a game between an artist who makes fakes and a detective who spots them. Each pushes the other to improve.
+
+`🎲 noise → 🎨 generator makes sample → 🕵️ discriminator checks → 🔁 both learn`
+
+💻 **CS analogy:** it resembles a red-team test loop: one program creates tricky cases while another program tries to detect them, and each forces the other to improve.
+
+## Math Playground 🧮
+
+The game is \(\min_G\max_D\;E[\log D(x)]+E[\log(1-D(G(z)))]\). The discriminator \(D\) wants real examples \(x\) to score near 1 and generated ones \(G(z)\) near 0; the generator wants to fool it. This is a game objective, not a single normal loss minimization, which explains why balance can be difficult.
+
+## Background: What Came Before 🕰️
+
+Earlier generative models often had to specify a tractable likelihood or carefully approximate one, which limited the kinds of image generators people could train. They could be mathematically neat but produce blurry outputs. GANs were needed as a new route: learn to generate by competing against a learned judge rather than explicitly scoring every pixel configuration.
+
 ## Why It Matters
 
 Before GANs, many generative approaches either modeled a tractable likelihood,

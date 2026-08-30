@@ -9,6 +9,22 @@ reparameterization made very deep image networks substantially easier to
 optimize. It does not mean deeper is automatically better, or that every
 shortcut is an identity when shapes change.
 
+## Fun Map for First Years 🧭
+
+ResNet lets a layer learn a small change instead of rebuilding everything. A shortcut carries the original information around the new work.
+
+`📦 input → 🛠️ small correction + ➡️ shortcut → ➕ add together → 🧠 deeper network`
+
+💻 **CS analogy:** a residual block is a patch or decorator: keep the original value and add only the small correction a function has learned.
+
+## Math Playground 🧮
+
+The key equation is \(y=F(x)+x\). Think of \(x\) as the current object and \(F(x)\) as a diff: if no change helps, the diff can be near zero and the original still passes through. During backpropagation, that direct \(+x\) path also gives gradients a short route through a deep program.
+
+## Background: What Came Before 🕰️
+
+Researchers could make image networks deeper, but simply stacking layers eventually made even the training error worse, not just the test error. Better initialization and normalization helped, yet optimization paths were still fragile. ResNet was needed to let a deep stack learn incremental corrections instead of forcing every block to relearn its entire input.
+
 ## Why It Matters
 
 By 2015, convolutional networks had shown that depth could improve image

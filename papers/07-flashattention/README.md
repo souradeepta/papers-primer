@@ -6,6 +6,22 @@ Dao, Fu, Ermon, Rudra, Ré, 2022 — [arXiv:2205.14135](https://arxiv.org/abs/22
 
 FlashAttention makes exact softmax attention fast and memory-efficient by rethinking *where* the computation happens relative to a GPU's memory hierarchy, not *what* it computes. Standard attention implementations materialize the full N×N score matrix in slow, high-bandwidth GPU memory (HBM) and then read it back repeatedly; FlashAttention instead tiles queries, keys, and values into blocks that fit in the GPU's much faster on-chip SRAM, and uses an "online softmax" trick to compute the correct row-wise softmax incrementally, block by block, without ever holding the full matrix at once. The backward pass recomputes the needed attention blocks on the fly from small saved statistics instead of storing the N×N matrix, trading extra floating-point operations for far fewer memory transfers. The result is exactly the same attention output as the standard formula (up to ordinary floating-point summation-order effects), with reported wall-clock speedups such as 15% on BERT-large at sequence length 512, 3× on GPT-2 at sequence length 1K, and 2.4× on the Long-Range Arena benchmark, plus enabling longer context windows because memory now scales linearly, not quadratically, in sequence length. This is the first paper in this collection to make its central contribution at the hardware/IO level rather than the modeling level.
 
+## Fun Map for First Years 🧭
+
+FlashAttention solves an organizer problem: do attention in small tiles so the GPU does not keep carrying one enormous sheet of numbers back and forth.
+
+`🧩 small tiles → 🚀 fast GPU memory → 👀 exact attention → ⏱️ cheaper long context`
+
+💻 **CS analogy:** FlashAttention is cache-aware blocked matrix multiplication, except it also maintains a streaming softmax result.
+
+## Math Playground 🧮
+
+Attention still computes `softmax(QKᵀ/√d)V`; FlashAttention changes the order of calculation, not the answer. It keeps running maximum and sum statistics for each row, like computing a stable running average while reading chunks from disk instead of materializing every intermediate score.
+
+## Background: What Came Before 🕰️
+
+Standard attention was mathematically simple but materialized a huge score matrix, so memory traffic—not only arithmetic—became the bottleneck for long sequences. Faster hardware did not solve wasteful reads and writes by itself. FlashAttention was needed to preserve exact attention while reorganizing the computation around fast on-chip tiles.
+
 ## Why It Matters
 
 Every paper covered so far in this collection changes what a model computes: a new architecture (Attention Is All You Need), a new pretraining objective (BERT), a new adaptation method (LoRA), a new training-time procedure (InstructGPT/RLHF), or a new way to allocate a fixed compute budget (Chinchilla). FlashAttention changes none of that. The attention formula — scaled dot-product queries against keys, softmax, weighted sum of values — is exactly the same before and after. What changes is the *implementation strategy*: how the computation is scheduled against a GPU's memory hierarchy so that the same mathematical function runs faster and in less memory.

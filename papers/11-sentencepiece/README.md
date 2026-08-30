@@ -4,6 +4,22 @@
 
 SentencePiece is a tokenizer framework that learns subword units directly from raw text instead of requiring a language-specific word splitter first. It makes whitespace a visible symbol, so a sequence of pieces can be concatenated and deterministically decoded back into text. This matters because a language model never sees characters or words directly: its vocabulary, lengths, costs, and failure modes all begin at tokenization. The 2018 paper provides an end-to-end, language-independent approach and open-source C++ and Python implementations for neural text processing.
 
+## Fun Map for First Years 🧭
+
+SentencePiece turns raw text into reusable word pieces, including a visible marker for spaces. It helps a model read languages without guessing where “words” begin.
+
+`📝 raw text → ⬜ visible spaces → 🧩 subword pieces → 🔢 token IDs`
+
+💻 **CS analogy:** choosing subword pieces is a shortest-path problem over string positions, where each valid piece is an edge with a cost.
+
+## Math Playground 🧮
+
+The unigram model scores a segmentation by multiplying piece probabilities, or equivalently adding negative log probabilities. Dynamic programming finds the lowest-cost path through the text. Taking logs turns products into sums, which is why familiar graph algorithms can solve tokenization efficiently.
+
+## Background: What Came Before 🕰️
+
+Word tokenizers often depended on language-specific rules and produced unknown tokens for rare or misspelled words. Character tokenization avoids unknowns but makes sequences long. SentencePiece was needed to learn a language-agnostic subword vocabulary directly from raw text and make tokenization reproducible as part of a model artifact.
+
 ## Why It Matters
 
 The Transformer papers in this repository begin with token IDs and embeddings. That is a useful abstraction, but it can conceal a consequential design decision: where did the IDs come from? A word vocabulary has trouble with unknown words, spelling variants, morphology, and languages that do not mark word boundaries with spaces. A character vocabulary avoids unknown words but makes sequences long. Subword tokenization is the middle ground: common sequences get compact pieces while rare words can be assembled from smaller ones.

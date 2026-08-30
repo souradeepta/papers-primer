@@ -6,6 +6,22 @@ Hoffmann et al., 2022 — [arXiv:2203.15556](https://arxiv.org/abs/2203.15556)
 
 Chinchilla asks a planning question rather than proposing a new Transformer block: with a fixed pre-training compute budget, how should we split it between model parameters and training tokens? The paper finds that many prominent language models had spent too much of their budget on parameter count and too little on data. Across more than 400 training runs, its three estimation methods all said that compute-optimal parameter count and token count should grow at roughly the same rate as compute grows. The headline validation was Chinchilla: a 70B-parameter model trained on 1.4T tokens, using roughly Gopher's training compute but outperforming the 280B-parameter Gopher on the reported downstream suite. This is a scaling-law result: it is a useful empirical rule for the experimental regime, not a law that makes data quality, architecture, hardware, or post-training irrelevant.
 
+## Fun Map for First Years 🧭
+
+Chinchilla says a big brain also needs enough books. Spending all compute on a giant model or all compute on repeated reading wastes part of the budget.
+
+`⚙️ compute budget → 🧠 model size + 📚 training tokens → ⚖️ balanced training → 📉 lower loss`
+
+💻 **CS analogy:** compute-optimal training is capacity planning: CPU cores and input records must be provisioned together, not independently maxed out.
+
+## Math Playground 🧮
+
+Scaling studies fit power laws such as `L(C) ≈ aC⁻ᵝ + c`, where `L` is loss and `C` is compute. A negative exponent means more compute helps but each doubling buys a smaller improvement, like cache-hit gains that flatten after the obvious bottlenecks are fixed.
+
+## Background: What Came Before 🕰️
+
+Scaling practice had emphasized making models larger, and compute-optimal rules based on earlier evidence encouraged parameter-heavy training. Many large models consequently saw too few tokens for their size. Chinchilla was needed to show, under a fixed compute budget, that model parameters and training data should grow together.
+
 ## Why It Matters
 
 Before this paper, a very visible story about language-model progress was “make the dense model larger.” That story had real evidence behind it: the earlier Kaplan scaling-law work showed smooth power-law improvements with model size, data, and compute. But a project does not get to increase all three independently. A team normally knows its accelerator budget and deadline first. At that fixed budget, making each training step more expensive by increasing the number of parameters means it can afford fewer steps or fewer tokens. Conversely, training an extremely small model for a huge number of tokens leaves representational capacity unused. The engineering decision is an allocation problem.

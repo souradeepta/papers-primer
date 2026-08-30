@@ -18,6 +18,22 @@ way the industry fine-tunes large models, and the direct ancestor of the
 whole "parameter-efficient fine-tuning" (PEFT) ecosystem, including
 QLoRA and countless production fine-tuning pipelines.
 
+## Fun Map for First Years 🧭
+
+LoRA teaches a huge model a small new habit without repainting its entire brain. It adds tiny “correction notes” instead of replacing the original textbook.
+
+`🧠 frozen big model + 📝 tiny correction → 🎯 new task behavior → 💾 small saved update`
+
+💻 **CS analogy:** LoRA is a small patch file applied at runtime instead of copying and editing an entire large binary.
+
+## Math Playground 🧮
+
+LoRA replaces a weight matrix with `W' = W + BA`, where `B` and `A` are thin matrices. Their product is a low-rank update: it can express a focused set of directions while storing far fewer numbers than a full replacement for `W`.
+
+## Background: What Came Before 🕰️
+
+Full fine-tuning copies and changes every weight for every task, which is expensive to store, train, and deploy as base models grow. Earlier adapter methods added task modules but could introduce inference overhead. LoRA was needed to express a useful weight update as a small, mergeable low-rank patch.
+
 ## Why It Matters
 
 Before LoRA, if you wanted to adapt a large pretrained model — say GPT-3

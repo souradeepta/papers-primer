@@ -13,6 +13,22 @@ training in a fraction of the wall-clock time. Almost every large language
 model built since — BERT, GPT, T5, LLaMA — is a descendant of this
 architecture.
 
+## Fun Map for First Years 🧭
+
+Words are like students in a group project: each word can look around and decide who to listen to most. Attention is the set of “who should I listen to?” scores.
+
+`📚 words → 👀 attention looks around → 🧠 richer word meanings → ✍️ next word`
+
+💻 **CS analogy:** attention is a database query: each word asks which records are most relevant, then combines their values.
+
+## Math Playground 🧮
+
+The paper's core rule is `softmax(QKᵀ / √d) V`. `Q` asks questions, `K` labels what each token offers, and `V` stores what can be copied. Softmax turns raw match scores into percentages that add to one; dividing by `√d` keeps scores from becoming too extreme as vectors grow.
+
+## Background: What Came Before 🕰️
+
+Before this paper, translation models usually processed text one word at a time with recurrent networks, sometimes aided by convolutional layers and an attention add-on. Long paths made distant relationships hard to learn and limited parallel training. The Transformer was needed to make attention itself the main computation, so every token could connect directly to the others.
+
 ## Why It Matters
 
 Before 2017, the dominant approach to sequence-to-sequence tasks

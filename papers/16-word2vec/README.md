@@ -11,6 +11,23 @@ layer made it practical to learn useful vectors from very large corpora. These
 are static embeddings, so one vector cannot choose a different meaning for
 `bank` in a river sentence and a finance sentence.
 
+## Fun Map for First Years 🧭
+
+word2vec learns a map where words used in similar neighborhoods stand near each other, like classmates grouped by the clubs they join.
+
+`📝 nearby words → 🧠 adjust word vectors → 🗺️ similar contexts nearby → 🔎 useful comparisons`
+
+💻 **CS analogy:** this is an embedding table plus a vector-search score: a word ID looks up a row, and dot products rank candidate neighbors.
+
+## Math Playground 🧮
+
+For skip-gram, the paper scores a possible neighbor with a dot product and turns those scores into probabilities:
+\(p(o\mid c)=\exp(u_o^T v_c)/\sum_w\exp(u_w^T v_c)\). A dot product is a “how well do these two direction arrows agree?” score; softmax is the familiar step that converts a list of scores into percentages. Training raises the percentage for words that really appear nearby.
+
+## Background: What Came Before 🕰️
+
+Before word2vec, programs often represented a word as a huge one-hot ID or counted co-occurrences in a table. Those representations made related words look unrelated and were costly to use at scale. This paper was needed to make compact, reusable word features practical on very large text collections.
+
 ## Why It Matters
 
 Older count tables and one-hot encodings made vocabulary items independent:

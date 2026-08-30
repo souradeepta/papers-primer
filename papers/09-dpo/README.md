@@ -4,6 +4,22 @@
 
 Direct Preference Optimization (DPO) turns a dataset of “response A is preferred to response B” judgments into a direct language-model loss. It compares how much the trainable policy prefers the chosen answer over the rejected answer relative to a frozen reference model. Unlike the PPO stage in [InstructGPT](../05-instructgpt-rlhf/README.md), it does not first fit a separate reward model and then run an online reinforcement-learning loop. The result is a simple, stable pairwise classification objective, while still being motivated by KL-regularized RLHF.
 
+## Fun Map for First Years 🧭
+
+DPO learns from “this answer is better than that one” pairs directly. It nudges the model toward winners without running a separate reinforcement-learning loop.
+
+`❓ prompt → 👍 preferred answer / 👎 rejected answer → 📏 preference loss → 🤖 better choices`
+
+💻 **CS analogy:** DPO is a direct ranking-loss update, similar to teaching a search ranker from clicked-versus-skipped result pairs.
+
+## Math Playground 🧮
+
+DPO uses a logistic loss on the difference between preferred and rejected log probabilities, relative to a reference model. Log probability is convenient because multiplying token probabilities becomes adding numbers; the loss asks for a larger preference gap without needing a separate learned reward model.
+
+## Background: What Came Before 🕰️
+
+RLHF could align a model with preferences, but it required training a separate reward model and running a delicate PPO loop. That pipeline adds moving parts and opportunities for instability. DPO was needed to learn directly from preferred-versus-rejected response pairs while keeping a reference model as an anchor.
+
 ## Why It Matters
 
 Instruction tuning teaches an LM to imitate demonstrations, but imitation alone cannot represent every trade-off people care about: helpfulness versus brevity, harmlessness versus compliance, or a clear answer versus a rambling one. Preference data is often easier to collect than a calibrated scalar reward: show an annotator two answers to the same prompt and ask which is better. The classic InstructGPT pipeline in paper 05 fits a reward model to those comparisons, samples completions from a policy, and uses PPO to increase reward while a KL term restrains drift from the supervised model.

@@ -9,6 +9,22 @@ budget allocation. Small controlled runs can therefore guide larger experiments.
 These fits are planning tools, not guarantees of capability, safety, or product
 value.
 
+## Fun Map for First Years 🧭
+
+Scaling laws use small experiments to estimate what larger training runs may do, like testing recipe sizes before cooking for a stadium.
+
+`🧪 small runs → 📉 measure loss → 📈 fit trend → ⚙️ plan compute, model, and data`
+
+💻 **CS analogy:** it is empirical capacity planning: benchmark several system sizes, fit a trend, then use the curve to decide where the next compute budget should go.
+
+## Math Playground 🧮
+
+The paper models loss with a power-law-shaped curve such as \(L(N)\approx L_\infty+aN^{-\alpha}\). \(L_\infty\) is the floor the fitted curve approaches, while \(\alpha\) says how quickly extra parameters help. This resembles Big-O intuition, but it is a measured fit over a range of experiments—not a universal law or a guarantee outside that range.
+
+## Background: What Came Before 🕰️
+
+Teams knew larger language models often improved, but compute budgets were allocated with scattered rules of thumb: scale parameters, data, or training steps without a shared quantitative guide. That made expensive runs easy to undertrain or mis-size. Scaling-laws studies were needed to turn repeated measurements into forecasts for planning the next training run.
+
 ## Why It Matters
 
 Large language-model training is expensive, so design decisions cannot rely on

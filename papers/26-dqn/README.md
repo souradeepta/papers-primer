@@ -9,6 +9,22 @@ more slowly than the network being trained. An epsilon-greedy policy collects
 experience while the network learns from replayed transitions. This is a
 foundational value-based RL design, not a general recipe for safe control.
 
+## Fun Map for First Years 🧭
+
+DQN learns which game move is worth most by remembering past moves and their rewards, like studying shuffled flashcards from old games.
+
+`🎮 state → 🎯 choose action → 🏆 reward → 🗃️ replay memory → 🧠 better values`
+
+💻 **CS analogy:** DQN is dynamic programming with a learned cache: store an estimate of each state–action value, then update it from the best estimate of the next state.
+
+## Math Playground 🧮
+
+Its target is \(y=r+\gamma\max_{a'}Q_{\text{target}}(s',a')\). Reward \(r\) is today’s score; \(\gamma\) discounts a future score; the max picks the best next action. A separate target network makes the cached answer change more slowly, so the learner is not continuously chasing a value it just rewrote.
+
+## Background: What Came Before 🕰️
+
+Q-learning had strong tabular results, but a table cannot cover every possible video-game screen. Deep neural networks could read pixels yet combining them directly with bootstrapped value targets was unstable. DQN was needed to make one agent learn Atari control from high-dimensional observations using replay memory and a stabilized target.
+
 ## Why It Matters
 
 Q-learning can learn values without an environment model, but a table cannot

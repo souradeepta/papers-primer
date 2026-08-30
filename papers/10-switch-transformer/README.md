@@ -4,6 +4,22 @@
 
 Switch Transformer replaces a dense Transformer feed-forward network with many expert feed-forward networks and routes each token to just one expert. This top-1 “switch” routing lets total parameter count grow while each token activates roughly the compute of one ordinary FFN. The design is simpler than earlier top-k mixture-of-experts routing, but it needs capacity limits and an auxiliary loss to stop every token choosing the same expert. Fedus, Zoph, and Shazeer showed this sparse design could train very large language models efficiently, including a trillion-parameter model.
 
+## Fun Map for First Years 🧭
+
+Switch Transformers have many expert helpers, but each token visits only one. It is like sending a question to one specialist instead of waking every specialist.
+
+`🔤 token → 🚦 router picks expert → 🧑‍🔧 one expert works → 🧠 large capacity, lower cost`
+
+💻 **CS analogy:** the router is a load balancer that picks one worker for each request while trying not to overload one machine.
+
+## Math Playground 🧮
+
+The router computes a softmax probability for each expert, then takes the top one. Softmax converts expert scores into a distribution; the auxiliary load-balancing loss discourages all tokens from choosing the same expert, like a scheduler penalizing a hot shard.
+
+## Background: What Came Before 🕰️
+
+Dense Transformers use every parameter for every token, so expanding parameter count also expands compute. Earlier mixture-of-experts designs existed but routing multiple experts made training and communication harder. Switch Transformer was needed to scale capacity with a simple one-expert-per-token routing rule.
+
 ## Why It Matters
 
 Every dense model in the earlier parts of this collection uses all of its layer parameters for every token. Scaling a dense FFN from billions to hundreds of billions of weights increases both what can be stored and how much arithmetic each token requires. That coupling is expensive: capacity and per-token latency rise together. Mixture of Experts (MoE) breaks it by storing a collection of specialist FFNs but calling only a small subset for each token.

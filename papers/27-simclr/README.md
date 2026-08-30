@@ -10,6 +10,22 @@ matching views while lowering similarity to other batch examples. The paper
 showed that augmentation composition, a nonlinear projection head, and large
 batches are central to strong self-supervised visual learning.
 
+## Fun Map for First Years 🧭
+
+SimCLR shows a model two altered versions of the same picture and says “these still belong together,” while other pictures should stay apart.
+
+`🖼️ one image → ✂️ two random views → 🧠 shared encoder → 🤝 pull together / ↔️ push apart`
+
+💻 **CS analogy:** treat two transformed copies as duplicate records that must hash nearby, while every other record in the batch is a temporary negative test case.
+
+## Math Playground 🧮
+
+SimCLR’s NT-Xent loss raises the cosine similarity of a positive pair above the other batch similarities: \(-\log\frac{\exp(\mathrm{sim}(i,j)/\tau)}{\sum_{k\ne i}\exp(\mathrm{sim}(i,k)/\tau)}\). Cosine compares directions; temperature \(\tau\) controls how sharply the softmax cares about the best match. The denominator makes a batch act like a small retrieval contest.
+
+## Background: What Came Before 🕰️
+
+Image representations usually relied on manual labels, while earlier self-supervised approaches used hand-designed pretext tasks whose benefit did not always transfer. Contrastive ideas existed but their training recipes were complicated. SimCLR was needed to show that strong augmentations, a projection head, and a simple contrastive objective could learn highly useful visual features without labels.
+
 ## Why It Matters
 
 Supervised vision representation learning requires labels that can be expensive,

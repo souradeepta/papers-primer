@@ -4,6 +4,22 @@
 
 T5 casts every NLP task as text in and text out: a prompt-like prefix identifies the task, and one encoder–decoder Transformer produces the answer. It supplies the missing third major Transformer family beside BERT’s encoder-only design and GPT’s decoder-only design. Its pre-training objective removes contiguous spans and asks the decoder to generate them, marked by ordered sentinel tokens. The paper is also a broad transfer-learning study: it compares objectives, architectures, data, and fine-tuning choices rather than presenting only one architectural novelty.
 
+## Fun Map for First Years 🧭
+
+T5 treats every language task as text in and text out. It practices repairing missing spans, then can translate, summarize, or answer using the same interface.
+
+`📥 task text → 🧠 encoder understands → ✍️ decoder writes → 📤 task answer`
+
+💻 **CS analogy:** span corruption is like replacing missing substrings with numbered placeholders, then asking a decoder to emit the patch file in order.
+
+## Math Playground 🧮
+
+T5 maximizes the probability of target tokens one by one: `∏ p(yᵢ | y<ᵢ, encoded input)`. The encoder supplies read-only context and the decoder supplies the previously written target, like a function with both immutable input data and an output buffer.
+
+## Background: What Came Before 🕰️
+
+NLP systems used many different architectures and objectives for classification, translation, question answering, and summarization. That made transfer experiments hard to compare and implementations hard to reuse. T5 was needed to frame every task as text-to-text, so one encoder–decoder recipe and one training objective could cover them all.
+
 ## Why It Matters
 
 Papers 02 and 03 establish two powerful but different patterns. BERT’s bidirectional encoder produces a representation that task-specific heads consume; GPT-style models predict the next token from a causal decoder. Before T5, benchmark practice often reflected this difference with a collection of custom heads, label mappings, and task-specific output formats. Classification might use a linear head, extractive QA might predict two positions, and translation might use a separate seq2seq model. The interface complexity makes transfer-learning comparisons harder than they need to be.

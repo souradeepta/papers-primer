@@ -4,6 +4,22 @@
 
 Transformers need position information because attention alone can see a bag of tokens. The original Transformer in [paper 01](../01-attention-is-all-you-need/README.md) adds a position vector to each token representation; RoFormer instead rotates each query and key in two-dimensional coordinate pairs. The rotation angle grows with token position, and the query--key dot product consequently depends on their relative displacement. That compact change, now called RoPE, preserves vector length, works at arbitrary sequence lengths in the formula, and became a common positional mechanism in open-weight decoder LLMs.
 
+## Fun Map for First Years 🧭
+
+RoPE gives each word a tiny spin based on where it sits. Comparing two spun vectors lets attention notice how far apart words are.
+
+`📍 position → 🌀 rotate vectors → 👀 compare relative distance → 🧠 ordered language`
+
+💻 **CS analogy:** RoPE is like encoding an array index as an angle, so subtracting positions becomes a simple relative phase comparison.
+
+## Math Playground 🧮
+
+For a two-number slice `(x,y)`, RoPE applies a rotation: `(x cos θ - y sin θ, x sin θ + y cos θ)`. Rotations preserve vector length but change direction; comparing two rotated vectors makes their dot product depend on relative position.
+
+## Background: What Came Before 🕰️
+
+Transformers need position information because attention alone does not know token order. Absolute position embeddings worked but did not naturally express a relative distance inside an attention score or extrapolate gracefully. RoPE was needed to encode position as a rotation, so the query–key interaction directly reflects relative offset.
+
 ## Why It Matters
 
 Attention computes a compatibility score between a query at one token and keys at other tokens. Without a position signal, swapping two identical word embeddings changes nothing: a model cannot tell whether an adjective came before or after a noun. The 2017 Transformer solved this by adding fixed sine/cosine vectors to token embeddings before the projections. Addition is simple and effective, but the attention score then mixes content-position, position-content, and position-position terms. A relative offset is not isolated by construction.

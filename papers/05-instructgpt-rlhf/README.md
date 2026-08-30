@@ -16,6 +16,22 @@ InstructGPT model having over 100x fewer parameters. This paper is the
 direct methodological ancestor of essentially every "helpful assistant"
 LLM product that followed it, including ChatGPT.
 
+## Fun Map for First Years 🧭
+
+RLHF teaches a model from human preferences: people compare answers, a reward model learns their taste, and the assistant practices earning better scores.
+
+`🤖 draft answers → 🧑‍⚖️ humans compare → 🏆 reward signal → 📈 improved assistant`
+
+💻 **CS analogy:** RLHF resembles training a ranking service from A/B preference logs, then optimizing a policy against that learned scorer.
+
+## Math Playground 🧮
+
+The reward model learns that a chosen answer should score above a rejected one, often with `-log σ(r(chosen)-r(rejected))`. The sigmoid `σ` turns a score difference into a win probability; a bigger chosen-minus-rejected gap means the model is more confident about the preference.
+
+## Background: What Came Before 🕰️
+
+Next-token pretraining teaches a model to imitate internet text, not necessarily to follow a helpful, safe instruction. Supervised prompts helped, but they could not capture every quality judgment with one target answer. InstructGPT was needed to turn human preference comparisons into an optimization signal that steers a pretrained model’s behavior.
+
 ## Why It Matters
 
 Before this paper, the standard way to make a large language model useful

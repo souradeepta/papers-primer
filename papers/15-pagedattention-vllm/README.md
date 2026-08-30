@@ -4,6 +4,22 @@
 
 PagedAttention is a serving-system technique for managing the growing key/value (KV) cache of autoregressive LLM requests. Instead of reserving one contiguous cache region per request, it stores fixed-size KV blocks wherever GPU memory has room and uses a per-request block table to make them logically contiguous. This sharply reduces memory waste from fragmentation and enables safe sharing of prompt-prefix blocks between requests. Kwon et al. build vLLM around this idea and report 2–4× higher throughput at similar latency than the systems compared in their SOSP 2023 evaluation.
 
+## Fun Map for First Years 🧭
+
+PagedAttention stores a model’s growing memory in small blocks, like library books on numbered shelves instead of one giant reserved desk.
+
+`💬 request tokens → 🧱 KV-cache blocks → 🗺️ block table → 🚀 more requests fit`
+
+💻 **CS analogy:** PagedAttention uses virtual-memory-style indirection: a logical token address maps through a table to a physical memory block.
+
+## Math Playground 🧮
+
+With block size `B`, token index `t` maps to logical block `floor(t/B)` and offset `t mod B`. This is integer division and remainder, the same arithmetic used to find a page number and byte offset in memory systems.
+
+## Background: What Came Before 🕰️
+
+Autoregressive serving stores a growing key–value cache for every request, and conventional contiguous allocation wastes memory when requests have different lengths. That waste restricts batch size and throughput. PagedAttention was needed to manage KV cache memory in fixed blocks, much like virtual memory, so more requests fit safely.
+
 ## Why It Matters
 
 FlashAttention makes the attention calculation itself more IO-efficient. Serving has a different bottleneck: after every generated token, the model needs the keys and values for all previous tokens in the request. This KV cache is large, grows token by token, and has an unknown final length when generation begins. A conventional allocator may reserve a maximum-length contiguous region for every request or repeatedly allocate and copy regions as a request grows. Both approaches waste expensive GPU memory and limit how many requests can be batched.

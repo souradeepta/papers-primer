@@ -9,6 +9,22 @@ compared with an image embedding to form a zero-shot classifier. The paper
 trained on large-scale web image-text pairs and found transfer across many
 tasks. It is a matching representation, not a guarantee that a prompt is true.
 
+## Fun Map for First Years 🧭
+
+CLIP puts pictures and captions on one shared map. A photo of a dog should land close to the words “a photo of a dog.”
+
+`🖼️ image + 📝 caption → 🧠 two encoders → 🗺️ shared space → 🔎 compare with prompts`
+
+💻 **CS analogy:** CLIP builds a shared search index: a picture query and a text query should retrieve the same matching record.
+
+## Math Playground 🧮
+
+For a batch, CLIP forms a score table \(S_{ij}=\tau\,I_i^T T_j\): every image vector compares with every text vector. The diagonal pairs are the correct matches, and cross-entropy teaches each row and column to rank its partner highest. It is like testing all query–document pairs in a small search benchmark at once.
+
+## Background: What Came Before 🕰️
+
+Vision models were commonly trained on fixed human-written class labels, so adding a new label set required a new supervised dataset and training run. Text and image systems also tended to live in separate pipelines. CLIP was needed to use plentiful captioned web data to connect the two modalities and make text-defined, zero-shot classification possible.
+
 ## Why It Matters
 
 Traditional image classification starts with a fixed label taxonomy and requires

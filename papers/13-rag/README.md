@@ -4,6 +4,22 @@
 
 RAG combines a language model’s parametric knowledge with a searchable external document index. For a query, a dense retriever selects passages; a seq2seq generator conditions on them to produce an answer. Lewis et al. formulate generation as a marginal over retrieved documents, rather than treating retrieval as an unexamined preprocessing step. This is foundational because updating or inspecting a corpus is often easier than trying to edit facts stored in model weights.
 
+## Fun Map for First Years 🧭
+
+RAG lets a language model open a library before answering. It finds useful passages and uses them as extra notes while writing.
+
+`❓ question → 🔎 retrieve passages → 📚 useful evidence → ✍️ generated answer`
+
+💻 **CS analogy:** RAG is a weighted fan-out query: several retrieved documents each contribute an answer probability, then the system combines them.
+
+## Math Playground 🧮
+
+RAG marginalizes documents: `p(y|x)=Σ_z p(z|x)p(y|x,z)`. Think of `z` as an unknown branch in a program: instead of committing to one passage immediately, the model adds each branch's answer likelihood weighted by how likely retrieval says that passage is.
+
+## Background: What Came Before 🕰️
+
+Parametric language models store knowledge only in their fixed weights, so facts can be stale, hard to audit, and expensive to update. Search systems can retrieve current documents but do not by themselves compose fluent answers. RAG was needed to couple retrieval with generation so a model can consult external evidence at answer time.
+
 ## Why It Matters
 
 GPT-style models can answer factual questions because information is partially encoded in their weights, but that information is difficult to update, hard to attribute, and not guaranteed to be recalled precisely. The RAG paper identifies these limits explicitly: provenance and updating world knowledge remain open problems for parametric-only language models. A retrieval system offers a separate, non-parametric memory that can be refreshed without retraining every generator weight.

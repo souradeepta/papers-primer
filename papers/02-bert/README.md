@@ -20,6 +20,22 @@ tasks at the time. It became the template — pre-train once on raw text,
 fine-tune cheaply per task — that most subsequent encoder-based NLP
 systems followed.
 
+## Fun Map for First Years 🧭
+
+BERT is a reading student who practices filling in missing words while looking both left and right. That practice builds a useful understanding of whole sentences.
+
+`📖 sentence with blanks → 👀 read both directions → 🧩 guess blank → 🧠 reusable language skills`
+
+💻 **CS analogy:** masked-language training is like a unit test with a deliberately deleted variable that the program must reconstruct from surrounding context.
+
+## Math Playground 🧮
+
+BERT minimizes cross-entropy for masked tokens: `-log p(correct token | context)`. In plain terms, it pays a larger penalty when the correct missing word gets a tiny probability. Cross-entropy is like a grading rule that rewards placing the real answer near the top of a probability-ranked list.
+
+## Background: What Came Before 🕰️
+
+Language models were often trained left-to-right, so a word representation could not use the words after it during pretraining. Task-specific models also had to be built from scratch for each benchmark. BERT was needed to learn reusable bidirectional language features from unlabeled text, then adapt them with a small supervised fine-tuning step.
+
 ## Why It Matters
 
 Before BERT, the strongest pre-trained language representations came from

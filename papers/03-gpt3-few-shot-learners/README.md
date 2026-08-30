@@ -18,6 +18,22 @@ finding — that task adaptation could happen entirely inside a prompt,
 with no fine-tuning step — is the direct ancestor of the "prompt
 engineering" and general-purpose chat-assistant paradigm that followed.
 
+## Fun Map for First Years 🧭
+
+GPT-3 is a next-word machine that can learn a pattern from examples placed in its prompt, like copying a worksheet format without changing its brain.
+
+`📝 examples in prompt → 🤖 spot the pattern → 🔮 predict next text → 📤 answer`
+
+💻 **CS analogy:** autoregressive generation is a loop whose next iteration receives every previous output as state.
+
+## Math Playground 🧮
+
+GPT assigns a sequence probability by multiplying next-token probabilities: `p(x₁,…,xₙ)=∏ p(xᵢ | x₁,…,xᵢ₋₁)`. This is a chain rule: like processing a log one event at a time, each prediction uses the history already written.
+
+## Background: What Came Before 🕰️
+
+After pretraining, NLP systems commonly needed labeled task data and gradient-based fine-tuning for each new job. Earlier language models showed transfer, but their in-context abilities were less broadly demonstrated. GPT-3 was needed to test whether scale alone could let one next-token model pick up a task from instructions and examples placed in its prompt.
+
 ## Why It Matters
 
 Before GPT-3, the dominant recipe for applying a pretrained language model

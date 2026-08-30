@@ -9,6 +9,22 @@ high-resolution encoder features with decoder features so localization detail is
 not lost. The original paper paired this architecture with strong augmentation
 to learn biomedical segmentation from relatively few annotated images.
 
+## Fun Map for First Years 🧭
+
+U-Net first zooms out to understand a whole image, then zooms back in while carrying fine details so it can color every pixel correctly.
+
+`🖼️ image → 🔍 zoom out for context → 🪜 skip details → 🎨 pixel-by-pixel mask`
+
+💻 **CS analogy:** the encoder is a compressed index, while skip connections are direct links back to the full-resolution source records needed for precise output.
+
+## Math Playground 🧮
+
+Segmentation commonly uses per-pixel cross-entropy, \(-\sum_c y_c\log p_c\). Each pixel is a tiny classification task: the one-hot label \(y\) selects the correct class probability \(p\), and the loss strongly complains when that probability is small. U-Net’s math-friendly shape trick is concatenating matching-resolution encoder features with decoder features before predicting pixels.
+
+## Background: What Came Before 🕰️
+
+Classifiers could say what was in an image but discarded spatial detail as they pooled down to one label. Sliding-window methods preserved locality but repeated expensive work. U-Net was needed to combine broad context with exact localization, especially when labeled medical images were scarce.
+
 ## Why It Matters
 
 Image classification can compress an image to one label, but segmentation must

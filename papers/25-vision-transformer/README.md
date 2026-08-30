@@ -10,6 +10,22 @@ pretraining, this simple architecture can compete with or exceed convolutional
 networks on image recognition. ViT does not eliminate image preprocessing,
 compute tradeoffs, or the need to validate data scale and transfer behavior.
 
+## Fun Map for First Years 🧭
+
+ViT cuts an image into square patches and treats them like word tokens, letting attention connect a patch in one corner to one far away.
+
+`🖼️ image → 🧩 patches → 📍 add positions → 👀 Transformer attention → 🏷️ label`
+
+💻 **CS analogy:** split an image file into fixed-size chunks, turn each chunk into a record, and let an attention-based service decide which records should exchange information.
+
+## Math Playground 🧮
+
+An \(H\times W\) image with square patches of side \(P\) becomes \(N=HW/P^2\) patch tokens. Each token uses the same attention rule, \(\operatorname{softmax}(QK^T/\sqrt d)V\), as a text transformer. The patch size is a trade-off: smaller chunks preserve detail but create more pairwise comparisons.
+
+## Background: What Came Before 🕰️
+
+Convolutional networks dominated vision because locality and translation assumptions made them data-efficient. Transformers had succeeded in language but their all-pairs attention seemed ill-suited to raw image pixels. ViT was needed to test whether a nearly unchanged transformer could become a strong vision model when images were represented as patches and enough data was available.
+
 ## Why It Matters
 
 Convolutional networks bake in locality and translation equivariance through

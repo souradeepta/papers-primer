@@ -9,6 +9,22 @@ noise and repeatedly applies learned reverse steps. The method made diffusion a
 practical high-quality image-generation approach, but naive sampling is slower
 than a one-pass generator.
 
+## Fun Map for First Years 🧭
+
+DDPM learns to remove a little noise at a time. It practices on messy data, then starts from static and slowly turns it into a sample.
+
+`🖼️ clean data → 🌨️ add noise → 🧠 predict noise → 🧼 many denoise steps → ✨ sample`
+
+💻 **CS analogy:** it is like learning a robust cleanup function: first deliberately corrupt a file in many tiny steps, then train a program to undo one step at a time.
+
+## Math Playground 🧮
+
+The forward process can be sampled directly as \(x_t=\sqrt{\bar\alpha_t}x_0+\sqrt{1-\bar\alpha_t}\epsilon\). It mixes the clean image \(x_0\) with known random noise \(\epsilon\); \(\bar\alpha_t\) says how much signal remains after \(t\) steps. The network learns to predict that noise, so reverse-time generation repeatedly subtracts its estimate.
+
+## Background: What Came Before 🕰️
+
+GANs could make sharp images but their adversarial game could collapse or miss parts of the data distribution. Likelihood-based alternatives often had other architectural constraints. DDPM was needed to offer a stable, simple generative recipe: turn data into noise gradually and learn the reverse denoising process.
+
 ## Why It Matters
 
 Generative models must capture complex distributions without merely memorizing
