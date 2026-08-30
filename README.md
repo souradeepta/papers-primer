@@ -23,6 +23,9 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 | 15 | [PagedAttention: Efficient Memory Management for Large Language Model Serving](papers/15-pagedattention-vllm/README.md) | [2309.06180](https://arxiv.org/abs/2309.06180) | done |
 | 16 | [word2vec: Efficient Estimation of Word Representations in Vector Space](papers/16-word2vec/README.md) | [1301.3781](https://arxiv.org/abs/1301.3781) | done |
 | 17 | [Adam: A Method for Stochastic Optimization](papers/17-adam/README.md) | [1412.6980](https://arxiv.org/abs/1412.6980) | done |
+| 18 | [Deep Residual Learning for Image Recognition](papers/18-resnet/README.md) | [1512.03385](https://arxiv.org/abs/1512.03385) | done |
+| 19 | [Generative Adversarial Networks](papers/19-gan/README.md) | [1406.2661](https://arxiv.org/abs/1406.2661) | done |
+| 20 | [Learning Transferable Visual Models From Natural Language Supervision](papers/20-clip/README.md) | [2103.00020](https://arxiv.org/abs/2103.00020) | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.
