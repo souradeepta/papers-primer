@@ -31,6 +31,11 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 | 23 | [U-Net: Convolutional Networks for Biomedical Image Segmentation](papers/23-unet/README.md) | [1505.04597](https://arxiv.org/abs/1505.04597) | done |
 | 24 | [Proximal Policy Optimization Algorithms](papers/24-ppo/README.md) | [1707.06347](https://arxiv.org/abs/1707.06347) | done |
 | 25 | [An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale](papers/25-vision-transformer/README.md) | [2010.11929](https://arxiv.org/abs/2010.11929) | done |
+| 26 | [Playing Atari with Deep Reinforcement Learning](papers/26-dqn/README.md) | [1312.5602](https://arxiv.org/abs/1312.5602) | done |
+| 27 | [A Simple Framework for Contrastive Learning of Visual Representations](papers/27-simclr/README.md) | [2002.05709](https://arxiv.org/abs/2002.05709) | done |
+| 28 | [Graph Attention Networks](papers/28-graph-attention-networks/README.md) | [1710.10903](https://arxiv.org/abs/1710.10903) | done |
+| 29 | [Denoising Diffusion Probabilistic Models](papers/29-ddpm/README.md) | [2006.11239](https://arxiv.org/abs/2006.11239) | done |
+| 30 | [Scaling Laws for Neural Language Models](papers/30-scaling-laws/README.md) | [2001.08361](https://arxiv.org/abs/2001.08361) | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.

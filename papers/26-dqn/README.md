@@ -1,0 +1,216 @@
+# Playing Atari with Deep Reinforcement Learning (DQN)
+
+## TL;DR
+
+DQN uses a convolutional neural network to estimate one action value for each
+discrete action directly from game pixels. It combines Q-learning with a replay
+buffer that randomly samples stored transitions and a target network that changes
+more slowly than the network being trained. An epsilon-greedy policy collects
+experience while the network learns from replayed transitions. This is a
+foundational value-based RL design, not a general recipe for safe control.
+
+## Why It Matters
+
+Q-learning can learn values without an environment model, but a table cannot
+store a separate value for every possible visual frame. Combining neural
+approximation, bootstrapped targets, correlated sequential data, and a moving
+behavior policy was historically unstable. DQN showed a convolutional network
+could learn Atari control from raw pixels with one architecture and algorithm
+across several games.
+
+The paper made replay-based deep value learning concrete: acting, storing,
+sampling, and target calculation are separate operations. Later variants added
+target networks, Double DQN, prioritized replay, and distributional values; do
+not attribute every later stabilization to this workshop paper. PPO is a
+different policy-gradient family, not a DQN configuration option.
+
+## Core Intuition
+
+Imagine learning a game from a scrapbook of past moves. Every entry records a
+screen, action, immediate reward, and next screen. Rather than reading only the
+latest page, DQN studies random pages so nearly identical consecutive frames do
+not dominate an update. It learns that a move's value is immediate reward plus
+the best future value possible from the next screen. A slowly changing answer
+key stops that target from moving with every homework correction.
+
+```mermaid
+flowchart LR
+ S[frame stack] --> Q[online Q network]
+ Q --> A[epsilon-greedy action]
+ A --> E[environment]
+ E --> B[replay buffer]
+ B --> M[random minibatch]
+ M --> L[TD loss using target values]
+ L --> Q
+```
+
+## The Mechanism
+
+For transition \(s,a,r,s'\), DQN estimates \(Q_\theta(s,a)\). The one-step
+target is \(y=r\) at a terminal transition and otherwise
+\(y=r+\gamma\max_{a'}Q_{\theta^-}(s',a')\), where \(\theta^-\) is a target
+network. A regression loss brings the online selected-action value toward that
+target. The target includes another learned prediction, so it is not a fixed
+supervised label from the environment.
+
+```mermaid
+flowchart TD
+ T[transition from replay] --> O[online Q(s,a)]
+ T --> N[target Q for next state]
+ N --> Y[reward plus gamma max Q]
+ O --> D[temporal-difference error]
+ Y --> D
+ D --> G[gradient update online network]
+```
+
+![Illustrative DQN replay and target](assets/dqn_replay_target.gif)
+
+The behavior policy is epsilon-greedy: choose randomly with probability epsilon,
+otherwise choose the online network's argmax. Replay randomizes samples and
+allows expensive experience to be reused. Target parameters are copied or
+soft-updated less often than online parameters. These mechanisms improve
+stability but do not prove nonlinear off-policy learning will converge.
+
+The original Atari pipeline used recent frame history to infer motion, grayscale
+preprocessing, and action repeats. Those details are benchmark protocol, not
+universal perception guidance. The GIF is illustrative, not a score curve.
+DQN's maximization assumes a manageable discrete action set; continuous control
+needs another method or an explicit discretization tradeoff.
+
+## Practical Engineering Notes
+
+Use a maintained reference such as Stable-Baselines3 DQN before changing a
+custom environment. Define reset, termination versus truncation, action mapping,
+frame stacking, reward scaling, seed, and observation preprocessing. A terminal
+flag decides whether a target bootstraps; treating a time-limit truncation as a
+true terminal can bias values. Unit-test these transitions before interpreting
+learning curves.
+
+Replay is a data system. Store every field needed for targets, bound memory
+deliberately, and avoid frame mutation through shared storage. For pixels,
+compression and frame deduplication trade memory against CPU throughput. Log
+buffer fill, sampled transition age, action distribution, terminal fraction,
+TD-error distribution, Q scale, target lag, epsilon, and environment steps. A
+rising return can hide exploding values or an action-wrapper bug.
+
+Evaluate with frozen exploration policy and multiple seeds. Report interaction
+count, wall time, preprocessing, and action-repeat protocol; scores are not
+comparable otherwise. Check rare states, invalid actions, reward delays, and
+simulator failures. For consequential systems, train in a sandbox and enforce
+external constraints, budgets, and human review. Reward maximization does not
+establish safety, permission, or robustness under distribution shift.
+
+### Debugging and experiment controls
+
+Start with a deterministic toy environment where the correct value target can
+be calculated by hand. Verify terminal transitions do not bootstrap, truncated
+transitions follow your selected semantics, and action indices map to intended
+simulator actions. Then overfit a fixed replay set: TD loss should decrease and
+selected values should approach known targets. If this fails, larger buffers or
+deeper networks only hide a basic dataflow error.
+
+Separate environment time from optimization time. A collected transition can be
+replayed many times, so comparisons need update ratio, buffer size, warmup,
+sampling policy, target-update cadence, batch size, discount, learning rate, and
+reward transformation. Reward clipping can improve stability while changing
+which behavior the value function prefers. Record the complete configuration.
+
+Q-value overestimation can arise when a maximum selects noisy predictions.
+Double DQN, introduced later, selects actions with the online network and
+evaluates them with the target network to reduce this bias. It is a useful
+extension, but it must be labeled separately from the original mechanism.
+Prioritized replay likewise changes the sampling distribution and needs explicit
+importance weighting; it is not a neutral optimization.
+
+Build evaluation isolated from training replay and exploration. Lock simulator
+seeds where possible, but also report variation across several seeds and
+scenarios. Retain fixed trajectory videos or state snapshots for regression
+inspection. A visual agent may seem improved because a wrapper changed crop,
+frame rate, lives, or action repeat rather than because its policy improved.
+
+Do not treat an argmax action as authorization in a deployed loop. Validate
+inputs, bound action frequency and magnitude, apply allowlists for irreversible
+operations, and retain an external safe fallback. If the environment changes,
+pause behavior until re-evaluation. Replay and target networks stabilize
+training; they do not provide monitoring, accountability, or harm prevention.
+
+Finally compare against random and heuristic baselines with identical observation
+and action interfaces. Report failure states, worst-case episodes, and resource
+use with average return. Responsible evaluation asks what an agent does when
+assumptions break, not only its mean score on a familiar benchmark.
+
+Replay capacity is also a policy choice about recency. A very small buffer may
+forget useful rare events, while a very large one can contain behavior from
+policies that no longer resembles the current agent. There is no universally
+correct size: monitor sample age and test environments with nonstationary
+dynamics or curricula. If priorities or multiple collectors are introduced,
+measure whether rare failures are actually sampled and learned from rather than
+assuming additional system complexity helps.
+
+Numerical checks prevent silent target bugs. Assert that `max` is taken over the
+action dimension, that reward and done tensors broadcast as intended, and that
+gradients do not flow through target values. Clip or inspect gradient norms only
+after confirming loss scale and reward units. A finite scalar loss is weak
+evidence: log target and online-value quantiles, and alert on persistent drift
+or implausibly large magnitudes.
+
+These controls make DQN a reproducible experimental baseline rather than a
+black-box score generator. They also give a future maintainer enough evidence to
+tell a genuine learning improvement from a changed simulator, preprocessing
+path, or evaluation convention.
+
+For every reported result, retain the configuration, checkpoint, environment
+revision, and raw evaluation episodes. That audit trail makes comparison and
+rollback possible when later changes reveal an unintended reward, simulator, or
+measurement assumption.
+It supports responsible maintenance and reproducible scientific review.
+
+## Runnable Code Example
+
+[`code/td_target.py`](code/td_target.py) calculates a scalar nonterminal target
+from reward and maximum next-action value.
+
+```bash
+python3 papers/26-dqn/code/td_target.py
+```
+
+It illustrates the target invariant, not convolutional perception, replay
+storage, or a full Q-learning trainer.
+
+## Common Misconceptions & Pitfalls
+
+**“DQN learns from only its latest frame.”** Replay deliberately samples older
+transitions to reduce correlation and reuse data.
+
+**“The TD target is ground truth.”** It bootstraps from a learned target network
+and can contain approximation error.
+
+**“DQN handles any action space.”** Its max over actions assumes a manageable
+discrete set.
+
+## Interview Q&A
+
+**Q:** Why use replay?
+**A:** It breaks up sequential correlation and lets transitions support several
+stochastic updates.
+
+**Q:** Why use a target network?
+**A:** It makes bootstrapped regression labels change more slowly.
+
+**Q:** What is epsilon-greedy?
+**A:** Randomly act with probability epsilon; otherwise choose the highest-valued
+action.
+
+**Q:** What is TD error?
+**A:** The difference between current Q prediction and reward-plus-bootstrapped
+target.
+
+**Q:** Is DQN on-policy?
+**A:** No. Replay contains behavior from past policies while current parameters
+are optimized off-policy.
+
+## Further Reading
+
+- [Original paper](https://arxiv.org/abs/1312.5602)
+- [Human-level control through deep reinforcement learning](https://www.nature.com/articles/nature14236)
+- [Stable-Baselines3 DQN documentation](https://stable-baselines3.readthedocs.io/en/master/modules/dqn.html)
