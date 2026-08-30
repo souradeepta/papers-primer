@@ -12,7 +12,7 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 7. Core Intuition (analogy, no math, >=1 diagram)
 8. The Mechanism (math/architecture, CS-student depth; >=1 Mermaid diagram AND >=1 GIF)
 9. Practical Engineering Notes (SWE depth: prod tradeoffs, perf, named real-library pointers)
-10. Runnable Code Example (references a documented file in code/, with prerequisites, exact command, expected behavior, and a short explanation of the implementation)
+10. Runnable Code Example (references a documented file in implementations/NN-slug/code/, with prerequisites, exact command, expected behavior, and a short explanation of the implementation)
 11. Common Misconceptions & Pitfalls (>=2 items)
 12. Interview Q&A (>=5 pairs, format: **Q:** ... / **A:** ...)
 13. Further Reading (>=3 markdown links, must include the original arXiv paper)
@@ -36,7 +36,8 @@ generic study advice that could describe any paper.
   contain a ```mermaid fenced block — a diagram elsewhere (e.g. Core
   Intuition) does not satisfy this
 - GIFs referenced must exist in assets/ and be > 10 KB
-- code/ has >=1 .py file, exits 0 within 60s, no traceback
+- implementations/NN-slug/code/ has >=1 .py file, exits 0 within 60s, no
+  traceback, module docstring, and explanatory comments
 - Interview Q&A >= 5 pairs; Further Reading >= 3 links
 
 ## Accuracy requirement
@@ -47,4 +48,4 @@ sizes, dates, ablation numbers).
 ## Directory shape per paper
 papers/NN-slug/README.md
 papers/NN-slug/assets/*.png *.gif
-papers/NN-slug/code/*.py
+implementations/NN-slug/code/*.py

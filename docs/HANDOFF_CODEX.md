@@ -3,6 +3,12 @@
 Date: 2026-08-30. Written for a fresh agent continuing the complete 30-paper
 collection.
 
+Runnable examples live in the top-level `implementations/NN-slug/code/`
+tree, not inside the paper directories. Each must be independently runnable,
+start with a purpose-focused docstring, and use comments to explain the
+non-obvious calculations and assertions. Keep the corresponding paper README
+linked to its exact implementation path.
+
 ## What this repo is
 
 `papers-primer` is a collection of long-form explainers for foundational
