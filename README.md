@@ -13,6 +13,7 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 | 05 | [InstructGPT (RLHF)](papers/05-instructgpt-rlhf/README.md) | [2203.02155](https://arxiv.org/abs/2203.02155) | done |
 | 06 | [Chinchilla: Training Compute-Optimal Large Language Models](papers/06-chinchilla/README.md) | [2203.15556](https://arxiv.org/abs/2203.15556) | done |
 | 07 | [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](papers/07-flashattention/README.md) | [2205.14135](https://arxiv.org/abs/2205.14135) | done |
+| 08 | [RoFormer: Enhanced Transformer with Rotary Position Embedding](papers/08-roformer-rope/README.md) | [2104.09864](https://arxiv.org/abs/2104.09864) | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.

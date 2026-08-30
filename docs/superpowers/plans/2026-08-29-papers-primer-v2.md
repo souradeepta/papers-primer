@@ -38,7 +38,7 @@ root `SPEC.md` validator before the next one begins.
 - [x] Scope and paper selection captured in Batch 2 spec.
 - [x] 06 — Chinchilla
 - [x] 07 — FlashAttention
-- [ ] 08 — RoFormer / RoPE
+- [x] 08 — RoFormer / RoPE
 - [ ] 09 — DPO
 - [ ] 10 — Switch Transformer
 
