@@ -40,7 +40,7 @@ root `SPEC.md` validator before the next one begins.
 - [x] 07 — FlashAttention
 - [x] 08 — RoFormer / RoPE
 - [x] 09 — DPO
-- [ ] 10 — Switch Transformer
+- [x] 10 — Switch Transformer
 
 ## Global Constraints
 
