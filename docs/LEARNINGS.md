@@ -15,6 +15,10 @@ This file records lessons that must survive a fresh agent or cold start.
   invariant, trade-off, failure mode, and test evidence should all be visible.
 - Authoring instructions belong in `SPEC.md`, templates, and scripts. Never
   leak generation guidance into published paper pages.
+- Repository governance is part of release quality: keep [`LICENSE`](../LICENSE)
+  and [`DISCLOSURES.md`](../DISCLOSURES.md) current. Disclose AI assistance,
+  educational scope, source attribution, non-affiliation, and third-party
+  dependency licensing without implying ownership of the cited papers.
 
 ## Review procedure
 
@@ -24,3 +28,9 @@ This file records lessons that must survive a fresh agent or cold start.
 4. Run `python3 scripts/validate_paper.py papers/NN-slug` for every paper.
 5. Search for repeated scaffolding and inspect the rendered Markdown.
 6. Commit and push only after the full collection is green.
+
+## Release memory
+
+The repository is public. Before a release, verify the root README links to the
+license and disclosures, confirm the primary-paper links are present, and push
+the validated commit to `origin/master`.

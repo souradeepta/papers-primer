@@ -62,6 +62,11 @@ Misconceptions & Pitfalls and six explanatory Quick Concept Checks. Later papers
 must not be allowed to degrade into one-line answers. Run the full per-paper
 validator and inspect for repeated authoring instructions before publishing.
 
+**Repository-release additions:** preserve the root [`LICENSE`](../LICENSE) and
+[`DISCLOSURES.md`](../DISCLOSURES.md). A fresh maintainer must keep the public
+repo's reuse terms, AI-assistance disclosure, source attribution, educational
+scope, non-affiliation notice, and third-party licensing boundary intact.
+
 ## Current status
 
 Papers 01-30 are done and pass validation. The table below is retained as the
