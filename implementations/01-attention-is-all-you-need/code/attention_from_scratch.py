@@ -45,6 +45,26 @@ class MultiHeadAttention(torch.nn.Module):
         return self.out_proj(out)
 
 
+class TransformerLayer(torch.nn.Module):
+    """One pre-norm Transformer layer: attention, residuals, and feed-forward."""
+
+    def __init__(self, d_model: int, n_heads: int, causal: bool) -> None:
+        super().__init__()
+        self.attention = MultiHeadAttention(d_model, n_heads)
+        self.feed_forward = torch.nn.Sequential(
+            torch.nn.Linear(d_model, 4 * d_model), torch.nn.ReLU(),
+            torch.nn.Linear(4 * d_model, d_model),
+        )
+        self.norm_attention, self.norm_ff = torch.nn.LayerNorm(d_model), torch.nn.LayerNorm(d_model)
+        self.causal = causal
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply either encoder attention or decoder-masked self-attention."""
+        mask = causal_mask(x.size(1)) if self.causal else None
+        x = x + self.attention(self.norm_attention(x), mask)
+        return x + self.feed_forward(self.norm_ff(x))
+
+
 def causal_mask(seq_len: int) -> torch.Tensor:
     """Lower-triangular mask so position i cannot attend to positions > i."""
     return torch.tril(torch.ones(seq_len, seq_len)).bool()
@@ -61,6 +81,10 @@ if __name__ == "__main__":
     assert out.shape == x.shape, f"expected {x.shape}, got {out.shape}"
     print(f"ok: unmasked output shape {tuple(out.shape)} matches input shape")
 
+    encoder = TransformerLayer(d_model=16, n_heads=4, causal=False)
+    decoder = TransformerLayer(d_model=16, n_heads=4, causal=True)
+    assert encoder(x).shape == x.shape and decoder(x).shape == x.shape
+
     # Causal (decoder self-attention) case: verify masking actually zeroes
     # out attention to future positions.
     mask = causal_mask(5)
@@ -74,4 +98,3 @@ if __name__ == "__main__":
         "causal mask leaked attention to future positions"
     )
     print("ok: causal mask zeroes all attention weights to future positions")
-

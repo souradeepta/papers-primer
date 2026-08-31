@@ -9,7 +9,7 @@ Completed: 08 RoPE, 09 DPO.
 
 ## Transformer and language models
 
-- [ ] 01 Attention Is All You Need — encoder/decoder Transformer block and masks
+- [x] 01 Attention Is All You Need — encoder/decoder Transformer layers and masks
 - [x] 02 BERT — bidirectional encoder with MLM batching and loss
 - [x] 03 GPT-3 — causal decoder, positional embeddings, in-context prompt
 - [x] 04 LoRA — frozen linear layer plus trainable low-rank adapters
@@ -34,19 +34,19 @@ Completed: 08 RoPE, 09 DPO.
 - [x] 21 VAE — encoder, reparameterization, decoder, ELBO training step
 - [x] 22 Batch Normalization — train/eval running statistics and affine transform
 - [x] 23 U-Net — contracting path, skip joins, expanding path, segmentation loss
-- [ ] 25 Vision Transformer — patch embed, class token, Transformer encoder
-- [ ] 27 SimCLR — augmentations, encoder/projection head, NT-Xent loss
-- [ ] 29 DDPM — forward diffusion, noise predictor, reverse sampling step
+- [x] 25 Vision Transformer — patch embed, class token, Transformer encoder
+- [x] 27 SimCLR — augmentations, encoder/projection head, NT-Xent loss
+- [x] 29 DDPM — forward diffusion, noise predictor, reverse denoising step
 
 ## Reinforcement learning and graphs
 
-- [ ] 24 PPO — rollout advantages, clipped surrogate, value and entropy losses
-- [ ] 26 DQN — replay buffer, target network, Bellman update
-- [ ] 28 Graph Attention Networks — multi-head attention, adjacency masking, layer
+- [x] 24 PPO — advantages, clipped surrogate, value and entropy losses
+- [x] 26 DQN — replay batch, target network, Bellman update
+- [x] 28 Graph Attention Networks — multi-head attention, adjacency masking, layer
 
 ## Completion checks
 
-- [ ] Run every script under `implementations/*/code/`
-- [ ] Compile all Python files and run `git diff --check`
-- [ ] Update the implementation index/readme if an interface changes
-- [ ] Commit and push the completed upgrade set
+- [x] Run every script under `implementations/*/code/`
+- [x] Compile all Python files and run `git diff --check`
+- [x] Implementation index/readme remains accurate; no interface update required
+- [x] Commit and push the completed upgrade set
