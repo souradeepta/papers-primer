@@ -8,6 +8,8 @@ All runnable teaching implementations are collected separately in
 
 Maintainer review guidance is in [`docs/COLD_START.md`](docs/COLD_START.md) and
 the durable lessons are recorded in [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
+See [`LICENSE`](LICENSE) for reuse terms and [`DISCLOSURES.md`](DISCLOSURES.md)
+for source, AI-assistance, educational-scope, and third-party notices.
 
 | # | Paper | arXiv | Status |
 |---|-------|-------|--------|
