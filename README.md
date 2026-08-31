@@ -45,7 +45,7 @@ the durable lessons are recorded in [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
 | 32 | [Sequence to Sequence Learning with Neural Networks](papers/32-sequence-to-sequence-learning/README.md) | [1409.3215](https://arxiv.org/abs/1409.3215) | done |
 | 33 | [Neural Machine Translation by Jointly Learning to Align and Translate](papers/33-bahdanau-attention/README.md) | [1409.0473](https://arxiv.org/abs/1409.0473) | done |
 | 34 | [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](papers/34-dropout/README.md) | [JMLR](https://www.jmlr.org/papers/v15/srivastava14a.html) | done |
-| 35 | [GloVe: Global Vectors for Word Representation](papers/35-glove/README.md) | EMNLP 2014 | done |
+| 35 | [GloVe: Global Vectors for Word Representation](papers/35-glove/README.md) | [EMNLP 2014](https://aclanthology.org/D14-1162/) | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.
