@@ -84,8 +84,10 @@ different senses of the same word from sentence context.
 ## Runnable Code Example
 
 Run python3 implementations/35-glove/code/glove_weighted_least_squares.py.
-It optimizes word/context vectors and biases against a toy count matrix and
-asserts that weighted log-count loss decreases.
+It first builds a sparse, distance-weighted co-occurrence table from a small
+tokenized corpus, then optimizes word/context vectors and biases over observed
+pairs only. The final assertion confirms that weighted log-count loss falls
+during training.
 
 ## Common Misconceptions & Pitfalls
 

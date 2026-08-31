@@ -1,4 +1,9 @@
-"""Dropout training versus deterministic inference with inverted scaling."""
+"""Dropout training versus deterministic inference with inverted scaling.
+
+The program exposes the two operational modes, verifies their expected
+behavior, and performs a real classifier update so masks participate in
+backpropagation instead of being a disconnected random-output demonstration.
+"""
 
 from __future__ import annotations
 
@@ -16,20 +21,27 @@ class DropoutClassifier(torch.nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Return class logits; Dropout changes behavior with train and eval mode."""
         return self.layers(x)
 
 
 def main() -> None:
     torch.manual_seed(34)
-    model, data = DropoutClassifier(), torch.randn(16, 4)
+    model, data = DropoutClassifier(probability=.4), torch.randn(32, 4)
+    labels = (data[:, 0] + data[:, 1] > 0).long()
+    optimizer = torch.optim.SGD(model.parameters(), lr=.1)
     model.train()
     first, second = model(data), model(data)
-    training_loss = torch.nn.functional.cross_entropy(first, torch.randint(0, 2, (16,)))
+    training_loss = torch.nn.functional.cross_entropy(first, labels)
+    optimizer.zero_grad()
     training_loss.backward()
+    optimizer.step()
     model.eval()
     evaluation_first, evaluation_second = model(data), model(data)
-    print(f"training outputs differ: {not torch.allclose(first, second)}; eval outputs match: {torch.allclose(evaluation_first, evaluation_second)}")
-    assert not torch.allclose(first, second) and torch.allclose(evaluation_first, evaluation_second)
+    stochastic = not torch.allclose(first, second)
+    deterministic = torch.allclose(evaluation_first, evaluation_second)
+    print(f"loss={training_loss.item():.3f}; training differs={stochastic}; eval matches={deterministic}")
+    assert stochastic and deterministic and model.layers[0].weight.grad is not None
     print("ok: random thinned networks train together while inference is deterministic")
 
 

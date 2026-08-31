@@ -83,8 +83,9 @@ data; excessive dropout causes underfitting.
 ## Runnable Code Example
 
 Run python3 implementations/34-dropout/code/dropout_training.py.
-It verifies that two training-mode outputs differ because masks differ, while
-two evaluation-mode outputs are identical.
+It performs a real classifier update with sampled masks, then verifies that
+two training-mode outputs differ while two evaluation-mode outputs match.
+Switching model.train and model.eval is the key production behavior to notice.
 
 ## Common Misconceptions & Pitfalls
 

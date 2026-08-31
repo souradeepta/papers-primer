@@ -87,8 +87,10 @@ fixed-vector bottleneck.
 ## Runnable Code Example
 
 Run python3 implementations/32-sequence-to-sequence-learning/code/seq2seq_lstm.py.
-It encodes a padded token batch, initializes a decoder from encoder state, and
-computes a teacher-forced cross-entropy loss.
+It packs a padded source batch, initializes a two-layer decoder from the
+encoder's final state, and computes teacher-forced cross-entropy loss. It then
+uses greedy_decode to feed predicted tokens back at inference, making the
+training-versus-generation difference explicit.
 
 ## Common Misconceptions & Pitfalls
 

@@ -87,8 +87,10 @@ TensorFlow, and JAX.
 ## Runnable Code Example
 
 Run python3 implementations/33-bahdanau-attention/code/additive_attention.py.
-It computes additive scores, applies a valid-position mask, forms the weighted
-context, and asserts that every alignment distribution sums to one.
+It computes additive scores, caches encoder projections for repeated decode
+steps, applies a valid-position mask, and forms weighted contexts. Its
+assertions verify that each alignment sums to one and that padding receives
+exactly zero probability.
 
 ## Common Misconceptions & Pitfalls
 

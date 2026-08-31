@@ -90,8 +90,10 @@ steps like Transformers.
 ## Runnable Code Example
 
 Run python3 implementations/31-long-short-term-memory/code/lstm_cell.py.
-The program computes all four gate values, advances a seven-step sequence, and
-checks that a finite gradient reaches the gate parameters.
+The program computes all four gate values, advances a masked seven-step batch,
+and checks that a finite gradient reaches the gate parameters. Read
+run_sequence first: its length mask demonstrates why padding must not silently
+change a shorter sequence's hidden or cell state.
 
 ## Common Misconceptions & Pitfalls
 
