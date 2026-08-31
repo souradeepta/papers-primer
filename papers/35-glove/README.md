@@ -1,5 +1,7 @@
 # GloVe: Global Vectors for Word Representation
 
+Primary paper: [GloVe: Global Vectors for Word Representation (EMNLP 2014)](https://aclanthology.org/D14-1162/).
+
 **Pennington, Socher & Manning, 2014** · EMNLP 2014
 
 ## 1. TL;DR
@@ -214,6 +216,6 @@ it with a fused, distributed, or highly optimized implementation.
 **A:** Present one minimal failing input, the expected **count construction, weighting cutoff, and bias terms use the same vocabulary snapshot**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
 ## 13. Further Reading
-- [Original paper](https://aclanthology.org/D14-1162/)
+- [GloVe: Global Vectors for Word Representation — original EMNLP 2014 paper](https://aclanthology.org/D14-1162/)
 - [word2vec](https://arxiv.org/abs/1301.3781)
 - [SentencePiece](https://arxiv.org/abs/1808.06226)
