@@ -1,7 +1,7 @@
 # Handoff: continuing papers-primer (Codex)
 
-Date: 2026-08-30. Written for a fresh agent continuing the complete 30-paper
-collection.
+Date: 2026-08-31. Written for a fresh agent continuing the complete 35-paper
+collection. Read `docs/COLD_START.md` and `docs/LEARNINGS.md` first.
 
 ## Batch-selection learning
 
@@ -56,6 +56,11 @@ order after that.
 Every learner paragraph must be paper-specific: use a concrete mini-example,
 an effect of varying the equation, or a practical consequence. Do not use
 generic filler that could be copied into any paper.
+
+**Review-critical additions:** every paper needs four explained items in Common
+Misconceptions & Pitfalls and six explanatory Quick Concept Checks. Later papers
+must not be allowed to degrade into one-line answers. Run the full per-paper
+validator and inspect for repeated authoring instructions before publishing.
 
 ## Current status
 

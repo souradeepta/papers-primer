@@ -261,43 +261,30 @@ training.
 
 ## Common Misconceptions & Pitfalls
 
-**“Self-supervised means augmentation choices do not matter.”** They define the
-invariances and therefore the learning task.
-
-**“All views from one image must be pixel similar.”** They can be strongly
-transformed while still being designated as a positive pair.
-
-**“Loss alone proves representation quality.”** Transfer needs a held-out
-downstream evaluation and shortcut analysis.
+- **Misconception: `−log exp(sim(i,j)/τ)/Σ_kexp(sim(i,k)/τ)` is the whole implementation.** The equation describes the paper's central relationship, but `contrastive visual representation learning with augmented positive pairs` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **positive indices are correct, self-similarity is excluded, and temperature has the intended scale**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **augmentation leakage, false negatives, or a batch too small to supply useful negatives** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **assert pair indexing and inspect retrieval before linear evaluation across augmentation ablations**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What is a SimCLR positive pair?
-**A:** Two independently augmented views of the same source image.
+**Q:** What is the central idea behind **contrastive visual representation learning with augmented positive pairs**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why use a projection head?
-**A:** It gives the contrastive objective a separate space while preserving a
-representation better suited to downstream linear evaluation.
+**Q:** How should I read `−log exp(sim(i,j)/τ)/Σ_kexp(sim(i,k)/τ)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Why does batch size matter?
-**A:** Other batch views supply negatives in the basic objective.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **positive indices are correct, self-similarity is excluded, and temperature has the intended scale**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What does temperature do?
-**A:** It scales similarities before softmax and changes how sharply examples
-compete.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **augmentation leakage, false negatives, or a batch too small to supply useful negatives**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Is SimCLR supervised classification?
-**A:** No. It uses instance identity created by augmentations, then evaluates
-features with labels later.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **assert pair indexing and inspect retrieval before linear evaluation across augmentation ablations**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-SimCLR makes two augmented views of each image, pulls their projected
-representations together, and pushes other batch examples apart with a
-temperature-scaled contrastive objective. Augmentations define which invariances
-are learned, so tune crop, color, blur, and batch size as part of the method.
-Evaluate frozen representations with a linear probe to separate representation
-quality from classifier fine-tuning.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

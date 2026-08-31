@@ -9,6 +9,7 @@ from paper_checks import (
     check_code_dir,
     check_further_reading,
     check_interview_quality,
+    check_learning_sections,
     check_gifs,
     check_mechanism_mermaid,
     check_qa_pairs,
@@ -45,6 +46,9 @@ def test_paper_is_spec_compliant(paper_dir: Path):
     assert qa_count >= 5, f"{paper_dir.name}: {qa_count} Q&A markers, need >= 5"
     interview_errors = check_interview_quality(text)
     assert not interview_errors, f"{paper_dir.name}: {interview_errors}"
+
+    learning_errors = check_learning_sections(text)
+    assert not learning_errors, f"{paper_dir.name}: {learning_errors}"
 
     reading_count = check_further_reading(text)
     assert reading_count >= 3, f"{paper_dir.name}: {reading_count} further-reading links, need >= 3"

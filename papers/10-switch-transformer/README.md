@@ -175,43 +175,30 @@ The code does not train experts because the routing invariant is the point. It s
 
 ## Common Misconceptions & Pitfalls
 
-- **“Every token uses every expert.”** That is dense computation. Switch selects one expert per token, then processes tokens at their selected destinations.
-- **“More experts automatically mean lower latency.”** Total capacity grows, but routing and all-to-all communication can dominate latency.
-- **“The balancing loss guarantees semantic specialists.”** It encourages traffic balance, not a human-interpretable division of labor.
-- **“Dropped tokens are harmless.”** They are a bounded-resource safety valve and must be monitored because systematic drops can degrade quality.
+- **Misconception: `y=Expert[argmax p(x)](x)` is the whole implementation.** The equation describes the paper's central relationship, but `top-1 sparse mixture-of-experts routing` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **each token is dispatched to exactly one selected expert and capacity overflow is observable**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **expert load imbalance, dropped tokens, and all-to-all communication spikes** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **log per-expert counts, overflow rate, routing entropy, and quality for overflowed tokens**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What makes Switch different from top-k MoE routing?
-**A:** It routes each token to exactly one expert, avoiding the second expert’s computation and combination step.
+**Q:** What is the central idea behind **top-1 sparse mixture-of-experts routing**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why is expert capacity needed?
-**A:** It bounds memory and compute when a router sends too many tokens to one expert.
+**Q:** How should I read `y=Expert[argmax p(x)](x)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** What are \(f_i\) and \(P_i\) in the auxiliary loss?
-**A:** \(f_i\) is the hard fraction routed to expert i; \(P_i\) is its average soft router probability across the batch.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **each token is dispatched to exactly one selected expert and capacity overflow is observable**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** Does sparse activation remove communication cost?
-**A:** No. Expert-parallel execution often requires all-to-all token exchange between devices.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **expert load imbalance, dropped tokens, and all-to-all communication spikes**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Why can router precision matter so much?
-**A:** A small logit perturbation can change a discrete top-1 destination and therefore the entire expert computation path.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **log per-expert counts, overflow rate, routing entropy, and quality for overflowed tokens**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Worked Routing Path
-
-At one token position, the router computes a score for every expert and sends
-the token to the highest-scoring expert. Only that expert's feed-forward
-network runs, so active compute stays close to a dense layer while total
-parameter capacity grows. The router's auxiliary balancing loss matters
-because a router that sends nearly every token to one expert turns the other
-experts into unused storage and creates a capacity bottleneck.
-
-Production routing needs observability: log expert load, dropped-token rate,
-capacity factor, and quality by token class. Distributed all-to-all exchange
-can dominate runtime when expert placement is poor, so an apparently sparse
-model is not automatically cheap. Test router determinism, overflow handling,
-and the distinction between training-time noisy routing and inference-time
-dispatch before comparing throughput.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

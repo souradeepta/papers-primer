@@ -491,137 +491,30 @@ targets over long sequences, not guarantees for any individual short one.
 
 ## Common Misconceptions & Pitfalls
 
-- **"BERT is bidirectional the same way you'd get by running an LSTM
-  forward and backward and concatenating."** That's what ELMo does — two
-  independent unidirectional models combined at the output. BERT's
-  bidirectionality is architectural and applies inside every layer:
-  because a Transformer encoder's self-attention has no directional mask
-  at all, a token's representation at layer 3 is already a function of
-  both left and right context from layer 2, and that compounds through
-  every subsequent layer. This "deep" bidirectionality — not a shallow
-  concatenation at the end — is the paper's specific, stated contribution
-  relative to ELMo.
-- **"You could get the same effect by just removing the causal mask from
-  GPT."** Mechanically, removing the causal mask from a decoder-style
-  model does make its self-attention unmasked, but the paper's argument is
-  that the *training objective* also has to change to make use of that,
-  not just the architecture. A left-to-right, next-token-prediction
-  objective trivially "solves itself" if a token can already see the
-  answer through unmasked attention to its own future position — there is
-  nothing left to predict. BERT's MLM objective is specifically designed
-  so that this shortcut isn't available: the token to be predicted is
-  literally corrupted in the input, so seeing "the answer" isn't possible
-  even with unrestricted attention.
-- **"BERT's masking is always literally replacing the word with
-  `[MASK]`."** Only 80% of the selected 15% of positions get the literal
-  `[MASK]` token; 10% get a random other token, and 10% are left as the
-  original word (see The Mechanism above). This detail is easy to
-  overlook and is specifically motivated by avoiding a pre-training/
-  fine-tuning mismatch, since `[MASK]` never appears in real fine-tuning
-  data.
-- **"NSP is essential and every BERT-style model uses it."** It was
-  central to the original paper's framing and ablations, but later work
-  (RoBERTa, notably — outside this paper) found that dropping NSP while
-  changing how training segments are constructed did not hurt and
-  arguably helped their setup. Treat NSP as a design choice this
-  particular paper made and validated for its own configuration, not an
-  architectural requirement of bidirectional pre-training in general.
-- **"110M and 340M parameters mean BERT-Base and BERT-Large differ only in
-  size, not in kind."** They share the same architecture family (encoder
-  blocks, MLM + NSP pre-training), but the paper reports the two were
-  trained identically otherwise, and the performance gap between them
-  across GLUE tasks is consistently reported as nontrivial (BERT-Large
-  scores higher on every GLUE task in Table 1 of the paper) — depth and
-  width, at fixed pre-training data and objective, are not a "same model,
-  proportionally scaled" story; the paper explicitly credits BERT-Large's
-  size as material to its state-of-the-art results, particularly on
-  smaller fine-tuning datasets.
+- **Misconception: `−log p(xᵢ|context)` is the whole implementation.** The equation describes the paper's central relationship, but `masked-language pretraining with bidirectional encoder layers` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **only selected masked positions contribute to the MLM loss and padding is ignored**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **train/serve tokenizer drift or an incorrect mask-label alignment** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **assert masked positions and evaluate a small downstream classifier with a frozen preprocessing snapshot**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What specifically makes BERT "bidirectional" in a way that ELMo's
-combination of forward and backward LSTMs is not?
-**A:** ELMo trains two entirely separate unidirectional LSTMs (one reading
-left-to-right, one right-to-left) and concatenates their final hidden
-states — each individual LSTM never sees the other direction while
-computing its own representations; the combination happens only after
-both have already run. BERT instead uses a single Transformer encoder
-whose self-attention has no directional mask at every layer, so a given
-token's representation at layer *k* is already a joint function of both
-directions from layer *k-1*, and this compounds through every subsequent
-layer. The paper describes this as "deep" bidirectionality specifically
-to distinguish it from the shallow concatenation approach.
+**Q:** What is the central idea behind **masked-language pretraining with bidirectional encoder layers**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why can't you just remove the causal mask from a GPT-style model
-and get the same bidirectional benefit without changing the training
-objective?
-**A:** Removing the mask changes the architecture, but the standard
-next-token-prediction objective would then let a token's own future
-position attend to itself, making the prediction trivial — the model
-would just learn to copy the token forward instead of learning anything
-about language, since the answer is directly visible with no restriction.
-BERT's fix pairs the unmasked architecture with a different objective
-(masked language modeling) where the token to predict is actually removed
-or corrupted from the input, so there's no shortcut available even with
-fully unrestricted attention.
+**Q:** How should I read `−log p(xᵢ|context)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Walk through the 80/10/10 masking rule and explain why it isn't
-just "always replace with [MASK]."
-**A:** For the 15% of WordPiece positions selected for masking: 80% are
-replaced with the literal `[MASK]` token, 10% are replaced with a random
-other token from the vocabulary, and 10% are left unchanged (but still
-counted in the loss). If every selected position were always literally
-`[MASK]`, the model would only ever need to build a good representation
-for positions it can see are masked — but at fine-tuning time, `[MASK]`
-never appears at all, creating a train/fine-tune mismatch. Mixing in
-random-token and unchanged-token corruption forces the model to maintain
-a genuinely useful contextual representation at every position, since it
-can't tell in advance which positions the loss will actually be computed
-on.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **only selected masked positions contribute to the MLM loss and padding is ignored**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What's the practical difference between how BERT is used for
-sentence classification versus how it's used for SQuAD-style question
-answering, given it's the same pre-trained weights?
-**A:** For sentence (or sentence-pair) classification, the input is
-formatted as `[CLS] sentence_A [SEP] (sentence_B) [SEP]` and a single
-classification layer is trained on top of `[CLS]`'s final hidden state.
-For SQuAD-style extractive question answering, the input is `[CLS]
-question [SEP] passage [SEP]`, and instead of a `[CLS]`-based
-classification head, two separate learned vectors are trained whose dot
-product with *every* token's final hidden state produces a start-score
-and an end-score per token; the predicted answer span is the
-highest-scoring `(start, end)` pair. Both reuse the identical pre-trained
-encoder; only the small task-specific head on top and the input
-formatting change.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **train/serve tokenizer drift or an incorrect mask-label alignment**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** The paper's abstract reports a GLUE score of 80.5%, but Table 1 in
-the paper reports BERT-Large's average GLUE score as 82.1%. Are these
-inconsistent?
-**A:** They're measuring slightly different things, not contradicting
-each other: Table 1's 82.1% average is computed across the 8 GLUE tasks
-shown in that table's columns. The 80.5% figure in the abstract reflects
-the official GLUE leaderboard score, which the paper elsewhere notes
-includes the WNLI task — a task the authors describe having practical
-issues with. This is a good habit generally: when a paper reports two
-numbers for "the same" benchmark, check exactly which task subset and
-aggregation each number is computed over, rather than assuming a
-contradiction or arithmetic error.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **assert masked positions and evaluate a small downstream classifier with a frozen preprocessing snapshot**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-**Q:** Why does removing NSP hurt SQuAD performance in the paper's
-ablation, given that SQuAD is a single-passage task and doesn't obviously
-need "does sentence B follow sentence A" reasoning?
-**A:** The paper's ablation groups "No NSP" together with "LTR & No NSP,"
-and it's actually the LTR (left-to-right) variant — not NSP removal
-alone — that the paper reports causes the largest SQuAD-specific drop,
-which it attributes to the token-level hidden states having no
-right-side context, a serious handicap for span-extraction where the
-correct boundary can depend on words after the span. The "No NSP" variant
-(bidirectional MLM, but no NSP) is reported to hurt QNLI, MNLI, and SQuAD
-to a smaller degree than the LTR variant — the paper's interpretation is
-that NSP contributes a coarser, sentence-relationship signal that still
-helps somewhat even on tasks that aren't explicitly about sentence pairs,
-though the much larger effect on SQuAD specifically comes from losing
-bidirectionality, not from losing NSP.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

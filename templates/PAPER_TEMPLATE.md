@@ -46,10 +46,13 @@ papers so readers can follow the historical learning path. -->
 <!-- walk through code/name.py: what it does, expected output -->
 
 ## Common Misconceptions & Pitfalls
-<!-- >=2 items -->
+<!-- >=4 paper-specific items. Explain why each claim is wrong or dangerous,
+then give a consequence, invariant, or practical guard. -->
 
 ## Quick Concept Checks
-<!-- Optional concise recall questions. These do not replace the official SDE2 interview section. -->
+<!-- Include >=6 concise but explanatory Q&A pairs. Every answer must be >=30
+words and tie the concept to the equation, implementation, edge case, or an
+operational decision. These do not replace the official SDE2 interview section. -->
 
 ## Interview Q&A
 <!-- Official SDE2 section: include >=3 scenario pairs, >=3 explicit follow-ups,

@@ -432,127 +432,30 @@ probability distribution for a real (if untrained) set of projections.
 
 ## Common Misconceptions & Pitfalls
 
-- **"Attention replaces the need for any other layer type."** It doesn't
-  — the position-wise feed-forward network is still a standard MLP doing
-  real computational work per token, and as noted above, it's the single
-  largest block of the base model's parameters. Attention is what mixes
-  information *across* tokens; the FFN is what transforms information
-  *within* a token after that mixing — they're doing structurally
-  different jobs, and later ablation studies (not this paper) have found
-  removing the FFN and relying on attention alone measurably hurts
-  performance, consistent with that division of labor.
-- **"Multi-head attention means the model literally learns semantic roles
-  like 'subject' and 'object' per head."** Some heads in some trained
-  models do show interpretable, specializable patterns (this was studied
-  in later interpretability papers, not this one), but it's an emergent
-  property of training, not something architecturally guaranteed or
-  enforced. Don't assume any given head in any given trained model has a
-  clean, human-nameable job.
-- **"Self-attention is inherently order-aware."** It is not — without
-  positional encoding, self-attention over a set of tokens is *permutation
-  equivariant*, not invariant: shuffle the input tokens and the output
-  shuffles the same way (rather than staying fixed), so the model has no
-  independent signal for absolute or relative position at all. All
-  positional information comes from the added encoding vectors, not from
-  the attention mechanism itself.
-- **"Bigger `d_k` per head is always better."** The scaling factor
-  `1/sqrt(d_k)` exists precisely because larger `d_k` pushes dot products
-  toward the extremes, saturating softmax and killing gradients if you
-  don't correct for it. This is a concrete, checkable numerical-stability
-  issue, not just a design preference — it's the paper's own stated
-  motivation for the scaling term (see The Mechanism above for the exact
-  attribution).
+- **Misconception: `softmax(QKᵀ/√dₖ)V` is the whole implementation.** The equation describes the paper's central relationship, but `scaled dot-product self-attention` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **causal and padding masks must prevent invalid keys from contributing**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **quadratic score memory and mask leakage** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **compare a masked reference with an optimized kernel and test a future-token perturbation**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** Why divide by `sqrt(d_k)` in scaled dot-product attention — what
-actually breaks if you don't?
-**A:** As `d_k` grows, the dot product between two random vectors grows
-in expected magnitude (its variance scales with `d_k`, assuming
-components have roughly unit variance). Large-magnitude inputs to
-softmax push it toward a near-one-hot output, where the gradient with
-respect to all but the max input is close to zero. That kills useful
-gradient signal during backpropagation and makes training unstable or
-slow to converge, especially with a large `d_k`. Dividing by `sqrt(d_k)`
-renormalizes the variance back to roughly 1 regardless of dimension,
-keeping softmax in a well-behaved regime.
+**Q:** What is the central idea behind **scaled dot-product self-attention**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** What's the actual computational complexity of self-attention
-versus a recurrent layer, and why does that matter in practice?
-**A:** Self-attention is O(n² · d) per layer (all-pairs comparison across
-a sequence of length n, each comparison costing O(d) for d-dimensional
-vectors), but every one of those n² comparisons is independent and can be
-computed in parallel — the sequential depth is O(1). A recurrent layer is
-O(n · d²) total (cheaper in total operations than attention specifically
-when the sequence is short relative to the dimension, i.e. `n < d`) but
-has O(n) sequential depth — you cannot start computing step t+1 until
-step t finishes. In practice, on hardware with massive
-parallelism (GPUs/TPUs), that O(1) sequential depth dominates wall-clock
-training time far more than the raw operation count does, which is the
-efficiency argument the paper makes for preferring attention. The
-tradeoff flips for very long sequences where n² memory/compute starts to
-dominate — which is exactly the motivation for later work like
-FlashAttention and sparse attention variants.
+**Q:** How should I read `softmax(QKᵀ/√dₖ)V`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Why does the decoder need a mask but the encoder doesn't?
-**A:** The encoder processes the entire source sentence at once — nothing
-about translating "the cat sat" requires hiding "sat" from "the," since
-the whole source sentence is available up front. The decoder, though, is
-autoregressive: at generation time, token t+1 hasn't been produced yet
-when you're generating token t, so it must not be allowed to "cheat" by
-looking at ground-truth future tokens during training either — that would
-create a mismatch between training (where the whole target sequence is
-available) and inference (where it isn't). The causal mask enforces this
-by setting attention scores to `-inf` for any future position before the
-softmax, making the learned weight exactly 0 there.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **causal and padding masks must prevent invalid keys from contributing**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What would happen if you used only one attention head with the
-full `d_model` dimensionality instead of `h` smaller heads?
-**A:** The paper's own reasoning: averaging over a single attention head
-inhibits the model from jointly attending to information from different
-representation subspaces at different positions — one shared softmax
-distribution has to compromise across everything it's tracking at once.
-Splitting into `h` heads with their own smaller projections gives the
-model `h` independent softmax distributions per query, so it can
-represent several different kinds of relationships in parallel instead of
-compromising within one. It's not solely an efficiency trick — going from
-one head at `d_model` dimensions to `h` heads at `d_model/h` dimensions
-each keeps total compute roughly comparable, so the benefit is
-representational, not computational.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **quadratic score memory and mask leakage**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Where does positional information actually enter the model, and
-why sine/cosine functions specifically rather than, say, a learned
-position embedding?
-**A:** It's added directly to the token embeddings before the first
-layer: `PE(pos, 2i) = sin(pos / 10000^(2i/d_model))`,
-`PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))`. The paper chose a fixed
-sinusoidal function (rather than a learned embedding table, which they
-also tried and found performed nearly identically) partly because it
-hypothesized this would let the model extrapolate to sequence lengths
-longer than any seen during training — for any fixed offset k, PE(pos+k)
-can be expressed as a linear function of PE(pos), which the paper
-suggests could make it easier for attention to learn to attend by
-relative position. In practice, many later models (BERT, GPT-2) reverted
-to learned positional embeddings, and still later models (RoPE, ALiBi)
-went back to different flavors of fixed/relative schemes — this remains
-an actively revisited design decision, not a settled one.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **compare a masked reference with an optimized kernel and test a future-token perturbation**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-**Q:** In a production LLM serving stack, why is "prefill" a different
-performance regime than "decode," and how does that trace back to this
-paper's architecture?
-**A:** Prefill (processing the input prompt) computes Key/Value vectors
-and attention for every prompt token in parallel — it's compute-bound,
-and GPUs are efficient here because you're doing large, dense matrix
-multiplications. Decode (generating each new token one at a time) can
-only compute one new token's Query at a time (because of the causal
-mask — you don't know token t+1 until you've generated token t), and
-with KV-caching, that one step is dominated by reading the entire
-accumulated KV cache from memory rather than by the FLOPs of the matmul
-itself — so it's memory-bandwidth-bound, not compute-bound. This split is
-a direct consequence of the paper's autoregressive, causally-masked
-decoder design: the model is architecturally required to generate one
-token at a time at inference, even though it was trained with full
-sequences available in parallel (via teacher forcing).
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

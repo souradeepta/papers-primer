@@ -512,146 +512,30 @@ changes *how well* it works, not *whether* it works.
 
 ## Common Misconceptions & Pitfalls
 
-- **"Few-shot learning in this paper means the model is being trained on
-  the few examples you give it."** No — the paper is explicit that "no
-  weight updates are allowed" in the few-shot setting. The examples are
-  part of the input text the model conditions on for one forward pass, not
-  training data for a gradient step. This is precisely the distinction the
-  paper draws between "few-shot learning" (in-context, no weight update)
-  and "fine-tuning" (weight update via gradient descent on labeled data) —
-  conflating the two erases the paper's central contribution.
-- **"GPT-3 introduced a new attention mechanism or architecture."** It
-  did not — the paper explicitly builds on the same GPT-2-style
-  decoder-only Transformer, with alternating dense and locally banded
-  sparse attention patterns "similar to the Sparse Transformer" (a
-  technique from prior work, not introduced in this paper). The paper's
-  contribution is the scaling study and the empirical characterization of
-  in-context learning, not a novel model architecture.
-- **"More few-shot examples always helps, without limit."** The context
-  window is a hard ceiling (`n_ctx = 2048` for GPT-3) — you cannot supply
-  more demonstration tokens than fit alongside the instruction and query,
-  and the paper's own results show diminishing (not indefinitely growing)
-  returns as K increases within that window. This repo's GIF depicts
-  monotonically increasing curves for illustration, but the paper does not
-  claim the trend is unbounded.
-- **"GPT-3's strong few-shot numbers prove it 'understands' language the
-  way a human does."** The paper itself is measured about this: it
-  reports numbers, notes where the model is weak (certain
-  sentence-comparison and reading-comprehension tasks), and dedicates
-  real space to discussing data contamination risk and the difficulty of
-  fully ruling out that some benchmark performance reflects patterns
-  memorized from a huge, largely unfiltered web-scale training corpus
-  rather than a general reasoning capability. Treat "the paper shows X" and
-  "later work argues X" as different claims — this explainer tries to mark
-  that distinction explicitly throughout, and you should do the same when
-  reading benchmark headlines.
-- **"Scaling parameters is the only lever that matters, so a bigger model
-  is strictly better for a given task."** The training-data table in this
-  explainer's Mechanism section shows the paper deliberately *does not*
-  scale data proportionally with model size on a per-source basis — some
-  smaller, higher-quality sources are oversampled relative to their size.
-  Model scale, data scale, and data quality are three separate levers the
-  paper manipulates together; crediting results to parameter count alone
-  overstates what one paper's specific data-mixture choices established.
+- **Misconception: `p(xₜ|x₍<ₜ₎)` is the whole implementation.** The equation describes the paper's central relationship, but `autoregressive in-context learning` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the demonstration examples and query remain in order and the causal mask hides future tokens**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **prompt-format sensitivity and context-window truncation** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **hold weights fixed, replay prompts byte-for-byte, and compare task accuracy across controlled prompt variants**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What, precisely, is the difference between few-shot learning as
-this paper defines it and fine-tuning?
-**A:** Fine-tuning updates the model's weights via gradient descent on a
-labeled dataset for the target task — you end up with a separate,
-specialized set of weights per task. Few-shot learning (in this paper's
-sense) supplies the task instruction and several worked examples as plain
-text inside the input prompt to a single frozen model, and the paper is
-explicit that in this setting "no weight updates are allowed" — the model
-never sees a gradient computed from those examples. The only thing that
-differs across zero-shot, one-shot, and few-shot is how much task-specific
-text sits in the input before the query; the underlying model and its
-parameters are completely unchanged in all three cases.
+**Q:** What is the central idea behind **autoregressive in-context learning**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Did GPT-3 introduce a new model architecture to make in-context
-learning work?
-**A:** No. The paper uses essentially the same architecture as GPT-2 — a
-decoder-only Transformer with causal self-attention — with one specific
-addition: "alternating dense and locally banded sparse attention patterns
-in the layers of the transformer, similar to the Sparse Transformer," a
-technique from prior work rather than a novel contribution of this paper.
-In-context learning is not a special module bolted onto the model; the
-paper's argument is that it's an emergent behavior of training a
-large-enough version of an otherwise ordinary next-token predictor on a
-large, varied enough training corpus.
+**Q:** How should I read `p(xₜ|x₍<ₜ₎)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Why does the paper's training data mixture oversample Wikipedia
-and undersample Common Crawl, given that Common Crawl is by far the
-largest source?
-**A:** The paper weights training-mix sampling by source quality rather
-than raw token count: Common Crawl (410B tokens, 60% weight) is seen only
-0.44 times over the course of training, while Wikipedia (3B tokens, 3%
-weight) is seen 3.4 times. Common Crawl, though enormous, is a noisy,
-largely unfiltered scrape of the web; Wikipedia and curated book corpora
-are comparatively higher-quality, more consistent text. The paper is
-willing to under-sample a much larger but noisier corpus and repeat a
-smaller, cleaner one several times over, on the view that data quality,
-not just data quantity, affects downstream model quality.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **the demonstration examples and query remain in order and the causal mask hides future tokens**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** The paper reports 3-digit addition accuracy dropping as digit
-count increases. Why does the paper treat this as evidence against pure
-memorization, and how strong is that evidence really?
-**A:** The paper's reasoning is that if GPT-3 were simply recalling
-arithmetic answers memorized verbatim from its training corpus, there's
-no obvious reason accuracy should degrade smoothly as problems get
-harder (more digits) — you'd expect either "this exact problem was seen"
-or "it wasn't," not a graceful accuracy curve. A smoothly degrading curve
-is more consistent with the model having learned something like a
-general (if imperfect) arithmetic procedure. That said, the paper itself
-is careful here — it does not claim to have proven the model isn't
-partially relying on memorized patterns for simpler problems; given the
-scale and opacity of a huge web-scraped training corpus, this is
-presented as suggestive evidence, not a controlled ablation that rules
-memorization out entirely.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **prompt-format sensitivity and context-window truncation**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Where does the "prompt engineering" practice used with modern LLM
-APIs trace directly back to in this paper?
-**A:** To the paper's demonstration that a frozen, pretrained model's task
-performance can vary substantially based purely on how the input text
-(instruction + demonstrations + query ordering and wording) is
-constructed — with no way to further adjust the model itself short of a
-full fine-tuning run. Because the entire task specification lives inside
-the same token sequence the model conditions on, and because the paper
-shows this channel alone can get you competitive performance on some
-tasks, the practical skill of authoring effective prompts became a
-first-class part of using large language models in production, in a way
-it simply wasn't as relevant when fine-tuning was the primary adaptation
-mechanism.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **hold weights fixed, replay prompts byte-for-byte, and compare task accuracy across controlled prompt variants**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-**Q:** GPT-3's few-shot SuperGLUE score (71.8%) is well below the fine-
-tuned state of the art (89.0%) reported in the paper. Does that
-contradict the paper's headline claim?
-**A:** Not really — it's consistent with the paper's actual claim, which
-is narrower than "few-shot always matches fine-tuning." The paper
-presents a mix of results: some benchmarks (like LAMBADA, at 86.4%
-few-shot) where GPT-3 beats prior fine-tuned state of the art outright;
-some (like TriviaQA) where its one-shot result matches, and its few-shot
-result exceeds, strong fine-tuned-plus-retrieval systems; and some (like
-the SuperGLUE aggregate, and specific tasks like
-QuAC and RACE) where it clearly trails fine-tuning. The paper's
-contribution is characterizing this whole landscape — where in-context
-learning closes the gap to fine-tuning and where it doesn't — not
-claiming a uniform victory over fine-tuning on every task.
-
-**Q:** Why does the context window size (`n_ctx = 2048` tokens for
-GPT-3) matter as a practical engineering constraint, independent of the
-model's parameter count?
-**A:** Every token of a few-shot prompt — the instruction, every
-demonstration, and the query — has to fit inside that fixed window, so
-context length places a hard ceiling on how many demonstrations you can
-supply, regardless of how capable the underlying model is. And because
-self-attention's compute and memory cost grows quadratically with
-sequence length (see this repo's [Attention Is All You Need explainer](../01-attention-is-all-you-need/README.md)),
-a longer few-shot prompt is not just a formatting choice — it's a real,
-recurring compute and latency cost paid on every single inference
-request, unlike a fine-tuning cost that's paid once and amortized across
-many later requests.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

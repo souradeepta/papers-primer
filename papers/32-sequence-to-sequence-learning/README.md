@@ -137,124 +137,30 @@ training-versus-generation difference explicit.
 
 ## Common Misconceptions & Pitfalls
 
-- The original system does not attend to all encoder states at every decode
-  step; that is the next paper's contribution.
-- Teacher forcing during training differs from autoregressive inference.
+- **Misconception: `p(y|x)=∏_tp(y_t|y<t,x)` is the whole implementation.** The equation describes the paper's central relationship, but `LSTM encoder-decoder autoregressive generation` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **teacher-forced training and inference use compatible token boundaries while decoder state is initialized correctly**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **exposure bias, EOS errors, or beam-search state aliasing** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **compare teacher-forced loss with greedy and beam outputs on exact fixtures**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What connects encoder and decoder?  
-**A:** The encoder final LSTM state initializes the decoder.
+**Q:** What is the central idea behind **LSTM encoder-decoder autoregressive generation**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why is output length flexible?  
-**A:** The decoder emits one token at a time until an end marker.
+**Q:** How should I read `p(y|x)=∏_tp(y_t|y<t,x)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** What is teacher forcing?  
-**A:** Feeding the true previous target token during training.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **teacher-forced training and inference use compatible token boundaries while decoder state is initialized correctly**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What bottleneck did this reveal?  
-**A:** One fixed vector must represent the full source sequence.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **exposure bias, EOS errors, or beam-search state aliasing**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** What fixed that bottleneck?  
-**A:** Soft attention over encoder states.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **compare teacher-forced loss with greedy and beam outputs on exact fixtures**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Deeper Mechanism and Engineering
-
-The encoder processes source tokens in order and returns its final hidden and
-cell states. Those two tensors are not merely features appended to a decoder
-input; they initialize the decoder recurrence. The first decoder step begins
-with a start token, produces a distribution over vocabulary items, and then
-uses a prior target token to advance. Training commonly supplies the true prior
-token, while generation feeds the model's own chosen token back in.
-
-That train-inference difference creates exposure bias. A decoder trained only
-on correct histories may make one early mistake at inference and then receive
-a prefix it never saw in training. Beam search partly addresses this by
-tracking several likely partial outputs, but it increases compute and can still
-prefer fluent yet incorrect sequences. Length normalization, end-token rules,
-and vocabulary constraints are therefore product decisions, not minor details.
-
-The fixed encoder vector is a useful compression test. For a short command,
-one state can preserve subject, action, and important modifiers. As source
-length grows, the decoder must retrieve many independent details from a single
-state. Translation quality can degrade because a distant name, negation, or
-phrase boundary competes for the same limited representation. This observed
-pressure motivated the attention mechanism in the next paper.
-
-Input reversal in the original work is historically instructive. Reversing
-source tokens reduced the temporal distance between early decoder predictions
-and relevant source information, making optimization easier without changing
-the model's basic capacity. It illustrates that sequence order affects the
-gradient path in recurrent systems, not merely the human-facing presentation.
-
-In production, source and target vocabularies need explicit unknown-token,
-padding, start-token, and end-token policies. Mask loss on padding, preserve
-per-example lengths, and ensure evaluation decoding uses the same tokenization
-rules as deployment. Teacher-forced loss can look good even when free-running
-generation is weak, so evaluate decoded outputs as well as token-level loss.
-
-The architecture is still valuable for tasks with compact inputs and outputs,
-or as a teaching baseline. Modern Transformer encoder-decoders retain the same
-probabilistic factorization and autoregressive decoder interface; they replace
-the recurrent fixed-vector pathway with attention and parallel layer
-computations.
-
-The model learns two related jobs at once. The encoder turns a variable-length
-input into state, and the decoder learns a conditional language model whose
-initial state depends on that input. This separation is why the same pattern
-can handle translation, code generation, question answering, or a structured
-data-to-text task. The symbols differ, but the contract remains “read one
-sequence, then write another.”
-
-The probability product in the math section is scored in practice by summing
-log probabilities. Logs turn multiplication into addition and avoid tiny
-floating-point products. Cross-entropy loss then asks the decoder to assign
-high probability to each correct next token. A full decoded sentence is only
-as likely as its chain of choices, so a locally tempting early word can lead
-to a poor global translation.
-
-Beam search is a controlled alternative to greedy decoding. Greedy decoding
-keeps only the single most likely next token; beam search keeps several partial
-sentences and extends each. That resembles a bounded best-first search over
-paths in a graph. Larger beams cost more and do not guarantee better human
-quality, so production systems tune beam width, length penalties, repetition
-rules, and stop conditions on representative examples.
-
-The initial final-state handoff is also a useful failure-analysis boundary.
-If the encoder state loses a name or a negation, no clever decoder vocabulary
-projection can recover it reliably. Inspect performance by source length and
-by rare-token rate. Those measurements make the next paper’s attention
-mechanism feel necessary rather than decorative: it changes what information
-the decoder can retrieve at each step.
-
-Training pairs require disciplined preprocessing. Put a start marker before
-every target and an end marker after it, then shift the target sequence by one
-position so decoder input and prediction label line up. An off-by-one error can
-still produce a finite loss while teaching the decoder to predict the current
-token from itself. Small hand-checked examples are more valuable than a large
-silent training job at this stage.
-
-The original model’s LSTM layers are recurrent, so encoder work is inherently
-ordered across source positions and decoder work is ordered across targets.
-Batching handles several examples at once, not arbitrary time steps from the
-same example. This matters when estimating latency: decoding a 40-token output
-requires roughly 40 sequential decisions even if the encoder input was already
-processed.
-
-When comparing systems, separate adequacy from fluency. A decoder can produce
-smooth target-language text that omits an important source detail, especially
-when the fixed vector is overloaded. Human evaluation, targeted contrast sets,
-and source-length slices expose that failure better than a single aggregate
-token accuracy. Attention addresses access to source detail, but faithful
-generation also depends on data coverage and decoding constraints.
-
-## Implementation Walkthrough
-
-The code packs variable-length sources, transfers both hidden and cell state,
-then contrasts teacher-forced logits with greedy decoding. That distinction is
-the central operational risk: a low teacher-forced loss can coexist with poor
-free-running output. Test exact token shifts, end-token termination, and
-length-stratified generation before optimizing beam search.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

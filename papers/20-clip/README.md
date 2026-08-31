@@ -259,43 +259,30 @@ temperature-scaled matrix, and cross-entropy gradients over a batch.
 
 ## Common Misconceptions & Pitfalls
 
-**“Zero-shot means no choices are needed.”** Candidate labels and prompt wording
-can materially change accuracy and bias.
-
-**“Similarity is factual confidence.”** It is a relative compatibility score,
-not a calibrated claim about reality.
-
-**“CLIP detects every object.”** Standard zero-shot scoring compares a whole
-image to supplied text; detection requires additional methods.
+- **Misconception: `sim(I,T)=ĨᵀT̃` is the whole implementation.** The equation describes the paper's central relationship, but `symmetric image-text contrastive learning` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **image-text positives align on both retrieval directions and temperature is applied consistently**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **duplicate captions, batch composition bias, or preprocessing mismatch between modalities** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **test image-to-text and text-to-image retrieval with duplicate and hard-negative slices**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What is CLIP's training target?
-**A:** It identifies matching image-text pairs within a batch in both directions.
+**Q:** What is the central idea behind **symmetric image-text contrastive learning**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why normalize embeddings?
-**A:** It makes dot products behave as cosine similarities and stabilizes the
-comparison geometry.
+**Q:** How should I read `sim(I,T)=ĨᵀT̃`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** How does zero-shot classification work?
-**A:** Encode prompted labels and choose the text embedding most similar to the
-image embedding.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **image-text positives align on both retrieval directions and temperature is applied consistently**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** Why is temperature learned?
-**A:** It controls the sharpness of contrastive softmax logits.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **duplicate captions, batch composition bias, or preprocessing mismatch between modalities**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** What is a deployment risk?
-**A:** A preprocessing, tokenizer, index, or prompt mismatch can invalidate
-scores without a runtime error.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **test image-to-text and text-to-image retrieval with duplicate and hard-negative slices**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-CLIP encodes a batch of images and matching text, computes every image-text
-similarity, and trains the diagonal pairs to outrank off-diagonal pairs. The
-batch itself supplies negatives, so batch composition, distributed gathering,
-and duplicate captions matter. At zero-shot inference, compare an image
-embedding to carefully chosen text prompts; prompt wording is an input feature,
-not an afterthought.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

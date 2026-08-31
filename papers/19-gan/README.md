@@ -260,44 +260,30 @@ It demonstrates signs of the updates, not image generation or convergence.
 
 ## Common Misconceptions & Pitfalls
 
-**“GAN loss should steadily go to zero.”** It is a game, so individual losses
-are not a monotonic quality score.
-
-**“A discriminator at 50% proves success.”** It can also be weak, undertrained,
-or evaluated on an uninformative split.
-
-**“Random noise guarantees diversity.”** A generator can ignore parts of its
-latent input and collapse to a few outputs.
+- **Misconception: `min_Gmax_D V(D,G)` is the whole implementation.** The equation describes the paper's central relationship, but `alternating generator/discriminator adversarial training` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **each optimizer updates only its intended network and sample diversity is measured separately from realism**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **mode collapse, discriminator overpowering, or misleading loss interpretation** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **track diversity and held-out samples while logging both players’ gradient norms**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What does a GAN learn without explicitly modeling?
-**A:** It learns a sampler that can produce data-like samples without requiring
-an explicit normalized likelihood for each output.
+**Q:** What is the central idea behind **alternating generator/discriminator adversarial training**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why alternate updates?
-**A:** Generator and discriminator optimize opposing objectives, so each update
-changes the other's learning signal.
+**Q:** How should I read `min_Gmax_D V(D,G)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** What is mode collapse?
-**A:** Many latent inputs map to too few kinds of samples, reducing coverage.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **each optimizer updates only its intended network and sample diversity is measured separately from realism**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** Why use the non-saturating loss?
-**A:** It gives stronger early generator gradients when the discriminator easily
-recognizes fakes.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **mode collapse, discriminator overpowering, or misleading loss interpretation**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Can GAN output be trusted as evidence?
-**A:** No. Plausible appearance does not establish authenticity, accuracy, or
-permission to use the depicted content.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **track diversity and held-out samples while logging both players’ gradient norms**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-GAN training alternates discriminator and generator updates. The discriminator
-learns to separate real from generated samples; the generator uses its gradient
-to make samples harder to distinguish. Balance matters: an overpowered
-discriminator can provide poor gradients, while a weak one gives little useful
-signal. Monitor sample diversity, discriminator behavior, and mode coverage,
-not a single scalar loss alone.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

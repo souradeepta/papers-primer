@@ -154,36 +154,30 @@ python3 papers/15-pagedattention-vllm/code/block_manager.py
 
 ## Common Misconceptions & Pitfalls
 
-- **“PagedAttention pages KV data to CPU or disk.”** Its central design is GPU-resident fixed blocks with logical-to-physical translation.
-- **“It replaces attention kernels such as FlashAttention.”** It manages persistent serving memory; kernels and cache management solve separate problems.
-- **“Sharing a prefix is always safe.”** Shared blocks need reference counting, authorization-aware keys, and copy-on-write protection for modifications.
-- **“Near-zero waste means no memory limit.”** Active KV entries, weights, scheduler queues, and block metadata still consume finite GPU memory.
+- **Misconception: `logical block → physical block` is the whole implementation.** The equation describes the paper's central relationship, but `paged KV-cache allocation for continuous batching` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **a request can read only its own logical blocks and reference counts free blocks exactly once**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **cross-request cache contamination, fragmentation, or block-table races** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **stress concurrent requests with isolation and reference-count assertions**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** Why does an LLM server need a KV cache?
-**A:** Decode steps reuse prior attention keys and values instead of recomputing the full prefix every token.
+**Q:** What is the central idea behind **paged KV-cache allocation for continuous batching**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** What does a block table map?
-**A:** A request’s logical KV block number to an arbitrary physical GPU block.
+**Q:** How should I read `logical block → physical block`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Why use fixed-size blocks?
-**A:** They avoid large contiguous reservations and bound unused tail memory.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **a request can read only its own logical blocks and reference counts free blocks exactly once**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** Why reference count shared prefix blocks?
-**A:** A block must not be freed while another beam, sample, or request still reads it.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **cross-request cache contamination, fragmentation, or block-table races**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** What is the principal operational trade-off?
-**A:** Better utilization and sharing versus allocator, scheduler, metadata, and block-size complexity.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **stress concurrent requests with isolation and reference-count assertions**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-PagedAttention stores each request's key-value cache in fixed-size blocks and
-maps logical token positions to physical blocks. This avoids reserving one
-large contiguous cache for every possible request length and permits sharing
-prefix blocks safely. A serving implementation must track block ownership,
-reference counts, eviction, and request cancellation; a cache leak or mistaken
-shared writable block is both a throughput and correctness failure.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

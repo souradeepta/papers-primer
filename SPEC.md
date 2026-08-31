@@ -13,7 +13,8 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 8. The Mechanism (math/architecture, CS-student depth; >=1 Mermaid diagram AND >=1 GIF)
 9. Practical Engineering Notes (SWE depth: prod tradeoffs, perf, named real-library pointers)
 10. Runnable Code Example (references a documented file in implementations/NN-slug/code/, with prerequisites, exact command, expected behavior, and a short explanation of the implementation)
-11. Common Misconceptions & Pitfalls (>=2 items)
+11. Common Misconceptions & Pitfalls (>=4 paper-specific items, each with an
+    explanation and a practical guard or consequence)
 12. Interview Q&A (SDE2 depth: >=3 scenario pairs plus follow-ups; every answer
   must be a paragraph of at least 40 prose words and explain implementation,
   trade-offs, or debugging evidence)
@@ -49,6 +50,11 @@ generic study advice that could describe any paper.
   failure mode, and prescribe a paper-appropriate test or debugging experiment.
   Generic scaffolding such as “check the inputs and compare outputs” does not
   satisfy this requirement, even when it meets the word count.
+- Common Misconceptions & Pitfalls must contain >=4 paper-specific items. Each
+  item must explain why the claim is wrong or dangerous and give a consequence,
+  invariant, or mitigation. Quick Concept Checks must contain >=6 Q&A pairs;
+  every answer must be at least 30 prose words and connect the concept to an
+  equation, implementation detail, edge case, or operational decision.
 - Use Markdown semantically: `inline code` for symbols and APIs, fenced
   `text`, `python`, or `mermaid` blocks for runnable or visual material,
   **bold** for labels and invariants, and *italics* sparingly for emphasis.

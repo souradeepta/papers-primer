@@ -189,44 +189,30 @@ This is not a language model or a benchmark. It isolates the gradient direction 
 
 ## Common Misconceptions & Pitfalls
 
-- **“DPO has no reward interpretation.”** Its derivation parameterizes reward through the policy/reference ratio; it merely avoids fitting a separate explicit reward network.
-- **“DPO is supervised fine-tuning on chosen answers.”** The rejected answer and frozen reference both appear in the loss, so discarding them changes the algorithm.
-- **“The reference is optional bookkeeping.”** It anchors behavior and defines the log ratios. Accidentally training it invalidates the intended objective.
-- **“Offline means safe.”** Fixed preference data can be biased, noisy, jailbroken, or unrepresentative; DPO does not repair those labels.
+- **Misconception: `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))` is the whole implementation.** The equation describes the paper's central relationship, but `direct preference optimization against a reference policy` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **chosen/rejected sequences use the same prompt boundary and reference log-probabilities are detached**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **preference leakage, length bias, or incorrect sequence log-prob summation** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **unit-test pairwise margins and monitor held-out preference accuracy by length bucket**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What is the DPO training example format?
-**A:** A prompt plus a chosen and rejected completion, scored conditionally under both policy and frozen reference.
+**Q:** What is the central idea behind **direct preference optimization against a reference policy**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why do reference terms cancel a prompt-dependent constant?
-**A:** The optimal-policy normalization depends only on the prompt, so subtracting two responses for that prompt removes it.
+**Q:** How should I read `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Which parameters receive gradients?
-**A:** Only the trainable policy. Reference log probabilities are computed with gradients disabled.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **chosen/rejected sequences use the same prompt boundary and reference log-probabilities are detached**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What does beta control?
-**A:** The scale of the pairwise margin and, in the derivation’s convention, the strength of the reward-versus-KL trade-off.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **preference leakage, length bias, or incorrect sequence log-prob summation**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** What does DPO give up relative to PPO RLHF?
-**A:** It does not perform on-policy exploration or use an online reward loop with adaptive PPO-style control.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **unit-test pairwise margins and monitor held-out preference accuracy by length bucket**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Worked Preference Update
-
-For one prompt, DPO receives a preferred completion and a rejected completion.
-It compares how much more the current policy favors the preferred answer than
-the rejected one, relative to a fixed reference policy. If that relative gap
-is too small, the loss supplies a gradient that raises the preferred
-completion's log probability and lowers the rejected one. The reference term
-acts like a guardrail against drifting merely because a completion is easy to
-make more likely.
-
-The data pipeline is as important as the equation. Keep the prompt identical
-within each pair, tokenize both continuations under the same policy, mask prompt
-tokens out of completion likelihood, and audit pair quality. A preference pair
-with a malformed rejected answer can teach superficial formatting rather than
-the desired behavior. Evaluate both preference accuracy and task-specific
-safety or helpfulness after optimization.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

@@ -132,127 +132,30 @@ Switching model.train and model.eval is the key production behavior to notice.
 
 ## Common Misconceptions & Pitfalls
 
-- Dropout is not the same as permanently pruning a network.
-- More dropout is not always better; too much blocks useful capacity.
+- **Misconception: `h̃=(m/p)h` is the whole implementation.** The equation describes the paper's central relationship, but `inverted dropout during training` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **training is stochastic while evaluation is deterministic and expected activation scale is preserved**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **dropout left enabled at serving or inconsistent rate placement across branches** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **assert stochastic train outputs, deterministic eval outputs, and mean-preserving scale**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** Why does dropout reduce overfitting?  
-**A:** It discourages units from relying on narrow co-adaptations.
+**Q:** What is the central idea behind **inverted dropout during training**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** When is dropout active?  
-**A:** During training, not ordinary deterministic inference.
+**Q:** How should I read `h̃=(m/p)h`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** What is inverted dropout?  
-**A:** Scaling retained activations by inverse keep probability at training time.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **training is stochastic while evaluation is deterministic and expected activation scale is preserved**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** Does it replace data augmentation?  
-**A:** No; they regularize in different ways and can complement each other.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **dropout left enabled at serving or inconsistent rate placement across branches**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Why use eval mode?  
-**A:** It disables random masks for repeatable predictions.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **assert stochastic train outputs, deterministic eval outputs, and mean-preserving scale**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Deeper Mechanism and Engineering
-
-During a training pass, each eligible activation receives an independent
-Bernoulli mask. A zero removes that activation's contribution for that pass;
-a retained activation is scaled by inverse keep probability in the common
-inverted-dropout convention. Across updates, the optimizer therefore sees many
-related subnetworks sharing the same parameters.
-
-The ensemble interpretation is useful but should be stated carefully. Dropout
-does not explicitly train and save every possible subnetwork. Instead, shared
-parameters receive gradients from randomly sampled thinned versions. At
-inference, the unmasked network is an efficient approximation to averaging
-those related models. Inverted scaling ensures its activation magnitude does
-not suddenly change between train and evaluation modes.
-
-Consider a feature that fires only when another specific feature fires. Without
-regularization, a classifier can rely on that accidental pair even if it is a
-training-set coincidence. Randomly dropping either feature makes that shortcut
-unreliable. Learning pressure shifts toward redundant evidence and features
-that remain helpful in several subnetworks.
-
-The hyperparameter is retention probability, or equivalently dropout
-probability. Inputs are commonly dropped less aggressively than hidden units.
-Very high dropout can make a small model underfit; very low dropout may not
-change an overfit model enough. Tune it with a validation set and assess
-calibration, accuracy, and loss rather than treating a conventional value as a
-universal rule.
-
-Normalization layers change the interaction. Batch normalization already
-introduces batch-dependent behavior, and dropout before or after it can change
-running statistics. Modern architectures often use dropout selectively in
-residual branches, embeddings, or attention weights rather than placing it
-after every layer. The correct placement follows the architecture and measured
-validation behavior.
-
-For reproducible experiments, record the seed, train/eval mode, probability,
-and framework version. For deterministic serving, call evaluation mode before
-export or prediction. Leaving training mode enabled produces random outputs,
-which can look like flaky infrastructure rather than a model-mode bug.
-
-The mask is sampled anew during training, not once at model creation. A unit
-that is absent in one batch can participate in the next. This is why dropout
-is a training-time perturbation rather than architectural pruning. The model
-cannot safely assign one important concept to a single fragile route, because
-that route may disappear before the next gradient update.
-
-Inverted scaling looks like a small implementation detail but prevents a large
-mode-switch surprise. If only half of values survive and are not scaled, the
-average activation entering later layers is about half as large during
-training. Dividing survivors by the keep probability restores the expected
-scale. It is analogous to distributing a team’s expected workload among fewer
-people on a randomly selected shift.
-
-Dropout regularizes different components in different ways. Dropping image
-pixels, embedding dimensions, hidden units, residual branches, or attention
-weights changes the noise injected into the computation. The original paper
-popularized unit dropout, but a modern architecture may use structured variants
-or no dropout when data augmentation, weight decay, and scale already provide
-enough regularization. Validation data should decide.
-
-To test an implementation, make two forward passes in training mode with the
-same input and expect variation, then repeat in evaluation mode and expect
-equality. Seed randomness when reproducing an experiment, but avoid assuming
-one seed proves a rate is good. Compare train-versus-validation curves: a
-large gap suggests overfitting, while both poor curves suggest capacity, data,
-or optimization trouble rather than a need for more masking.
-
-Dropout also changes the effective optimization problem. Gradients arrive from
-slightly different subnetworks on each update, so loss curves can be noisier.
-That noise is purposeful regularization, not automatically a stability bug.
-Use a learning-rate schedule and enough training steps to judge validation
-behavior fairly; stopping early just because one training batch gets worse can
-confuse random masking with true divergence.
-
-The original paper discusses applying dropout to visible units as well as
-hidden units, but input corruption must fit the modality. Removing random
-pixels can be sensible for images, while deleting token embeddings may damage
-short text. Structured dropout that removes channels, spans, or heads changes
-the failure mode. Pick a perturbation that reflects the shortcuts you want the
-model to stop using, then validate that it does not erase the signal entirely.
-
-At serving time, standard dropout has no runtime ensemble cost because it is
-off. If deliberately left on for many predictions, the spread of outputs can
-be used as a rough uncertainty heuristic called Monte Carlo dropout. That is a
-different product choice: it needs repeated inference, aggregation, and
-calibration evaluation. Do not accidentally present random single-pass output
-as uncertainty-aware behavior.
-
-Dropout should be measured against a no-dropout control with the same data
-split, seed range, optimizer, and training budget. If validation quality
-improves while training quality falls slightly, the regularizer is doing its
-intended job. If both collapse, reduce the rate or revisit the model and data.
-This comparison keeps “randomness helped” from becoming an unsupported story.
-
-## Implementation Walkthrough
-
-The example deliberately runs the same batch twice in training and evaluation
-mode. Training outputs should differ because masks are resampled; evaluation
-outputs should match because inverted scaling already corrected expected
-activation size. This simple test catches a common deployment bug where a
-model is exported while still in training mode.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

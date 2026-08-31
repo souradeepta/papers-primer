@@ -7,6 +7,7 @@ from paper_checks import (
     check_further_reading,
     check_gifs,
     check_interview_quality,
+    check_learning_sections,
     check_mechanism_mermaid,
     check_qa_pairs,
     check_sections,
@@ -128,6 +129,21 @@ def test_check_interview_quality_rejects_generic_template_filler():
 """.format(answer=answer)
     errors = check_interview_quality(text)
     assert any("generic template filler" in error for error in errors)
+
+
+def test_check_learning_sections_requires_explanatory_content():
+    text = """## Common Misconceptions & Pitfalls
+- **One:** too short
+- **Two:** too short
+- **Three:** too short
+- **Four:** too short
+## Quick Concept Checks
+**Q:** one
+**A:** short
+"""
+    errors = check_learning_sections(text)
+    assert any("misconception/pitfall" in error for error in errors)
+    assert any("quick checks" in error for error in errors)
 
 
 def test_check_further_reading_counts_links():

@@ -135,122 +135,30 @@ during training.
 
 ## Common Misconceptions & Pitfalls
 
-- GloVe is not a contextual embedding model; each word type has one vector.
-- A high co-occurrence count alone is not semantic proof; corpus bias matters.
+- **Misconception: `wᵀw̃+b+b̃≈logX` is the whole implementation.** The equation describes the paper's central relationship, but `weighted factorization of global word co-occurrence counts` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **count construction, weighting cutoff, and bias terms use the same vocabulary snapshot**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **corpus-count memory blow-up, rare-word noise, or separate embedding tables being mishandled** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **snapshot counts and evaluate reconstruction plus downstream similarity and retrieval**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What data does GloVe learn from?  
-**A:** Word-context co-occurrence counts from a corpus.
+**Q:** What is the central idea behind **weighted factorization of global word co-occurrence counts**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why use log counts?  
-**A:** They compress the wide numeric range of raw frequency.
+**Q:** How should I read `wᵀw̃+b+b̃≈logX`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Why have context vectors too?  
-**A:** They model asymmetric word-context roles during factorization.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **count construction, weighting cutoff, and bias terms use the same vocabulary snapshot**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** How does GloVe differ from word2vec?  
-**A:** GloVe explicitly fits global counts; word2vec uses a predictive objective.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **corpus-count memory blow-up, rare-word noise, or separate embedding tables being mishandled**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** What is a major limitation?  
-**A:** One static vector cannot choose a different sense per sentence.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **snapshot counts and evaluate reconstruction plus downstream similarity and retrieval**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Deeper Mechanism and Engineering
-
-Build a co-occurrence table by scanning a corpus with a context window. Each
-time word i occurs near word j, increment X_ij, often by a distance-dependent
-weight so closer neighbors count more. The table is sparse: most vocabulary
-pairs never occur together, and efficient implementations iterate only over
-observed pairs.
-
-GloVe gives every vocabulary item a word vector, a context vector, and two
-biases. Its predicted log count is the dot product of the two vectors plus
-their biases. A weighted squared error compares that prediction with log X_ij.
-The weighting function suppresses extremely rare noisy pairs and prevents a
-handful of very frequent pairs from dominating optimization.
-
-Why retain separate word and context embeddings? A word in the center and a
-word in the surrounding window have related but not identical roles. The
-factorization uses that asymmetry while learning. After training, applications
-often add the two embeddings or choose the word embedding, but that downstream
-choice should be evaluated rather than assumed.
-
-Global statistics can reveal relationships that a local objective sees only
-through individual windows. If two words have similar ratios of co-occurrence
-with many contexts, their vectors can become similar even when the words rarely
-appear directly beside one another. The approach remains limited by corpus
-coverage, tokenization, and social bias encoded in text frequency.
-
-In production, precompute counts with a stable tokenizer and record window
-size, vocabulary cutoff, distance weighting, and corpus version. A dense
-vocabulary-square array becomes impractical quickly; use sparse maps, shards,
-or streaming aggregation. Validate that unknown tokens, case folding, and
-punctuation handling match the downstream system.
-
-Static embeddings are cheap and useful for small models, similarity search, or
-interpretable baselines. They cannot choose different vectors for “bank” in a
-river sentence versus a finance sentence. Contextual encoders solve that by
-computing a representation from the full input, but they are more expensive
-and do not remove corpus bias automatically.
-
-The objective has a friendly interpretation. For every observed pair, the
-model makes a prediction for the logarithm of its count. If “ice” and “cold”
-occur together frequently, their word-context dot product and biases should
-make a larger prediction than for a rare pair. Squaring the difference makes
-large mistakes costly; the weighting function decides how much each observed
-pair should influence the total lesson.
-
-The weighting function is important because corpus counts have a long tail.
-Pairs seen once may be noise, while punctuation or function-word pairs may be
-so common that they crowd out everything else. GloVe increases influence up to
-a chosen count threshold and then caps it. This is like a monitoring system
-that listens more to repeated signals than one-off events but refuses to let a
-single noisy metric dominate every dashboard decision.
-
-Window construction determines what “context” means. A symmetric window sees
-left and right neighbors; a directional window can preserve order. Weighting
-nearby tokens more strongly encodes a belief that close words carry more
-direct relations. These choices, vocabulary cutoff, casing, and tokenization
-are part of the learned representation, so they belong in experiment metadata
-and reproducible data pipelines.
-
-The final vectors support cosine similarity because vector direction captures
-a usage pattern better than raw magnitude alone. Yet a nearest-neighbor list
-is an audit tool, not a certificate of meaning. Inspect for stereotypes,
-unexpected tokenization fragments, and overly frequent words. For a product,
-evaluate retrieval or downstream task behavior on the people and language
-varieties that actually matter, then consider contextual models when one static
-vector per word is too coarse.
-
-The paper motivates ratios of co-occurrence probabilities because they make
-comparisons sharper. A context word such as “solid” may be much more likely
-near “ice” than “steam,” while “gas” reverses that contrast. A raw count does
-not tell the whole story because common context words appear beside almost
-everything. Relative patterns are what let an embedding separate related but
-different concepts.
-
-Training samples only nonzero entries of the sparse table. That is a major
-engineering saving: a vocabulary of 100,000 words has ten billion possible
-pairs, but most do not occur in a realistic window. Store integer ids and
-counts, batch observed pairs, and monitor the weighted objective separately
-from downstream quality. A lower reconstruction loss is useful evidence, not
-a guarantee that the vectors help a classifier or retrieval service.
-
-GloVe sits in an instructive historical middle ground. It has an explicit
-statistical object—the corpus count matrix—like classical distributional
-semantics, but it learns dense vectors with gradient descent like neural
-methods. That clarity is why it remains a good baseline and teaching tool.
-Modern contextual models add flexibility, yet global-count embeddings can be
-smaller, easier to inspect, and appropriate when compute or data is limited.
-
-## Implementation Walkthrough
-
-The code constructs only observed window pairs, applies inverse-distance
-weights, and learns separate word/context embeddings plus biases. This is the
-sparse version of the paper's objective; a dense count matrix would waste
-memory on absent pairs. After fitting, inspect neighbors and downstream
-retrieval, because reducing log-count reconstruction loss alone does not
-guarantee useful semantics.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

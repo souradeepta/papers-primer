@@ -496,140 +496,30 @@ ablation is comparing.
 
 ## Common Misconceptions & Pitfalls
 
-- **"LoRA fine-tunes a low-rank *approximation of the model*."** It
-  doesn't approximate the pretrained weights `W0` at all — `W0` stays
-  exactly as it was pretrained, untouched, for the entire process. What's
-  low-rank is the *update* `ΔW = BA` applied on top of it. The paper is
-  explicit that its evidence points to the task-specific change needed
-  having low intrinsic rank, not that the pretrained model itself is
-  low-rank or that any information is being discarded from `W0`.
-- **"Adapters and LoRA are basically the same idea."** Both freeze the
-  base model and train a small number of new parameters, but
-  structurally they differ in an important way: adapter layers are new
-  modules inserted into the model's sequential forward path (so every
-  inference call executes them, adding latency the paper attributes to
-  adapters), while LoRA's update runs in parallel to an existing weight
-  matrix and can be algebraically merged into that matrix after
-  training, leaving nothing extra to execute at inference time. Treating
-  them as interchangeable "PEFT methods" glosses over exactly the
-  property (zero inference-latency overhead) the paper spends real
-  space distinguishing.
-- **"A smaller rank `r` is always strictly better because it's more
-  efficient."** The paper's `r=1` result is a specific finding for
-  specific matrices (`Wq`, `Wv`) on specific tasks, not a universal
-  claim that rank barely matters anywhere. Treating it as "rank doesn't
-  matter, just use r=1 everywhere" both overclaims the paper's result
-  and risks underfitting a task whose necessary update genuinely needs
-  more directions than a rank-1 update can express — this is a case
-  where "the paper reports X for its tested setting" needs to be kept
-  separate from "X generalizes to every setting."
-- **"LoRA reduces the compute cost of the forward/backward pass in the
-  same proportion as it reduces trainable parameters."** It doesn't:
-  every forward pass still runs the full computation through the frozen
-  `W0` (the paper doesn't shrink the model's activations or its
-  matrix-multiply FLOPs for the frozen path), plus a small extra
-  computation through `A` and `B`. What shrinks is the number of
-  parameters the optimizer has to track gradients and Adam moments for
-  — which is exactly why the memory savings the paper reports (1.2TB to
-  350GB) are large, but the forward-pass compute savings are much more
-  modest than the 10,000x parameter-count number might suggest at a
-  glance.
+- **Misconception: `W′=W+BA` is the whole implementation.** The equation describes the paper's central relationship, but `low-rank adapter injection into a frozen linear layer` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the base weight is unchanged while adapter shapes and merge/unmerge logits agree**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **wrong adapter rank, dtype, target module, or accidental base-weight updates** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **compare merged and unmerged logits and assert the frozen parameter checksum**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** Walk through the LoRA forward-pass equation and explain what each
-term does.
-**A:** `h = W0 x + (alpha/r) * B A x`. `W0` is the frozen pretrained
-weight — it never receives a gradient during LoRA fine-tuning. `A`
-(shape `r x k`) and `B` (shape `d x r`) are the trainable low-rank
-factors whose product `BA` (shape `d x k`, same as `W0`) forms the
-task-specific update, constrained to rank at most `r`. The `alpha/r`
-term is a fixed scaling factor that controls the update's effective
-magnitude, similar in effect to a learning rate — the paper reports
-tuning it plays roughly that role and that they typically didn't
-re-tune it extensively beyond setting it to their first tried `r`.
+**Q:** What is the central idea behind **low-rank adapter injection into a frozen linear layer**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why is `B` initialized to zero and `A` to a random Gaussian,
-rather than the other way around, or both being zero?
-**A:** The product `BA` needs to be exactly zero at the start of
-training so fine-tuning begins from the pretrained model's exact,
-unmodified behavior. Zero-initializing `B` alone (with `A` random)
-achieves that: the product is zero regardless of what's in `A`, because
-anything times a zero matrix is zero. If both were zero, `BA` would
-still be zero, but the gradient with respect to `A` would also be zero
-at initialization (since it's being multiplied by `B=0` in the forward
-path in a way that keeps the very first gradient degenerate) — so at
-least one factor needs a nondegenerate, non-zero initialization to give
-the model somewhere to move on the first backward pass. The paper's
-choice is to make that factor `A`.
+**Q:** How should I read `W′=W+BA`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** LoRA and adapter layers are both "freeze the base model, add a
-few trainable parameters" methods — what's the concrete difference in
-where those parameters live, and why does it matter for latency?
-**A:** Adapter layers are inserted as new modules directly in the
-model's sequential forward path — a token's activations flow through
-the frozen sublayer, then through the small trainable adapter, in
-series. That extra module has to execute on every request, adding
-measurable latency, which the paper cites as a real cost of adapter
-methods, especially at the low batch sizes and short sequence lengths
-typical of online serving where there's little parallel work to hide
-that extra computation behind. LoRA's update instead runs in parallel to
-an existing weight matrix (`W0 x` and `B A x` are computed independently
-and summed), and because both paths are linear, the paper shows you can
-algebraically fold the update into `W0` after training — `W =
-W0 + (alpha/r) BA` — producing one merged matrix with no separate module
-left to execute. That's the structural reason LoRA can guarantee zero
-added inference latency while adapters cannot, by construction.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **the base weight is unchanged while adapter shapes and merge/unmerge logits agree**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** The paper reports a rank as low as `r=1` performs well for
-adapting `Wq` and `Wv` on GPT-3. Does that mean the pretrained weight
-matrices themselves are low-rank?
-**A:** No — and this distinction matters. The paper's rank-1 finding
-and its follow-up singular-value analysis are about the *task-specific
-update* `ΔW = BA` needed to adapt the model to a new task, not about the
-pretrained weight `W0` itself, which is never modified in any way LoRA
-would reveal as low-rank or otherwise. The paper's own framing is that
-whatever correction the model needs to specialize to a given downstream
-task appears to be expressible with very few effective directions, and
-its singular-vector overlap analysis between rank-8 and rank-64 learned
-updates is offered as supporting evidence for exactly that — a claim
-about how much the model needs to change, not about the model's existing
-structure.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **wrong adapter rank, dtype, target module, or accidental base-weight updates**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** How does LoRA's approach to GPU memory savings differ from its
-approach to trainable-parameter-count savings — are they the same
-number for a different reason, or genuinely different mechanisms?
-**A:** They're related but not identical. The parameter-count reduction
-(the paper's reported ~10,000x figure) comes directly from training
-`A`/`B` (a tiny fraction of the full weight count) instead of the full
-weight matrices. The memory reduction (~3x, from a reported 1.2TB to
-350GB on GPT-3 175B) comes specifically from the optimizer state: Adam
-tracks two moment estimates per trainable parameter, so freezing the
-overwhelming majority of parameters means Adam only needs to allocate
-those moment buffers for the small `A`/`B` matrices, not the full model.
-The two numbers differ by orders of magnitude (10,000x vs 3x) because
-the frozen model's *weights themselves* still have to be held in memory
-during training even though they receive no gradient or optimizer
-state — the model's static footprint doesn't shrink, only its trainable
-and optimizer-tracked footprint does.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **compare merged and unmerged logits and assert the frozen parameter checksum**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-**Q:** If you needed to serve many different LoRA-adapted versions of
-the same base model simultaneously (e.g. one adapter per customer), what
-production tradeoff would you face that a single merged deployment
-doesn't have?
-**A:** Merging `W0 + (alpha/r) BA` into one matrix is ideal when you're
-deploying a single fine-tuned variant, since it reproduces normal
-fine-tuned-model inference latency exactly, per the paper. But merging
-commits the weights to one specific adapter — you'd need a separate
-full-size merged checkpoint per customer, losing the storage advantage
-that made LoRA attractive in the first place (this is my interpretation,
-extending beyond what the paper itself addresses, since it doesn't
-discuss multi-tenant serving). The alternative real-world pattern is to
-keep adapters unmerged and swap in the relevant small `A`/`B` pair per
-request against one shared frozen base model, trading a small amount of
-extra per-request compute (running two matrix multiplies instead of
-one merged one) for the ability to serve arbitrarily many task-specific
-adapters off a single copy of the base model's weights in memory.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

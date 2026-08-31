@@ -239,51 +239,30 @@ and manages two embedding matrices.
 
 ## Common Misconceptions & Pitfalls
 
-**“word2vec is one algorithm.”** It is commonly used as a family name. This
-paper describes CBOW and skip-gram with hierarchical softmax; negative sampling
-is a later, related optimization.
-
-**“Close vectors mean synonyms.”** Shared contexts can also make antonyms,
-topical associates, and stereotyped associations close. Similarity is a corpus
-statistic, not a lexical guarantee.
-
-**“Vector arithmetic always works.”** An analogy benchmark selects examples
-where an offset is useful and exact-match scoring is brittle. Multiword names,
-polysemy, and cultural variation routinely break it.
+- **Misconception: `logσ(vᵀv′)+Σlogσ(−vᵀvₙ)` is the whole implementation.** The equation describes the paper's central relationship, but `skip-gram training with negative sampling` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **positive pairs are rewarded while sampled negatives use the configured frequency distribution**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **subsampling or negative-sampling bias that produces plausible but unusable vectors** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **check positive scores against sampled negatives and audit nearest neighbors on held-out relations**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What is the difference between CBOW and skip-gram?
-**A:** CBOW predicts a center word from its context; skip-gram predicts context
-words from one center word. CBOW is often cheaper, while the best choice is
-empirical.
+**Q:** What is the central idea behind **skip-gram training with negative sampling**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why are there two embedding tables during training?
-**A:** A word can be a center and a context target. Separate input and output
-roles make the prediction objective simple; applications often retain input
-vectors, or combine them after checking the implementation convention.
+**Q:** How should I read `logσ(vᵀv′)+Σlogσ(−vᵀvₙ)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Why not compute full softmax for every pair?
-**A:** It scores every vocabulary word, so cost grows with vocabulary size.
-Hierarchical softmax and negative sampling approximate a cheaper learning
-signal.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **positive pairs are rewarded while sampled negatives use the configured frequency distribution**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What does the window size trade off?
-**A:** Small windows emphasize local/syntactic context; wider windows include
-broader topical association and increase the number of training pairs.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **subsampling or negative-sampling bias that produces plausible but unusable vectors**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Why do transformers reduce the need for word2vec?
-**A:** They learn token representations in task context, so `bank` can differ
-by sentence. They still use learned embedding lookups at their input.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **check positive scores against sampled negatives and audit nearest neighbors on held-out relations**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-Skip-gram starts with a center word and learns to score nearby context words
-above sampled noise words. Negative sampling avoids a full vocabulary softmax,
-but its noise distribution and number of negatives change the learned space.
-Build examples from a fixed window, exclude padding and self-pairs, then inspect
-nearest neighbors and a downstream task rather than assuming lower loss means
-better semantic behavior.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

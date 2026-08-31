@@ -169,55 +169,30 @@ Expected output reports a maximum absolute difference on the order of 1e-7 betwe
 
 ## Common Misconceptions & Pitfalls
 
-**"FlashAttention is an approximation, like Performer or Linformer."** It is not. FlashAttention computes exactly the same softmax attention function as the standard formula; the paper explicitly positions this as its advantage over the sparse/low-rank/kernel approximate-attention line of work. Any numerical difference from a standard implementation should be limited to ordinary floating-point summation-order effects, not a systematic approximation error.
-
-**"FlashAttention is a new attention mechanism or architecture."** It changes the memory-access pattern of computing attention, not the mathematical operation. A model using FlashAttention as its attention kernel has the identical set of learned weights and identical forward-pass mathematics as one using standard attention; you cannot tell from the model's outputs alone which kernel was used to compute them (up to floating-point tolerance).
-
-**"Recomputing values in the backward pass instead of storing them must be slower."** This is true under a compute-bound cost model but false under the memory-bound regime attention actually runs in on modern GPUs: the extra floating-point operations from recomputation are cheap relative to the HBM traffic saved by not storing and reloading the N×N matrix, so the paper reports recomputation making the backward pass *faster* overall, not just more memory-efficient.
-
-**"Bigger block sizes are always better since SRAM can be underused."** Block sizes are chosen to make one block's worth of data fit in the fixed, small SRAM budget available per streaming multiprocessor; oversized blocks that spill out of SRAM lose the entire benefit of the tiling scheme and fall back to relying on HBM traffic within a supposedly "on-chip" step.
-
-**"Enabling a fused/flash attention backend is a free, universal speedup."** It depends on head dimension, dtype, GPU generation, and sequence length being in the kernel's supported and favorable regime; unsupported configurations silently fall back to a slower kernel, and very short sequences may see little benefit since the eliminated HBM traffic is proportionally smaller relative to fixed overheads.
+- **Misconception: `softmax(QKᵀ)V` is the whole implementation.** The equation describes the paper's central relationship, but `IO-aware tiled exact attention` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **online softmax statistics produce the same result as a numerically stable reference**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **incorrect tile rescaling, causal-boundary handling, or hardware-specific regressions** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **compare outputs and gradients against a reference over tile boundaries and sequence lengths**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What specific problem does FlashAttention solve that sparse/approximate attention methods also try to solve, and how is its approach fundamentally different?
-**A:** Both address self-attention's quadratic time/memory cost in sequence length. Sparse and approximate methods (Reformer, Linformer, Performer, etc.) reduce cost by computing something other than exact softmax attention. FlashAttention instead keeps the exact math unchanged and reduces cost by minimizing data movement between GPU HBM and on-chip SRAM — it is an implementation-level, IO-aware algorithm, not a modeling-level approximation.
+**Q:** What is the central idea behind **IO-aware tiled exact attention**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why is attention considered "memory-bound" rather than "compute-bound" on modern GPUs, and why does that matter for the fix?
-**A:** GPU compute throughput has grown much faster than memory bandwidth, so for many operations — including standard attention's repeated writes/reads of the N×N score matrix to and from HBM — the bottleneck is bytes moved, not floating-point operations performed. If the bottleneck is IO, an algorithm that reduces FLOPs but not memory traffic will not help much; an algorithm that reduces memory traffic, even at some FLOP cost, can be substantially faster.
+**Q:** How should I read `softmax(QKᵀ)V`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** What is "online softmax" and why is a running-max correction necessary rather than just a numerical convenience?
-**A:** It is a way to compute a row-wise softmax incrementally over blocks of the row rather than needing the whole row in memory at once, by tracking a running max and running normalizer and updating them as each new block arrives. The correction (rescaling the running normalizer and output by exp(m_old − m_new) whenever the running max increases) is required for correctness: each block's exponentials are computed relative to that block's own local max, so two blocks' partial sums are on different scales until they are re-expressed relative to one shared max — omitting the rescale produces a wrong total, not merely a numerically unstable one.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **online softmax statistics produce the same result as a numerically stable reference**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** State FlashAttention's IO-complexity result and explain, at a high level, why the specific value of the head dimension d matters for how much benefit it provides.
-**A:** Standard attention requires Θ(Nd + N²) HBM accesses; FlashAttention requires Θ(N²d²/M) HBM accesses, where M is the SRAM size. Since d² for typical head dimensions (64–128) is many times smaller than a typical SRAM size (~100KB), the FlashAttention term is correspondingly much smaller, giving up to an order of magnitude fewer HBM accesses in the regimes the paper measures; a much larger d would shrink that advantage.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **incorrect tile rescaling, causal-boundary handling, or hardware-specific regressions**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Why does FlashAttention recompute attention-score blocks during the backward pass instead of either storing the full attention matrix or using ordinary gradient checkpointing?
-**A:** Storing the full N×N attention-probability matrix from the forward pass would reintroduce the same HBM traffic problem the forward pass was designed to avoid. Ordinary gradient checkpointing recomputes forward activations to save memory but is understood to trade away speed. FlashAttention instead stores only small per-row statistics (the running max and normalizer, and the output) and recomputes the needed score blocks on-chip in SRAM; because the eliminated HBM traffic dominates the added FLOPs in this memory-bound setting, the backward pass ends up faster, not just smaller in memory.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **compare outputs and gradients against a reference over tile boundaries and sequence lengths**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-**Q:** Is FlashAttention output identical to standard attention's output? What would tell you the fused kernel was in use versus a debugging bug?
-**A:** Yes, up to ordinary floating-point tolerance from a different order of summation — it computes exactly the same softmax attention function. If a model's outputs differ meaningfully from a standard-attention baseline, a correctly implemented FlashAttention kernel is very unlikely to be the cause; that is a useful elimination step when debugging quality regressions, since a genuinely approximate attention method would not offer the same guarantee.
-
-**Q:** If you enable a fused/flash attention backend and see no speedup, what are some likely reasons?
-**A:** The configuration may be outside the kernel's supported regime (unsupported head dimension, dtype, or GPU generation), causing a silent fallback to a slower path; the workload may already be compute-bound or use very short sequences, where there is proportionally less HBM traffic to eliminate; or the framework may not actually be dispatching to the fused kernel even though it was requested, which is worth confirming directly rather than assuming.
-
-## Worked Memory-Traffic View
-
-Ordinary attention first materializes a large score matrix, then reads it
-again for softmax and another time for the weighted values. FlashAttention
-chooses a tile of queries and keys that fits in fast on-chip memory, updates
-the softmax normalization online, and writes only the final output. The answer
-is mathematically exact because each tile carries forward a running maximum
-and running denominator; it is not an approximation that drops attention
-entries.
-
-When profiling, separate arithmetic from memory movement. A kernel can have
-few floating-point operations yet run slowly if it repeatedly moves a
-sequence-square matrix through high-bandwidth memory. Check causal masking,
-dropout, head dimension, dtype, and sequence lengths against the supported
-kernel path. A correct fallback is preferable to silently choosing a fast
-kernel with incompatible masking semantics.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

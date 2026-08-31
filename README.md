@@ -6,6 +6,9 @@ per-paper requirements and `templates/PAPER_TEMPLATE.md` to add a new one.
 All runnable teaching implementations are collected separately in
 [`implementations/`](implementations/README.md).
 
+Maintainer review guidance is in [`docs/COLD_START.md`](docs/COLD_START.md) and
+the durable lessons are recorded in [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
+
 | # | Paper | arXiv | Status |
 |---|-------|-------|--------|
 | 01 | [Attention Is All You Need](papers/01-attention-is-all-you-need/README.md) | [1706.03762](https://arxiv.org/abs/1706.03762) | done |

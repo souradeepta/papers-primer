@@ -33,6 +33,7 @@ _GENERIC_INTERVIEW_PHRASES = (
     "Reproduce the smallest production-shaped input and compare intermediate values",
     "Show one minimal failing example, the expected invariant, the observed intermediate divergence",
 )
+_QUICK_ANSWER_RE = re.compile(r"\*\*A:\*\*\s*(.*?)(?=\n\n\*\*Q:|\Z)", re.DOTALL)
 
 
 def check_sections(text: str) -> list[str]:
@@ -159,6 +160,33 @@ def check_interview_quality(text: str) -> list[str]:
     code_terms = re.findall(r"`[^`\n]+`", body)
     if len(code_terms) < 3:
         errors.append("interview section needs at least 3 concrete inline code/equation references")
+    return errors
+
+
+def check_learning_sections(text: str) -> list[str]:
+    """Ensure pitfalls and quick checks are explanatory, not placeholders."""
+    errors = []
+    pitfalls = _section_body(text, "Common Misconceptions & Pitfalls")
+    checks = _section_body(text, "Quick Concept Checks")
+    if pitfalls is None:
+        errors.append("missing Common Misconceptions & Pitfalls section")
+    else:
+        items = re.findall(r"(?m)^- \*\*.*?\*\*.*?(?=\n- |\Z)", pitfalls, re.DOTALL)
+        short_items = [item for item in items if len(item.split()) < 30]
+        if len(items) < 4:
+            errors.append(f"only {len(items)} misconception/pitfall items; need >=4")
+        if short_items:
+            errors.append(f"{len(short_items)} misconception/pitfall items are shorter than 30 words")
+    if checks is None:
+        errors.append("missing Quick Concept Checks section")
+    else:
+        questions = len(re.findall(r"\*\*Q:\*\*", checks))
+        answers = [" ".join(a.split()) for a in _QUICK_ANSWER_RE.findall(checks)]
+        if questions < 6:
+            errors.append(f"only {questions} quick checks; need >=6")
+        short_answers = [a for a in answers if len(a.split()) < 30]
+        if short_answers:
+            errors.append(f"{len(short_answers)} quick-check answers are shorter than 30 words")
     return errors
 
 

@@ -263,44 +263,30 @@ optimization.
 
 ## Common Misconceptions & Pitfalls
 
-**“The encoder outputs one latent vector.”** It outputs distribution parameters;
-training samples a latent vector from that approximate posterior.
-
-**“Low reconstruction error means good generation.”** A private-code
-autoencoder can reconstruct well while leaving a prior-sampled latent space bad.
-
-**“KL is just regularization.”** It has a probabilistic role: it relates the
-approximate posterior to the model's chosen prior.
+- **Misconception: `ELBO=E_q[logp(x|z)]−KL(q||p)` is the whole implementation.** The equation describes the paper's central relationship, but `variational encoding with a reconstruction objective and KL regularizer` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **reconstruction and KL terms are logged separately and latent samples use the reparameterization path**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **posterior collapse, KL dominance, or a decoder that ignores the latent** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **plot both loss terms and sample from the prior rather than evaluating encodings only**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What does amortized inference mean?
-**A:** One encoder network maps every input to posterior parameters instead of
-optimizing separate variational parameters per example.
+**Q:** What is the central idea behind **variational encoding with a reconstruction objective and KL regularizer**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why reparameterize?
-**A:** It moves randomness into parameter-independent noise so gradients can
-flow through the sampled latent value.
+**Q:** How should I read `ELBO=E_q[logp(x|z)]−KL(q||p)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** What is the ELBO tradeoff?
-**A:** It balances explaining each observation with making its posterior resemble
-the prior used for generation.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **reconstruction and KL terms are logged separately and latent samples use the reparameterization path**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What is posterior collapse?
-**A:** The decoder ignores z and the approximate posterior approaches the prior,
-so the latent code carries little information.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **posterior collapse, KL dominance, or a decoder that ignores the latent**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Can VAE latents be called disentangled by default?
-**A:** No. Useful or separated factors require evidence and often additional
-assumptions or objectives.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **plot both loss terms and sample from the prior rather than evaluating encodings only**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-A VAE encoder outputs a mean and log variance, samples a latent using the
-reparameterization trick, and a decoder reconstructs the input. Its loss joins
-reconstruction error with a KL term that keeps latents near a simple prior.
-Inspect both terms: a tiny reconstruction loss with collapsed KL means the
-decoder may be ignoring the latent code.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

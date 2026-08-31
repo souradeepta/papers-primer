@@ -252,45 +252,30 @@ normalization.
 
 ## Common Misconceptions & Pitfalls
 
-**“A shortcut removes vanishing gradients.”** It provides an easier additive
-path but does not eliminate all optimization or numerical failures.
-
-**“Residual means the network predicts image differences.”** The residual is a
-learned mapping between internal feature tensors.
-
-**“Every shortcut is free.”** Projection shortcuts, normalization, and shape
-changes add cost and must be included in profiling.
+- **Misconception: `y=F(x)+x` is the whole implementation.** The equation describes the paper's central relationship, but `residual learning through identity or projection shortcuts` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the shortcut and residual branch produce identical batch/spatial shapes before addition**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **a projection or normalization mismatch that blocks the identity path** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **zero the residual branch and assert shortcut behavior, then compare gradient norms**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What problem did ResNet target?
-**A:** Optimization degradation: deeper plain networks could train worse than
-shallower counterparts, even before considering test overfitting.
+**Q:** What is the central idea behind **residual learning through identity or projection shortcuts**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why can residual learning help?
-**A:** It makes identity-like behavior easy: the branch can learn a correction
-near zero while the shortcut carries the input.
+**Q:** How should I read `y=F(x)+x`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** When is a projection shortcut needed?
-**A:** When spatial resolution or channel count changes and elementwise addition
-would otherwise have incompatible shapes.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **the shortcut and residual branch produce identical batch/spatial shapes before addition**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What is a bottleneck block?
-**A:** A 1×1 reduction, 3×3 processing, and 1×1 expansion design that enables
-deep, wide stages more efficiently.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **a projection or normalization mismatch that blocks the identity path**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Is ResNet only for vision?
-**A:** No. The residual parameterization is widely used wherever deep transforms
-benefit from an identity reference path.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **zero the residual branch and assert shortcut behavior, then compare gradient norms**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-A residual block computes a transformation and adds the untouched input through
-a shortcut. When dimensions change, a projection shortcut aligns shape and
-channel count; otherwise addition is invalid. Track tensor shapes at each
-stage, use normalization and activation in the intended order, and compare a
-plain-depth control to confirm that residual paths—not just more parameters—
-improve optimization.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

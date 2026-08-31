@@ -463,140 +463,30 @@ assertions check.)
 
 ## Common Misconceptions & Pitfalls
 
-- **"RLHF teaches the model new facts or capabilities."** It's more
-  accurate to say RLHF reweights and elicits behaviors the pretrained
-  model can already produce, steering it toward the responses humans
-  prefer rather than injecting new knowledge — this is a widely-held
-  interpretation in the field, not a specific measured claim made by this
-  paper. The paper's own contribution is about *following instructions
-  and matching human preferences*, not about expanding what the
-  underlying model knows; the SFT and RM datasets (tens of thousands of
-  examples) are minuscule next to GPT-3's pretraining corpus, which is
-  itself a reason to be skeptical that this stage is where new knowledge
-  would come from.
-- **"A bigger reward model is always better."** The paper deliberately
-  used a 6B-parameter reward model even when fine-tuning the
-  175B-parameter policy, stating that 175B reward model training "could
-  be unstable" — a concrete, paper-stated reason to *not* default to
-  matching reward-model scale to policy scale.
-- **"The reward model's raw score is a calibrated, absolute quality
-  measure."** It isn't — the pairwise ranking loss is invariant to adding
-  a constant to every score (only the *differences* it was trained on
-  matter), so the paper has to explicitly renormalize the reward model
-  with a bias term before using it in RL, choosing the bias so
-  labeler-written demonstrations score a mean of 0. Treat reward-model
-  outputs as a relative ranking signal, not an interpretable absolute
-  scale.
-- **"Alignment tax means RLHF makes the model worse across the board."**
-  The paper does report a real regression on some public NLP benchmarks
-  for the plain PPO variant, and names it directly ("alignment tax"). But
-  the PPO-ptx mitigation (mixing pretraining-data gradient updates back
-  in) recovers most of that regression and, on HellaSwag specifically,
-  the paper reports it even surpasses plain GPT-3 — so "alignment
-  necessarily costs capability" is not the paper's conclusion; residual
-  gaps on some benchmarks (DROP, SQuADv2) remained even after the fix,
-  which is the more precise version of the finding.
-- **"PPO in this paper is a general sequential-decision RL problem."** The
-  paper explicitly frames it as a single-step bandit environment: one
-  prompt in, one full response out, one reward, episode ends — there's no
-  multi-turn state transition or long-horizon credit assignment beyond
-  generating that one response. This makes the RL problem considerably
-  simpler than, say, a game-playing RL agent, even though the underlying
-  PPO algorithm is general-purpose.
+- **Misconception: `E[reward]−βKL(π||πref)` is the whole implementation.** The equation describes the paper's central relationship, but `reward-model-guided policy optimization` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the KL penalty is measured against the frozen reference policy and reward inputs use the same prompt contract**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **reward hacking, preference-label bias, or an unstable policy/reference gap** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **track reward, KL, human preference, and adversarial slices separately during an ablation**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** Walk through the three stages of the RLHF pipeline in this paper —
-what does each stage optimize, and what does each stage's output feed
-into the next one?
-**A:** (1) Supervised fine-tuning: the pretrained GPT-3 model is
-fine-tuned with ordinary cross-entropy loss on human-written
-demonstrations of ideal responses (~13,000 prompts) — this produces the
-SFT model, which becomes both the initial RL policy and the frozen
-reference policy used later. (2) Reward model training: the SFT model
-generates multiple candidate responses per prompt, humans rank them, and
-a separate model (a GPT architecture with its unembedding layer replaced
-by a scalar head) is trained on the pairwise ranking loss
-`-log(sigmoid(r_chosen - r_rejected))` over ~33,000 comparison prompts —
-this produces an automated proxy for human preference. (3) PPO
-reinforcement learning: the SFT model (as the RL policy) generates
-responses to new prompts, the reward model scores them, and PPO updates
-the policy to maximize `reward_model_score - beta * KL(policy || SFT
-reference)` — this produces the final InstructGPT policy.
+**Q:** What is the central idea behind **reward-model-guided policy optimization**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why does the reward model need a normalization/bias correction
-before being used for RL, and what specifically would go wrong without
-it?
-**A:** The reward model is trained on a pairwise ranking loss that only
-constrains the *difference* between preferred and dispreferred scores —
-adding any constant to every output leaves that difference, and therefore
-the loss, unchanged. So the raw trained reward model has an arbitrary,
-unconstrained zero point. The paper fixes this by adding a bias so that
-labeler demonstrations score a mean of 0 before RL begins. Without this
-step, the RL objective's absolute reward scale would be arbitrary
-(shifted by whatever the untrained bias happened to converge to), which
-matters for things like interpreting reward trends during training and
-setting the relative weight of the KL penalty against a raw reward
-magnitude that has no principled reference point.
+**Q:** How should I read `E[reward]−βKL(π||πref)`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** What specific problem does the KL penalty term solve, and what
-would you observe if you trained with beta = 0?
-**A:** It counters reward-model over-optimization ("reward hacking"): if
-the policy is free to maximize the reward model's score with no
-constraint, it can drift toward outputs the reward model over-scores
-relative to what a human would actually prefer, since the reward model is
-only an approximation of true human preference, not the ground truth
-itself. With beta = 0, you'd expect training to eventually find
-degenerate or repetitive outputs that happen to score well on the reward
-model but that a human labeler, shown the output directly, would rate
-poorly — with no mechanism pulling the policy back toward the
-demonstrated, human-vetted behavior of the SFT model. The paper's
-qualitative framing (though it doesn't run a beta=0 ablation to failure
-in the excerpted results) is that beta exists specifically "to mitigate
-over-optimization of the reward model."
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **the KL penalty is measured against the frozen reference policy and reward inputs use the same prompt contract**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What is the "alignment tax," and how did the paper address it?
-**A:** It's the paper's own term for a measured regression in performance
-on standard public NLP benchmarks (including SQuAD, DROP, and HellaSwag)
-that resulted from PPO fine-tuning against the reward model, relative to
-the original pretrained GPT-3. Their fix was "PPO-ptx": mixing gradient
-updates from the original GPT-3 pretraining data distribution back into
-the PPO fine-tuning loop, controlled by a coefficient gamma in the
-objective. They report this mitigates the regression on all the
-benchmarks they tested and even surpasses GPT-3 on HellaSwag, and that it
-worked better than the simpler fix of just raising beta — though some
-residual gap remained on DROP and SQuADv2 specifically.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **reward hacking, preference-label bias, or an unstable policy/reference gap**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** Why is the RL problem in this paper framed as a "bandit" rather
-than a general sequential-decision-making problem, and why does that
-framing matter for how hard the RL is?
-**A:** Each episode is: one prompt comes in, the policy generates one
-full response, the reward model scores the (prompt, response) pair once,
-and the episode ends immediately — there's no environment state that
-evolves independently of the model's own generation and no multi-step
-credit-assignment problem where a decision now affects rewards several
-steps later. That's structurally simpler than, say, a multi-turn game,
-even though generating the response itself is a multi-token
-autoregressive process (which PPO still has to handle at the token
-level, hence the per-token KL penalty). The bandit framing is why RLHF
-for single-turn instruction-following is tractable with a comparatively
-standard PPO setup, without needing the longer-horizon credit-assignment
-machinery general RL research usually has to grapple with.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **track reward, KL, human preference, and adversarial slices separately during an ablation**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-**Q:** The paper reports InstructGPT-1.3B is preferred over GPT-3-175B
-"despite having 100x fewer parameters" — is that evidence that scale
-doesn't matter for language model quality?
-**A:** No — it's evidence that *raw pretraining scale alone* is not the
-same axis as *following instructions the way humans want*, for the
-specific evaluation the paper ran (human preference on API-style
-prompts). It doesn't mean InstructGPT-1.3B is better than GPT-3-175B on
-every axis — GPT-3-175B has far more raw knowledge and capability from
-pretraining at that scale. The paper's own separate finding on the
-"alignment tax" is a good example of why this distinction matters: RLHF
-fine-tuning, unmitigated, can trade away some benchmark capability for
-better instruction-following, meaning the two axes (scale/capability vs.
-alignment/preference-matching) genuinely can move somewhat independently
-in both directions, not just in InstructGPT's favor.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 

@@ -167,36 +167,30 @@ python3 papers/14-chain-of-thought/code/trace_majority_vote.py
 
 ## Common Misconceptions & Pitfalls
 
-- **“A chain of thought proves the answer.”** It is generated text and can be wrong, post-hoc, or irrelevant.
-- **“CoT is fine-tuning.”** Ordinary CoT prompting changes context at inference time, not weights.
-- **“The original paper introduced every reasoning prompt variant.”** Zero-shot CoT and self-consistency are later work.
-- **“More steps always help.”** They add cost, error opportunities, and sometimes distract smaller models.
+- **Misconception: `argmax_y Σ_k1[y=y_k]` is the whole implementation.** The equation describes the paper's central relationship, but `self-consistency over sampled reasoning traces` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
+- **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **vote aggregation uses only final answers and preserves sample identity for diagnosis**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
+- **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **correlated wrong traces, parsing errors, and latency from excessive sampling** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
+- **Pitfall: debugging only the final prediction.** Start with **score final answers independently from trace text and test adversarial problems with fixed seeds**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
 ## Quick Concept Checks
 
-**Q:** What changes in CoT prompting compared with ordinary few-shot prompting?
-**A:** Demonstrations contain intermediate rationale tokens before final answers.
+**Q:** What is the central idea behind **self-consistency over sampled reasoning traces**?
+**A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
-**Q:** Why can intermediate tokens help?
-**A:** They provide generated state that later tokens can condition on, decomposing a difficult direct answer.
+**Q:** How should I read `argmax_y Σ_k1[y=y_k]`?
+**A:** Read each symbol as an operation with a shape, a data source, and a numerical range. Ask what changes when its scale, temperature, rank, timestep, neighborhood, or other paper-specific value changes. Then make a two- or three-example fixture where the expected result can be calculated by hand; this catches notation-to-code misunderstandings early.
 
-**Q:** Does CoT guarantee faithful reasoning?
-**A:** No; a plausible rationale is not proof of the model’s internal causal process.
+**Q:** What invariant must a correct implementation preserve?
+**A:** It must preserve **vote aggregation uses only final answers and preserves sample identity for diagnosis**. This is stronger than asking whether accuracy improved because it is local, deterministic, and testable near the operation that could be wrong. Assert it at the boundary, compare against a small reference implementation, and include the unusual input shape most likely to violate it in production.
 
-**Q:** What is self-consistency?
-**A:** A later technique that samples multiple reasoning paths and aggregates their answers, often by majority vote.
+**Q:** What is the most dangerous failure mode?
+**A:** The first risk to investigate is **correlated wrong traces, parsing errors, and latency from excessive sampling**. It can produce plausible outputs while degrading only a slice of traffic, so monitor a paper-specific statistic alongside quality and system metrics. A canary should compare the old and new paths on identical inputs and should retain enough intermediate diagnostics to explain a regression.
 
-**Q:** What is the main production trade-off?
-**A:** Potential accuracy gains versus more tokens, latency, cost, and sensitive generated content.
+**Q:** How would I test this idea beyond a happy-path unit test?
+**A:** Begin with **score final answers independently from trace text and test adversarial problems with fixed seeds**, then add differential tests against a transparent reference on small randomized inputs. Cover boundaries such as padding, termination, empty neighborhoods, long sequences, rare tokens, extreme values, or duplicated examples when they apply. Test both output values and gradients or state updates when training behavior is part of the paper's claim.
 
-## Implementation Walkthrough
-
-Chain-of-thought prompting changes the intermediate text a model is invited to
-produce before its final answer. It can help multi-step tasks because earlier
-generated steps become part of the context for later steps, but it does not
-make every intermediate statement true. Use held-out answers, multiple prompt
-forms, and task-specific verification rather than grading only whether an
-explanation sounds plausible.
+**Q:** What should I remember when applying the paper in a real system?
+**A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
 ## Interview Q&A
 
