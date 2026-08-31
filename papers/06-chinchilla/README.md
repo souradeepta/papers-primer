@@ -112,6 +112,27 @@ One operational detail deserves emphasis: the learning-rate schedule must be par
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+C ≈ 6ND
+```
+
+In practice, the calculation is a pipeline: For a fixed compute budget, increasing parameters leaves fewer tokens and increasing data leaves fewer parameters. The useful design point balances both rather than maximizing model size alone. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[budget → choose N and D → train efficiently]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for Chinchilla](assets/worked_math.gif)
+
+
 Treat a scaling law as a budget-planning prior, then calibrate it with runs in your own regime. Tokenizers change token counts; code, multilingual text, synthetic data, and repeated epochs differ in information content; architecture changes can alter scaling; and loss may not track the product metric your product cares about. Start with a logarithmic grid of model sizes and token horizons, keep a data-mixture version fixed, and record both realized FLOPs and wall-clock throughput. The `6ND` figure is useful for comparing plans, but GPU-hour cost should include attention overhead, communication, checkpointing, evaluation, failures, and utilization.
 
 Data accounting needs to be explicit. Log unique source tokens, tokens presented to the optimizer, repeat rate, filters, deduplication method, and contamination checks. “1T tokens” without a tokenizer, mixture, and repeat policy is not a reproducible compute/data budget. If high-quality data is the bottleneck, blindly repeating it may change the overfitting and memorization behavior that the clean infinite-data approximation abstracts away.
@@ -198,6 +219,29 @@ The durable lesson is methodological: record both parameters and training
 tokens, report compute, and compare models at matched budgets. A model that
 looks impressive at one size may be an inefficient use of the same training
 resources.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through compute-optimal parameter/data allocation end to end. What does `C≈6ND` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, C≈6ND is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is the best model size depends on both training tokens and available FLOPs, not parameter count alone. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for extrapolating a fitted frontier outside the measured scale range. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with run matched-budget pilots and hold out larger-scale validation points, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 

@@ -346,6 +346,27 @@ orders of magnitude — than the single full matrix it's adapting
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+W′ = W + BA
+```
+
+In practice, the calculation is a pipeline: The frozen matrix keeps the pretrained capability while two small matrices learn the task-specific direction. Rank r controls adapter capacity and parameter count. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[frozen W + low-rank BA → adapted layer]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for LoRA](assets/worked_math.gif)
+
+
 **Where this lives in real code.** Hugging Face's `peft` library is the
 most widely used implementation, exposing a `LoraConfig` object where you
 set `r`, `target_modules` (which named modules to wrap — commonly the
@@ -595,6 +616,29 @@ request against one shared frozen base model, trading a small amount of
 extra per-request compute (running two matrix multiplies instead of
 one merged one) for the ability to serve arbitrarily many task-specific
 adapters off a single copy of the base model's weights in memory.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through low-rank adaptation end to end. What does `W′=W+BA` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, W′=W+BA is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is adapter parameters are O(r(din+dout)) instead of O(dindout), but rank limits update capacity. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for merging adapters incorrectly or applying them to the wrong projection. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with compare merged and unmerged logits and verify the base weights are unchanged, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 

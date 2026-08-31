@@ -109,6 +109,27 @@ DPO removes online exploration during its own fine-tuning loop. That is a simpli
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+logit σ(β log odds)
+```
+
+In practice, the calculation is a pipeline: A preferred/rejected pair supplies a direct log-probability comparison against a reference policy. β controls how strongly the pairwise preference is enforced. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[chosen vs rejected → log-odds → policy gradient]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for DPO](assets/worked_math.gif)
+
+
 Hugging Face TRL’s `DPOTrainer` handles paired tokenization, reference log probabilities, and standard DPO training. Still inspect a batch: chosen and rejected strings need a common prompt boundary, matching chat templates, correct EOS handling, and an attention mask that scores only completion tokens. Template mismatches are more damaging than an exotic optimizer choice because they change the conditional probabilities being compared.
 
 Reference-model memory is a real cost. A separate frozen model doubles much of the model footprint; PEFT/LoRA workflows can often use a base model as reference while adapters define the policy, subject to the trainer’s supported reference-free or adapter-switching mode. Precompute reference log probabilities for a static dataset when storage and tokenizer/version locking make that safe; otherwise compute them online with gradients disabled.
@@ -192,6 +213,29 @@ tokens out of completion likelihood, and audit pair quality. A preference pair
 with a malformed rejected answer can teach superficial formatting rather than
 the desired behavior. Evaluate both preference accuracy and task-specific
 safety or helpfulness after optimization.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through direct preference optimization end to end. What does `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x)))) is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is it avoids an online RL loop but depends heavily on preference quality and reference log-probabilities. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for wrong chosen/rejected ordering, length bias, or reference mismatch. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with unit-test pairwise margins and monitor held-out preference accuracy, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 

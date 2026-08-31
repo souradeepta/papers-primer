@@ -48,21 +48,27 @@ Bahdanau attention in paper 33.
 ## Why It Matters
 
 The encoder-decoder pattern became a general recipe for translation,
-summarization, speech, and structured generation. It is the direct ancestor of
-modern Transformer encoder-decoder systems.
+summarization, speech, and structured generation. It separated “understand the
+input” from “produce an output,” so the two sides could have different lengths
+and vocabularies. It is the direct ancestor of modern Transformer
+encoder-decoder systems, even though later systems replace recurrent state
+with attention-based representations.
 
 ## Core Intuition
 
 The encoder reads until it has context; the decoder then writes one step at a
 time. A longer input must still fit into the final encoder state, which is both
-the idea's strength and its central limitation.
+the idea's strength and its central limitation. Translating a short phrase is
+like passing a compact function argument; translating a long paragraph asks
+that one argument to preserve names, order, negation, and style at once.
 
 ## The Mechanism
 
 An embedding layer feeds an LSTM encoder. Its final hidden and cell states
 initialize an LSTM decoder; the decoder output distribution is projected over
-the vocabulary. At inference, its own previous prediction replaces the
-teacher-forced token.
+the vocabulary. With two layers, both state tensors have a layer dimension and
+must be transferred consistently. At inference, its own previous prediction
+replaces the teacher-forced token, exposing the train/inference mismatch.
 
 ![Animation of an encoder summarizing text and a decoder emitting tokens](assets/encoder-decoder.gif)
 
@@ -79,10 +85,33 @@ flowchart LR
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+p(y|x)=∏_t p(y_t|y<t,x)
+```
+
+In practice, the calculation is a pipeline: The decoder turns a variable-length conditional distribution into a loop: each output becomes context for the next. Teacher forcing supplies the correct previous token during training. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[source → final encoder state → autoregressive target]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for Seq2Seq](assets/worked_math.gif)
+
+
 Use length masks, padding, beam search, and vocabulary handling in production.
-Teacher forcing makes training parallel across target positions less direct
-than a pure classifier but stabilizes optimization. Long inputs expose the
-fixed-vector bottleneck.
+Teacher forcing stabilizes optimization but creates exposure bias: one bad
+early token can put the decoder on an unfamiliar path at serving time. Track
+sequence lengths separately from token ids, mask loss after the end marker,
+and define beam-search termination and length normalization explicitly. Long
+inputs expose the fixed-vector bottleneck.
 
 ## Runnable Code Example
 
@@ -212,6 +241,29 @@ then contrasts teacher-forced logits with greedy decoding. That distinction is
 the central operational risk: a low teacher-forced loss can coexist with poor
 free-running output. Test exact token shifts, end-token termination, and
 length-stratified generation before optimizing beam search.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through LSTM encoder-decoder generation end to end. What does `p(y|x)=∏_tp(y_t|y<t,x)` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, p(y|x)=∏_tp(y_t|y<t,x) is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is teacher forcing improves training but creates exposure bias and autoregressive latency. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for wrong state transfer, EOS handling, or train/inference token mismatch. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with compare teacher-forced loss with greedy and beam outputs, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 

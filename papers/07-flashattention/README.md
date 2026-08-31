@@ -103,6 +103,27 @@ flowchart TD
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+softmax(QKᵀ)V
+```
+
+In practice, the calculation is a pipeline: Attention is mathematically unchanged; the implementation avoids materializing the full score matrix in high-bandwidth memory. Tiles are accumulated with an online softmax correction. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[Q/K/V tiles → online softmax → exact output]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for FlashAttention](assets/worked_math.gif)
+
+
 You will very rarely write a FlashAttention kernel yourself today — it is available as a well-maintained building block in essentially every major deep learning stack. In PyTorch, `torch.nn.functional.scaled_dot_product_attention` will automatically dispatch to a fused, IO-aware attention kernel (a flash-attention-style backend) when the input shapes, dtype, and hardware support it, falling back to a memory-efficient or standard math kernel otherwise; passing `is_causal=True` avoids needing to materialize an explicit causal mask. The `flash-attn` PyPI package (maintained by the original authors' group) provides the reference CUDA implementation directly, including FlashAttention-2's further-optimized kernel, and is what many training frameworks (HuggingFace `transformers`' `attn_implementation="flash_attention_2"`, vLLM, and others) call under the hood on supported NVIDIA GPUs. xFormers' `memory_efficient_attention` predates and, in places, informed FlashAttention; both target the same underlying problem (avoiding an explicit N×N materialization), but FlashAttention's specific contribution is the IO-complexity analysis and the online-softmax/tiling scheme tuned against a concrete SRAM/HBM cost model, and it has generally displaced xFormers' original kernel as the default fast-attention backend where both are available.
 
 There are real constraints to know before assuming "just enable flash attention" always helps. Kernel support is typically restricted to specific head dimensions (historically ≤128, though this has expanded across FlashAttention-2/3), specific dtypes (fp16/bf16 more reliably than fp32), and specific GPU architectures (Ampere and newer for many kernel versions); on unsupported configurations you silently fall back to a slower path unless you check which backend actually ran. The speedup is largest for longer sequences and memory-bound configurations — for very short sequences or already compute-bound workloads the relative win shrinks, since there is less redundant HBM traffic to eliminate in the first place. Because backward-pass recomputation trades FLOPs for memory bandwidth, a GPU with unusually low compute headroom relative to its memory bandwidth (an unusual ratio for current-generation accelerators, but worth checking) could see the trade-off favor a different implementation. Dropout inside attention requires care: FlashAttention regenerates the dropout mask from a saved PRNG state during the backward pass rather than storing the mask, so custom attention variants that need bespoke masking behavior should not assume they can freely swap in a fused kernel without checking semantic equivalence. Finally, remember that FlashAttention computes *exact* attention — if you are debugging a quality regression, the fused kernel is very unlikely to be the cause (output should match standard attention up to floating-point tolerance), which is a useful elimination step versus debugging a genuinely approximate attention variant.
@@ -183,6 +204,29 @@ sequence-square matrix through high-bandwidth memory. Check causal masking,
 dropout, head dimension, dtype, and sequence lengths against the supported
 kernel path. A correct fallback is preferable to silently choosing a fast
 kernel with incompatible masking semantics.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through IO-aware exact attention end to end. What does `softmax(QKᵀ)V` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, softmax(QKᵀ)V is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is tiling reduces high-bandwidth-memory traffic while preserving the exact result; speed depends on tile and hardware. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for incorrect online-softmax rescaling or an unsupported mask/layout. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with compare against a numerically stable reference across sequence lengths, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 

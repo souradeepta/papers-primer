@@ -96,6 +96,27 @@ Document chunking determines the units a retriever can return. Large chunks may 
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+p(y|x)=Σ_z p(z|x)p(y|x,z)
+```
+
+In practice, the calculation is a pipeline: Retrieval supplies multiple possible evidence passages, and the generator combines their probability rather than blindly trusting one document. Better retrieval can therefore improve generation without changing the language model. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[query → top-k evidence → marginal answer]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for RAG](assets/worked_math.gif)
+
+
 FAISS is a common library for approximate dense-vector search; Hugging Face provides RAG model classes; pgvector and managed vector stores are common system choices. These are implementations, not interchangeable statistical models. Pin the embedding model, preprocessing, dimensionality, distance metric, index build parameters, and document corpus version together. Query vectors from one embedding revision can produce meaningless neighbors in an index built with another.
 
 Measure retrieval and generation separately. Retrieval recall against known supporting passages, nDCG-style ranking metrics, empty-result rate, and latency identify a different failure class from answer correctness, citation precision, or hallucination. A generator may answer correctly from parametric memory even when retrieval fails, concealing an index outage in end-to-end accuracy. Conversely, a correct retrieved passage can be ignored by the generator. Log query, filters, returned IDs, scores, prompt assembly, answer, and citations with privacy-aware retention.
@@ -177,6 +198,29 @@ the model output: chunk size, overlap, embedding version, index freshness, and
 metadata filters can change an answer before the generator runs. Evaluate
 retrieval recall separately from answer quality, and retain citations or chunk
 identifiers so an incorrect answer can be traced to retrieval versus synthesis.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through retrieval-augmented generation end to end. What does `p(y|x)=Σ_zp(z|x)p(y|x,z)` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, p(y|x)=Σ_zp(z|x)p(y|x,z) is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is retrieval adds index, network, and context costs but can improve freshness without retraining. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for stale or unauthorized evidence and the generator ignoring retrieved context. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with measure retrieval recall, citation support, and answer quality independently, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 

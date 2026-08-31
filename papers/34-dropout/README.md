@@ -48,19 +48,25 @@ neural models.
 
 Dropout made regularization practical without storing or serving many models.
 It remains common in dense layers and attention-related architectures, though
-its best rate depends on model, data, normalization, and augmentation.
+its best rate depends on model, data, normalization, and augmentation. The
+useful comparison is a matched validation experiment: if training loss rises
+slightly while validation loss improves, the noise is buying generalization.
 
 ## Core Intuition
 
 Every mask changes which feature combinations are available. A useful unit
 therefore learns to work with many possible companions instead of specializing
-to one accidental training correlation.
+to one accidental training correlation. For an image classifier, this can
+discourage a prediction from depending on one isolated texture detector; for a
+small tabular model, the same rate may instead erase too much signal.
 
 ## The Mechanism
 
 For each training batch, independent Bernoulli samples choose retained units.
-The sampled activations pass through the rest of the network. At evaluation,
-dropout is disabled, making the model deterministic.
+The sampled activations pass through the rest of the network and only the
+active subnetwork receives that pass's gradient. At evaluation, dropout is
+disabled, making the model deterministic. Inverted scaling keeps the expected
+activation magnitude aligned between the two modes.
 
 ![Animation of dropout sampling different thinned networks](assets/thinned-networks.gif)
 
@@ -75,10 +81,33 @@ flowchart LR
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+h̃=(m/p)h
+```
+
+In practice, the calculation is a pipeline: A new mask samples a different thinned network on each training pass. Scaling retained units by 1/p keeps their expected activation unchanged, which makes evaluation mode a clean deterministic switch. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[activation → random mask → scaled subnetwork]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for Dropout](assets/worked_math.gif)
+
+
 Call model.train for stochastic masks and model.eval for deterministic
 inference in PyTorch. Do not leave dropout enabled during validation unless
 doing deliberate uncertainty sampling. Tune the probability with validation
-data; excessive dropout causes underfitting.
+data; excessive dropout causes underfitting. Check its placement around
+normalization layers, because changing the order changes the statistics seen
+by the rest of the network.
 
 ## Runnable Code Example
 
@@ -210,6 +239,29 @@ mode. Training outputs should differ because masks are resampled; evaluation
 outputs should match because inverted scaling already corrected expected
 activation size. This simple test catches a common deployment bug where a
 model is exported while still in training mode.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through inverted dropout regularization end to end. What does `h̃=(m/p)h` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, h̃=(m/p)h is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is training noise can improve generalization with no serving ensemble cost, but rates and placement are architecture-dependent. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for leaving training mode enabled or combining poorly with normalization. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with assert stochastic train outputs and deterministic eval outputs, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 

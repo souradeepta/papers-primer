@@ -114,6 +114,27 @@ This is a small mathematical intervention with a large systems consequence: posi
 
 ## Practical Engineering Notes
 
+### Worked Math & Dataflow
+
+The compact view below makes the paper's central calculation concrete:
+
+```text
+R(m)ᵀR(n) = R(n−m)
+```
+
+In practice, the calculation is a pipeline: Rotating queries and keys by position makes their dot product depend on a relative offset. The rotation angle controls how quickly positional phase changes across dimensions. The important engineering
+choice is to preserve the paper's intended invariant while making the operation
+fit the available memory, batch size, and evaluation protocol.
+
+```mermaid
+flowchart LR
+    A[paper input] --> B[position → rotate q,k → relative score]
+    B --> C[paper output]
+```
+
+![Animated worked-math walkthrough for RoPE](assets/worked_math.gif)
+
+
 In Hugging Face `transformers`, architecture-specific modules such as LLaMA and GPT-NeoX rotary embeddings generate cosine/sine caches and apply them to Q/K. Prefer the model’s supplied position-ID and cache APIs over copying a blog’s tensor reshaping: head layout, grouped-query attention, padding convention, and cache position have to agree. The operation is elementwise and cheap compared with matrix multiplication, but cached cos/sin tables and broadcasting can still create accidental allocations at long context lengths.
 
 RoPE itself does not promise that a model trained at one maximum length will work unchanged at a much larger one. Position interpolation and NTK-aware/RoPE scaling are later context-extension techniques; they alter the mapping from token index to angle. Treat their scale factor, base, and training assumptions as checkpoint-specific configuration, not a harmless inference toggle. A wrong setting can preserve tensor shapes while degrading retrieval or generation quality.
@@ -184,6 +205,29 @@ query-key dot product. The position index must agree with cache position during
 autoregressive generation. A common serving bug is restarting positions at
 zero for a newly appended cached chunk, which changes the intended relative
 geometry even though tensor shapes still look valid.
+
+## SDE2 Interview Drill-down
+
+These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
+
+**Q:** Walk through rotary position encoding end to end. What does `R(m)ᵀR(n)=R(n−m)` mean in an implementation?
+**A:** Start by identifying the data structure entering the operation, the learned or configured values it uses, and the invariant that must hold at the output. In this paper, R(m)ᵀR(n)=R(n−m) is not just notation: it tells you what is compared, normalized, accumulated, or optimized. A strong implementation makes those stages visible in separate functions, keeps tensor shapes and dtypes explicit, and tests a tiny hand-computed example before optimizing. Explain what happens when the inputs are short, padded, empty, or unusually large; those cases often reveal whether the code actually matches the paper.
+
+**Follow-up:** Which invariant would you assert?
+**A:** Assert the property that makes the method meaningful: probabilities normalize over valid choices, a residual preserves shape, a target does not bootstrap past termination, or an update leaves frozen state untouched. The assertion should be local and cheap enough to run in tests, not an end-to-end hope such as “accuracy improves.” Also compare the optimized path with a simple reference on random small inputs using an appropriate tolerance. That catches indexing, masking, reduction, and broadcasting errors while the failing example is still understandable.
+
+**Q:** What is the main production trade-off, and how would you capacity-plan it?
+**A:** The practical trade-off here is rotations add little parameter cost but long-context behavior depends on frequency schedule. Estimate both arithmetic work and memory movement, then identify whether the service is compute-bound, bandwidth-bound, latency-bound, or limited by coordination. Include batch-size effects, peak activation/state memory, serialization, and cold-start behavior; average throughput can hide a bad tail latency. Choose a baseline configuration, measure it on representative shapes, and document which quality metric is allowed to move. If the system is distributed, include communication and retry behavior rather than treating the model operation as an isolated kernel.
+
+**Follow-up:** What would make you reject an apparently faster optimization?
+**A:** Reject it when it changes the evaluation contract, weakens isolation, creates silent quality regressions, or only wins on a synthetic shape. For this paper, watch especially for position scaling beyond training range or inconsistent rotation convention. A safe rollout uses a reference implementation, shadow traffic or canaries, resource limits, and dashboards for both system and model metrics. Keep the old path available until numerical outputs, error rates, p95/p99 latency, and cost are stable across the important input distributions.
+
+**Q:** How would you debug a model that passes unit tests but fails in production?
+**A:** Reproduce the smallest production-shaped input and compare intermediate values against the reference path, not only the final score. Log versioned preprocessing, shapes, masks, random seeds where relevant, and the exact model/configuration identifiers; otherwise a numerical symptom can be caused by data drift or a serving mismatch. Separate failures into data, numerical stability, optimization, and infrastructure categories. For this method, begin with test relative-offset invariance and compare long-context perplexity, then run a controlled ablation that disables the paper-specific mechanism to determine whether the regression is in the mechanism or its integration.
+
+**Follow-up:** What evidence would you present in the postmortem or interview?
+**A:** Show one minimal failing example, the expected invariant, the observed intermediate divergence, and the fix’s regression test. Add a before/after metric table covering quality, memory, throughput, and tail latency, plus the rollout guard that would catch recurrence. This demonstrates engineering judgment: the goal is not merely to identify a clever algorithm, but to make its behavior observable, reproducible, and safe to operate.
+
 
 ## Further Reading
 
