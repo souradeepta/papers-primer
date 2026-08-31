@@ -154,26 +154,40 @@ The unified interface does not eliminate data licensing, corpus filtering, or co
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/12-t5/code/span_corruption.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/span_corruption.py`](code/span_corruption.py) constructs a token list with two removed spans, writes ordered sentinels into the source and target, then reconstructs the original tokens. It asserts that each sentinel is present once in the corrupted source and that the target’s fills restore the exact original order.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/12-t5/code/span_corruption.py`](implementations/12-t5/code/span_corruption.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/12-t5/code/span_corruption.py
+python3 implementations/12-t5/code/span_corruption.py
 ```
 
-The program is a data transformation, not a trained Transformer. That is intentional: the invariant clarifies the pre-training contract a real encoder–decoder is asked to learn.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**text-to-text transfer learning with task prefixes**. The program turns `input text → target text` into executable operations,
+prints a compact result, and checks that **task prefix, target formatting, and special-token boundaries remain part of the model contract**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **test exact target formatting and run task-balanced validation for every supported prefix**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **a prefix or output-format regression that hides behind aggregate metrics**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

@@ -431,63 +431,40 @@ address.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/02-bert/code/bert_mlm_from_scratch.py`](implementations/02-bert/code/bert_mlm_from_scratch.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/02-bert/code/bert_mlm_from_scratch.py
+python3 implementations/02-bert/code/bert_mlm_from_scratch.py
 ```
 
-### Read it in order
+### What the example demonstrates
 
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+Read the module docstring first, then follow the functions implementing
+**masked-language pretraining with bidirectional encoder layers**. The program turns `−log p(xᵢ|context)` into executable operations,
+prints a compact result, and checks that **only selected masked positions contribute to the MLM loss and padding is ignored**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
 
+### Expected behavior and useful experiments
 
-See `code/bert_mlm_from_scratch.py` for a minimal, runnable
-implementation of two things: bidirectional self-attention (contrasted
-against a causally-masked version of the identical layer) and the
-paper's MLM 80/10/10 masking procedure — 161 lines, no external
-dependencies beyond `torch`.
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **assert masked positions and evaluate a small downstream classifier with a frozen preprocessing snapshot**.
 
-Running it (`python code/bert_mlm_from_scratch.py`) does three things:
+### Production connection
 
-1. Builds a random batch of shape `(2, 6, 16)` (batch of 2, sequence
-   length 6, `d_model` 16 — scaled down from BERT-base's 768 so it runs
-   instantly), passes it through single-head bidirectional self-attention
-   with no mask, and asserts that some of the resulting attention weight
-   lands on positions strictly *after* the query position — the defining
-   property of bidirectional attention, since a causally-masked layer
-   could never produce a nonzero weight there.
-2. Applies a causal mask to the exact same projected queries/keys/values
-   and asserts every future-position weight is now exactly zero — the
-   GPT-style contrast case, computed from the identical underlying
-   projections so the only variable that changed is the mask.
-3. Builds a synthetic 512-token sequence and runs `apply_mlm_masking`,
-   then asserts that roughly 15% of positions were selected for masking,
-   roughly 80% of those selected positions were replaced with the
-   `[MASK]` token, and that every unselected position was left both
-   unmodified in the input and excluded from the loss (label `-100`).
-
-Expected output:
-```
-ok: bidirectional attention output shape (2, 6, 16) matches input, and attends to future positions (sum of future weights = 4.7129)
-ok: applying a causal mask to the same layer zeroes all future-position weights -- this is the GPT-style contrast case BERT does not use
-ok: MLM masking selected 14.5% of 512 positions (target ~15%), 71.6% of those replaced with [MASK] (target ~80%)
-```
-
-(The exact numeric values in the first and third lines depend on the
-random seed and will vary slightly if you change it; the assertions check
-ranges, not exact values, because this is inherently a stochastic
-procedure.)
-
-If you want to extend it: try increasing `mask_prob` in
-`apply_mlm_masking` and observe how quickly the assertions on selected
-fraction start to fail if you also shrink the sequence length — with a
-short sequence, the sampled fraction of masked positions has much higher
-variance around its target than with 512 tokens, which is itself a small,
-concrete illustration of why the paper's masking ratios are described as
-targets over long sequences, not guarantees for any individual short one.
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **train/serve tokenizer drift or an incorrect mask-label alignment**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

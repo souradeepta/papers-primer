@@ -12,7 +12,7 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 7. Core Intuition (analogy, no math, >=1 diagram)
 8. The Mechanism (math/architecture, CS-student depth; >=1 Mermaid diagram AND >=1 GIF)
 9. Practical Engineering Notes (SWE depth: prod tradeoffs, perf, named real-library pointers)
-10. Runnable Code Example (references a documented file in implementations/NN-slug/code/, with prerequisites, exact command, expected behavior, and a short explanation of the implementation)
+10. Runnable Code Example (references a documented file in implementations/NN-slug/code/, with prerequisites, an exact fenced command, expected behavior, a paper-specific invariant, a useful experiment, and a production connection)
 11. Common Misconceptions & Pitfalls (>=4 paper-specific items, each with an
     explanation and a practical guard or consequence)
 12. Interview Q&A (SDE2 depth: >=3 scenario pairs plus follow-ups; every answer
@@ -55,6 +55,10 @@ generic study advice that could describe any paper.
   invariant, or mitigation. Quick Concept Checks must contain >=6 Q&A pairs;
   every answer must be at least 30 prose words and connect the concept to an
   equation, implementation detail, edge case, or operational decision.
+- Runnable Code Example must be reproducible from the repository root and must
+  include an exact fenced `bash` command, prerequisites, a link to the canonical
+  implementation, expected behavior, the asserted invariant, one experiment,
+  and a production connection. A command alone is not documentation.
 - Use Markdown semantically: `inline code` for symbols and APIs, fenced
   `text`, `python`, or `mermaid` blocks for runnable or visual material,
   **bold** for labels and invariants, and *italics* sparingly for emphasis.

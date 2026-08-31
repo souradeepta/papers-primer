@@ -159,26 +159,40 @@ The design also has a product implication: a relative relationship is available 
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/08-roformer-rope/code/rope_relative_position.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/rope_relative_position.py`](code/rope_relative_position.py) implements the pairwise rotation in plain PyTorch. It creates fixed query/key vectors, scores three position pairs with the same offset, and asserts the scores agree to `1e-6`. It also checks that a different offset changes the score for this seeded example and that rotations preserve the query norm. Run it with:
+Prerequisites: Python 3 and the dependencies imported by [`implementations/08-roformer-rope/code/rope_relative_position.py`](implementations/08-roformer-rope/code/rope_relative_position.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/08-roformer-rope/code/rope_relative_position.py
+python3 implementations/08-roformer-rope/code/rope_relative_position.py
 ```
 
-The program is deliberately a single-head vector calculation, not a language model. Its invariant is stronger and easier to inspect than a generated-text demo: moving both endpoints together does not change the RoPE dot product when their separation is held fixed.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**rotary position encoding applied to query and key pairs**. The program turns `R(m)ᵀR(n)=R(n−m)` into executable operations,
+prints a compact result, and checks that **relative offsets, tensor shape, and rotation pairing stay consistent across positions**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **test relative-offset invariance and compare long-context perplexity with a no-rotation control**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **frequency extrapolation failure or an off-by-one position/cache index**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

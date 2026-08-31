@@ -43,7 +43,9 @@ papers so readers can follow the historical learning path. -->
 <!-- SWE depth: production tradeoffs, perf/memory implications, named real-library pointers -->
 
 ## Runnable Code Example
-<!-- walk through code/name.py: what it does, expected output -->
+<!-- State prerequisites, give the exact command in a fenced bash block, walk
+through the canonical code/name.py, name its paper-specific invariant, explain
+expected behavior and one useful experiment, and connect the toy to production. -->
 
 ## Common Misconceptions & Pitfalls
 <!-- >=4 paper-specific items. Explain why each claim is wrong or dangerous,

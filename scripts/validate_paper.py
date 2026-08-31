@@ -10,6 +10,7 @@ from paper_checks import (
     check_further_reading,
     check_interview_quality,
     check_learning_sections,
+    check_runnable_example,
     check_gifs,
     check_mechanism_mermaid,
     check_qa_pairs,
@@ -49,6 +50,9 @@ def test_paper_is_spec_compliant(paper_dir: Path):
 
     learning_errors = check_learning_sections(text)
     assert not learning_errors, f"{paper_dir.name}: {learning_errors}"
+
+    runnable_errors = check_runnable_example(text)
+    assert not runnable_errors, f"{paper_dir.name}: {runnable_errors}"
 
     reading_count = check_further_reading(text)
     assert reading_count >= 3, f"{paper_dir.name}: {reading_count} further-reading links, need >= 3"

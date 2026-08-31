@@ -236,28 +236,40 @@ It supports responsible maintenance and reproducible scientific review.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/26-dqn/code/td_target.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/td_target.py`](code/td_target.py) calculates a scalar nonterminal target
-from reward and maximum next-action value.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/26-dqn/code/td_target.py`](implementations/26-dqn/code/td_target.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/26-dqn/code/td_target.py
+python3 implementations/26-dqn/code/td_target.py
 ```
 
-It illustrates the target invariant, not convolutional perception, replay
-storage, or a full Q-learning trainer.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**replay-based deep Q-learning with a delayed target network**. The program turns `y=r+γmax_aQ(s′,a)` into executable operations,
+prints a compact result, and checks that **terminal transitions have no bootstrap term and target-network parameters update only on schedule**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **unit-test terminal targets and compare online/target drift under a fixed replay fixture**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **overestimation, replay correlation, or online/target networks drifting unexpectedly**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

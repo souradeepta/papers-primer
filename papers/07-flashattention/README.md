@@ -144,28 +144,40 @@ There are real constraints to know before assuming "just enable flash attention"
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/07-flashattention/code/flash_attention_demo.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/flash_attention_demo.py`](code/flash_attention_demo.py) implements the numerical core of Algorithm 1 in plain, CPU-only PyTorch: a `flash_attention` function that tiles queries and keys/values into blocks, maintains the running max `m_i`, running normalizer `l_i`, and running output accumulator across blocks with the rescale-and-merge update described above, and a `standard_attention` reference that materializes the full score matrix directly. It runs both on the same small random Q/K/V example (N=37, d=16, deliberately not multiples of the block sizes 8 and 5, to stress boundary handling) and asserts `torch.allclose(reference, tiled, atol=1e-5)`. This does not implement the paper's actual CUDA kernel, SRAM sizing, or fused backward pass — there is no speed or memory benefit to be measured here, since everything still runs as ordinary PyTorch ops on CPU — the only claim being demonstrated is that the tiled, block-streaming algorithm is mathematically exact.
-
-Run it from this directory with:
+Prerequisites: Python 3 and the dependencies imported by [`implementations/07-flashattention/code/flash_attention_demo.py`](implementations/07-flashattention/code/flash_attention_demo.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 code/flash_attention_demo.py
+python3 implementations/07-flashattention/code/flash_attention_demo.py
 ```
 
-Expected output reports a maximum absolute difference on the order of 1e-7 between the two implementations, followed by a confirmation that the assertion passed.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**IO-aware tiled exact attention**. The program turns `softmax(QKᵀ)V` into executable operations,
+prints a compact result, and checks that **online softmax statistics produce the same result as a numerically stable reference**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **compare outputs and gradients against a reference over tile boundaries and sequence lengths**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **incorrect tile rescaling, causal-boundary handling, or hardware-specific regressions**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

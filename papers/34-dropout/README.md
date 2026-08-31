@@ -125,10 +125,40 @@ by the rest of the network.
 
 ## Runnable Code Example
 
-Run python3 implementations/34-dropout/code/dropout_training.py.
-It performs a real classifier update with sampled masks, then verifies that
-two training-mode outputs differ while two evaluation-mode outputs match.
-Switching model.train and model.eval is the key production behavior to notice.
+### Run from the repository root
+
+Prerequisites: Python 3 and the dependencies imported by [`implementations/34-dropout/code/dropout_training.py`](implementations/34-dropout/code/dropout_training.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
+
+```bash
+python3 implementations/34-dropout/code/dropout_training.py
+```
+
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**inverted dropout during training**. The program turns `h̃=(m/p)h` into executable operations,
+prints a compact result, and checks that **training is stochastic while evaluation is deterministic and expected activation scale is preserved**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct. The classifier performs a real parameter update before the mode checks, so this is more than a static API demonstration.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **assert stochastic train outputs, deterministic eval outputs, and mean-preserving scale**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **dropout left enabled at serving or inconsistent rate placement across branches**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

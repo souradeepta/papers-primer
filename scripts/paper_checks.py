@@ -190,5 +190,23 @@ def check_learning_sections(text: str) -> list[str]:
     return errors
 
 
+def check_runnable_example(text: str) -> list[str]:
+    """Require a reproducible, explanatory runnable-example section."""
+    body = _section_body(text, "Runnable Code Example")
+    if body is None:
+        return ["missing Runnable Code Example section"]
+    errors = []
+    if "```bash" not in body:
+        errors.append("runnable example needs an exact fenced bash command")
+    if "implementations/" not in body or ".py" not in body:
+        errors.append("runnable example must link to a canonical implementation")
+    for marker in ("Prerequisites", "Expected behavior", "Production connection"):
+        if marker not in body:
+            errors.append(f"runnable example missing {marker.lower()} explanation")
+    if len(body.split()) < 150:
+        errors.append("runnable example is too terse; explain the code, invariant, experiment, and production behavior")
+    return errors
+
+
 def check_further_reading(text: str) -> int:
     return len(_LINK_RE.findall(text))

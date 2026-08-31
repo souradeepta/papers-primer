@@ -234,27 +234,40 @@ iterative measurement process, not a single extrapolation ceremony.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/30-scaling-laws/code/power_law.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/power_law.py`](code/power_law.py) evaluates a toy negative-exponent power
-law and checks that doubling compute lowers a positive loss proxy.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/30-scaling-laws/code/power_law.py`](implementations/30-scaling-laws/code/power_law.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/30-scaling-laws/code/power_law.py
+python3 implementations/30-scaling-laws/code/power_law.py
 ```
 
-It demonstrates diminishing returns, not a fit to a real language model.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**empirical loss fitting across model and data scales**. The program turns `L(N,D)=A/Nᵅ+B/Dᵝ+C` into executable operations,
+prints a compact result, and checks that **training budgets, token quality, optimizer settings, and evaluation splits are comparable across runs**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **fit held-out scales with confidence intervals and validate against task-level metrics**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **regime change or overconfident extrapolation from noisy pilot data**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

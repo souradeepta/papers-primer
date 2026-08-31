@@ -129,11 +129,40 @@ inputs expose the fixed-vector bottleneck.
 
 ## Runnable Code Example
 
-Run python3 implementations/32-sequence-to-sequence-learning/code/seq2seq_lstm.py.
-It packs a padded source batch, initializes a two-layer decoder from the
-encoder's final state, and computes teacher-forced cross-entropy loss. It then
-uses greedy_decode to feed predicted tokens back at inference, making the
-training-versus-generation difference explicit.
+### Run from the repository root
+
+Prerequisites: Python 3 and the dependencies imported by [`implementations/32-sequence-to-sequence-learning/code/seq2seq_lstm.py`](implementations/32-sequence-to-sequence-learning/code/seq2seq_lstm.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
+
+```bash
+python3 implementations/32-sequence-to-sequence-learning/code/seq2seq_lstm.py
+```
+
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**LSTM encoder-decoder autoregressive generation**. The program turns `p(y|x)=∏_tp(y_t|y<t,x)` into executable operations,
+prints a compact result, and checks that **teacher-forced training and inference use compatible token boundaries while decoder state is initialized correctly**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **compare teacher-forced loss with greedy and beam outputs on exact fixtures**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **exposure bias, EOS errors, or beam-search state aliasing**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

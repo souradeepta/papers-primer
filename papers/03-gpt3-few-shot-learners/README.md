@@ -452,63 +452,40 @@ weights are frozen.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/03-gpt3-few-shot-learners/code/gpt3_incontext_decoder.py`](implementations/03-gpt3-few-shot-learners/code/gpt3_incontext_decoder.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/03-gpt3-few-shot-learners/code/gpt3_incontext_decoder.py
+python3 implementations/03-gpt3-few-shot-learners/code/gpt3_incontext_decoder.py
 ```
 
-### Read it in order
+### What the example demonstrates
 
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+Read the module docstring first, then follow the functions implementing
+**autoregressive in-context learning**. The program turns `p(xₜ|x₍<ₜ₎)` into executable operations,
+prints a compact result, and checks that **the demonstration examples and query remain in order and the causal mask hides future tokens**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
 
+### Expected behavior and useful experiments
 
-See `code/gpt3_incontext_decoder.py` for a minimal, runnable decoder-only
-causal Transformer (a toy GPT-3-shaped model: token embedding + learned
-positional embedding + causal self-attention + feed-forward blocks) in
-PyTorch, with no external dependencies beyond `torch`.
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **hold weights fixed, replay prompts byte-for-byte, and compare task accuracy across controlled prompt variants**.
 
-Running it (`python code/gpt3_incontext_decoder.py`) does three things:
+### Production connection
 
-1. Builds one `TinyGPT` model instance, then constructs three input token
-   sequences of increasing length representing a zero-shot prompt (query
-   only), a one-shot prompt (one demonstration + query), and a few-shot
-   prompt (five demonstrations + query) — feeds all three through the
-   *same* frozen model, and asserts the parameter count is identical
-   before and after all three forward passes, and that sequence lengths
-   strictly increase zero < one < few-shot. This is the direct code
-   analogue of the paper's core claim: in-context learning is purely a
-   longer input sequence through an unchanged model.
-2. Verifies the causal-masking property that makes autoregressive
-   generation well-defined: it appends one extra token after the
-   zero-shot query and asserts the logits at the original query position
-   are unchanged (within floating-point tolerance) — a position's output
-   can never depend on tokens that come after it.
-3. Runs greedy (argmax) decoding and temperature-scaled softmax sampling
-   on the few-shot sequence's final-position logits, and asserts the
-   resulting probability distribution sums to 1.
-
-Expected output:
-```
-ok: zero-shot seq_len=2, one-shot seq_len=6, few-shot seq_len=22 -- same 22,450-parameter model, same forward pass, zero weight updates
-ok: causal mask verified -- a later token cannot change an earlier position's logits
-ok: greedy next-token id=7 at temperature=0.7, softmax probs sum to 1.0000
-```
-
-(The exact parameter count and predicted token id are deterministic given
-the fixed random seed in the script but are not meaningful in themselves —
-this is an untrained, randomly initialized toy model; the point of the
-example is the *shape* of the computation, not its predictions.)
-
-If you want to extend it: try increasing `n_layers` or `d_model` in
-`TinyGPT` and re-running — the assertions should still pass unchanged,
-because none of the properties being tested (frozen parameter count,
-causal masking, valid softmax) depend on model size. That's exactly the
-paper's point about scale: GPT-3's 175B-parameter model and its 125M
-Small model share the identical mechanism this code demonstrates; scale
-changes *how well* it works, not *whether* it works.
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **prompt-format sensitivity and context-window truncation**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

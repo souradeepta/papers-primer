@@ -233,28 +233,40 @@ This separation also clarifies ownership and rollback procedures.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/17-adam/code/adam_step.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/adam_step.py`](code/adam_step.py) performs Adam's first scalar step and
-asserts that bias correction recovers the first gradient and squared gradient.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/17-adam/code/adam_step.py`](implementations/17-adam/code/adam_step.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/17-adam/code/adam_step.py
+python3 implementations/17-adam/code/adam_step.py
 ```
 
-It omits a model and backpropagation so the optimizer invariant is directly
-visible.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**Adam adaptive moment updates with bias correction**. The program turns `θ←θ−αm̂/(√v̂+ε)` into executable operations,
+prints a compact result, and checks that **first and second moments advance with the same step and state is not silently reset**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **run a scalar hand calculation and compare optimizer-state memory and update traces**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **incorrect bias correction, mixed-precision underflow, or weight-decay coupling**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

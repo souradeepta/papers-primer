@@ -211,31 +211,40 @@ filters outside the vector lookup: embedding proximity is not authorization.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/16-word2vec/code/skipgram_negative_sampling.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/skipgram_negative_sampling.py`](code/skipgram_negative_sampling.py)
-implements one scalar logistic update for an observed pair and for sampled
-noise. It deliberately avoids a training framework so the invariant is visible:
-the positive pair's score rises, while the negative pair's score falls.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/16-word2vec/code/skipgram_negative_sampling.py`](implementations/16-word2vec/code/skipgram_negative_sampling.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/16-word2vec/code/skipgram_negative_sampling.py
+python3 implementations/16-word2vec/code/skipgram_negative_sampling.py
 ```
 
-This is a teaching fragment, not a trainer: a real model updates vector
-coordinates for many windows, samples negatives from a frequency distribution,
-and manages two embedding matrices.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**skip-gram training with negative sampling**. The program turns `logσ(vᵀv′)+Σlogσ(−vᵀvₙ)` into executable operations,
+prints a compact result, and checks that **positive pairs are rewarded while sampled negatives use the configured frequency distribution**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **check positive scores against sampled negatives and audit nearest neighbors on held-out relations**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **subsampling or negative-sampling bias that produces plausible but unusable vectors**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

@@ -8,6 +8,7 @@ from paper_checks import (
     check_gifs,
     check_interview_quality,
     check_learning_sections,
+    check_runnable_example,
     check_mechanism_mermaid,
     check_qa_pairs,
     check_sections,
@@ -144,6 +145,13 @@ def test_check_learning_sections_requires_explanatory_content():
     errors = check_learning_sections(text)
     assert any("misconception/pitfall" in error for error in errors)
     assert any("quick checks" in error for error in errors)
+
+
+def test_check_runnable_example_requires_reproducible_explanation():
+    text = "## Runnable Code Example\n```bash\npython3 implementations/x/code/demo.py\n```\n"
+    errors = check_runnable_example(text)
+    assert any("prerequisites" in error for error in errors)
+    assert any("too terse" in error for error in errors)
 
 
 def test_check_further_reading_counts_links():

@@ -245,27 +245,40 @@ It enables reliable technical review and safe iteration.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/29-ddpm/code/noise_schedule.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/noise_schedule.py`](code/noise_schedule.py) applies the closed-form
-forward noising equation to one scalar clean value and fixed Gaussian noise.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/29-ddpm/code/noise_schedule.py`](implementations/29-ddpm/code/noise_schedule.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/29-ddpm/code/noise_schedule.py
+python3 implementations/29-ddpm/code/noise_schedule.py
 ```
 
-It illustrates the schedule equation, not image generation or reverse training.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**diffusion forward noising and sequential reverse denoising**. The program turns `x_t=√ᾱ_tx₀+√(1−ᾱ_t)ε` into executable operations,
+prints a compact result, and checks that **the timestep schedule and noise parameterization agree between training and sampling**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **reconstruct known noised samples and check timestep-dependent noise statistics**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **wrong schedule indexing, accumulated reverse-step error, or excessive sampling latency**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

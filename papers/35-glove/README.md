@@ -127,11 +127,40 @@ pleasant-looking analogies.
 
 ## Runnable Code Example
 
-Run python3 implementations/35-glove/code/glove_weighted_least_squares.py.
-It first builds a sparse, distance-weighted co-occurrence table from a small
-tokenized corpus, then optimizes word/context vectors and biases over observed
-pairs only. The final assertion confirms that weighted log-count loss falls
-during training.
+### Run from the repository root
+
+Prerequisites: Python 3 and the dependencies imported by [`implementations/35-glove/code/glove_weighted_least_squares.py`](implementations/35-glove/code/glove_weighted_least_squares.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
+
+```bash
+python3 implementations/35-glove/code/glove_weighted_least_squares.py
+```
+
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**weighted factorization of global word co-occurrence counts**. The program turns `wᵀw̃+b+b̃≈logX` into executable operations,
+prints a compact result, and checks that **count construction, weighting cutoff, and bias terms use the same vocabulary snapshot**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **snapshot counts and evaluate reconstruction plus downstream similarity and retrieval**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **corpus-count memory blow-up, rare-word noise, or separate embedding tables being mishandled**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

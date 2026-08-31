@@ -387,48 +387,40 @@ this explainer) spends most of its words on.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/01-attention-is-all-you-need/code/attention_from_scratch.py`](implementations/01-attention-is-all-you-need/code/attention_from_scratch.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/01-attention-is-all-you-need/code/attention_from_scratch.py
+python3 implementations/01-attention-is-all-you-need/code/attention_from_scratch.py
 ```
 
-### Read it in order
+### What the example demonstrates
 
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+Read the module docstring first, then follow the functions implementing
+**scaled dot-product self-attention**. The program turns `softmax(QKᵀ/√dₖ)V` into executable operations,
+prints a compact result, and checks that **causal and padding masks must prevent invalid keys from contributing**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
 
+### Expected behavior and useful experiments
 
-See `code/attention_from_scratch.py` for a minimal, runnable
-implementation of `scaled_dot_product_attention` and `MultiHeadAttention`
-in PyTorch — about 50 lines, no external dependencies beyond `torch`.
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **compare a masked reference with an optimized kernel and test a future-token perturbation**.
 
-Running it (`python code/attention_from_scratch.py`) does two things:
+### Production connection
 
-1. Builds a random batch of shape `(2, 5, 16)` (batch of 2, sequence
-   length 5, `d_model` 16 — scaled down from the paper's 512 so it runs
-   instantly), passes it through 4-head multi-head attention, and asserts
-   the output shape matches the input shape — self-attention is a
-   shape-preserving operation, since every attention layer needs to feed
-   into the next one of the same width.
-2. Builds a causal mask via `causal_mask(5)` (a lower-triangular boolean
-   matrix) and asserts that after masking, the attention weight matrix
-   has exactly zero weight in its upper triangle — i.e., no position
-   attends to a future position, which is the property that makes the
-   decoder autoregressive and safe to use for left-to-right generation.
-
-Expected output:
-```
-ok: unmasked output shape (2, 5, 16) matches input shape
-ok: causal mask zeroes all attention weights to future positions
-```
-
-If you want to extend it: try feeding the same query, key, and value
-tensor into `scaled_dot_product_attention` directly (self-attention is
-exactly this — Q, K, and V all derived from the same input) and print the
-returned `weights` matrix to see the actual `softmax(QK^T / sqrt(d_k))`
-probability distribution for a real (if untrained) set of projections.
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **quadratic score memory and mask leakage**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

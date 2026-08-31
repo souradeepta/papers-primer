@@ -146,24 +146,40 @@ Finally, reasoning tasks may be under-specified. A model can write a flawless ca
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/14-chain-of-thought/code/trace_majority_vote.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/trace_majority_vote.py`](code/trace_majority_vote.py) parses five fixed arithmetic traces and majority-votes their final answers. It asserts that four correct traces beat one incorrect trace. This illustrates later self-consistency, not the original paper’s single-chain few-shot method; the distinction is deliberately documented in the code and mechanism section.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/14-chain-of-thought/code/trace_majority_vote.py`](implementations/14-chain-of-thought/code/trace_majority_vote.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/14-chain-of-thought/code/trace_majority_vote.py
+python3 implementations/14-chain-of-thought/code/trace_majority_vote.py
 ```
+
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**self-consistency over sampled reasoning traces**. The program turns `argmax_y Σ_k1[y=y_k]` into executable operations,
+prints a compact result, and checks that **vote aggregation uses only final answers and preserves sample identity for diagnosis**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **score final answers independently from trace text and test adversarial problems with fixed seeds**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **correlated wrong traces, parsing errors, and latency from excessive sampling**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

@@ -166,26 +166,40 @@ For reproducibility, log the reference checkpoint revision, tokenizer revision, 
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/09-dpo/code/dpo_toy_preference.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/dpo_toy_preference.py`](code/dpo_toy_preference.py) contains a three-response toy policy and a frozen logit table as reference. Responses 0 and 1 are the chosen and rejected pair. It computes the exact DPO logistic loss, takes 80 SGD steps, and asserts that the chosen-minus-rejected log-probability margin relative to reference rises by more than one nat.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/09-dpo/code/dpo_toy_preference.py`](implementations/09-dpo/code/dpo_toy_preference.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/09-dpo/code/dpo_toy_preference.py
+python3 implementations/09-dpo/code/dpo_toy_preference.py
 ```
 
-This is not a language model or a benchmark. It isolates the gradient direction that matters: DPO improves a *relative* preference margin, not necessarily the raw probability of every chosen string in isolation.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**direct preference optimization against a reference policy**. The program turns `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))` into executable operations,
+prints a compact result, and checks that **chosen/rejected sequences use the same prompt boundary and reference log-probabilities are detached**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **unit-test pairwise margins and monitor held-out preference accuracy by length bucket**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **preference leakage, length bias, or incorrect sequence log-prob summation**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

@@ -153,26 +153,40 @@ The framework also separates a normal vocabulary piece from control behavior. A 
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
-
-```bash
-python3 papers/11-sentencepiece/code/unigram_segmentation.py
-```
-
-### Read it in order
-
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
-
-
-[`code/unigram_segmentation.py`](code/unigram_segmentation.py) implements a tiny Viterbi-style best-path segmenter over the visible-whitespace string `▁hello▁world`. Its vocabulary includes both compact word-with-space pieces and smaller fallback pieces. The program asserts that concatenating the winning pieces restores the normalized stream, decoding restores `hello world`, and the selected path scores no worse than a known valid fallback.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/11-sentencepiece/code/unigram_segmentation.py`](implementations/11-sentencepiece/code/unigram_segmentation.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/11-sentencepiece/code/unigram_segmentation.py
+python3 implementations/11-sentencepiece/code/unigram_segmentation.py
 ```
 
-It is intentionally not a replacement for SentencePiece training. Its invariant exposes the mechanism a production tokenizer relies on: segmentation may choose among pieces, but decoding must preserve the normalized text exactly.
+### What the example demonstrates
+
+Read the module docstring first, then follow the functions implementing
+**unigram subword segmentation over raw Unicode text**. The program turns `argmax_segmentation ∏p(piece)` into executable operations,
+prints a compact result, and checks that **normalization, whitespace markers, and encode/decode round trips are versioned together**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
+
+### Expected behavior and useful experiments
+
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **snapshot token IDs and test round trips on punctuation, repeated spaces, and non-segmented languages**.
+
+### Production connection
+
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **unknown pieces, changed normalization, or a tokenizer/model vocabulary mismatch**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

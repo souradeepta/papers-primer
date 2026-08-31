@@ -413,53 +413,40 @@ turned out to be no.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/05-instructgpt-rlhf/code/rlhf_from_scratch.py`](implementations/05-instructgpt-rlhf/code/rlhf_from_scratch.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/05-instructgpt-rlhf/code/rlhf_from_scratch.py
+python3 implementations/05-instructgpt-rlhf/code/rlhf_from_scratch.py
 ```
 
-### Read it in order
+### What the example demonstrates
 
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+Read the module docstring first, then follow the functions implementing
+**reward-model-guided policy optimization**. The program turns `E[reward]−βKL(π||πref)` into executable operations,
+prints a compact result, and checks that **the KL penalty is measured against the frozen reference policy and reward inputs use the same prompt contract**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
 
+### Expected behavior and useful experiments
 
-See `code/rlhf_from_scratch.py` for two self-contained, runnable smoke
-tests in PyTorch, each mirroring one formula from The Mechanism above:
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **track reward, KL, human preference, and adversarial slices separately during an ablation**.
 
-1. **Reward model training.** A linear `RewardHead` scores pairs of
-   frozen random-feature "completions" and is trained with the exact
-   pairwise ranking loss from the paper (`-log(sigmoid(r_chosen -
-   r_rejected))`, averaged over the batch) against a synthetic ground
-   truth. The script asserts the training loss decreases and that the
-   trained head ranks the "chosen" completion above the "rejected" one on
-   over 90% of held-out pairs — i.e., it actually learns the preference
-   structure from pairwise comparisons alone, with no absolute labels
-   ever provided, matching how the real reward model is trained.
-2. **KL-penalized reward.** `ppo_kl_penalized_reward` implements
-   `r_theta(x,y) - beta * log(pi_RL(y|x)/pi_SFT(y|x))` directly. The
-   script asserts the penalty is exactly zero when the policy's
-   log-probability matches the frozen reference's, and that holding the
-   raw reward-model score fixed while increasing the policy's
-   log-probability relative to the reference (simulating growing drift)
-   causes the total reward to fall strictly monotonically — the
-   mechanical reason this term discourages the policy from drifting
-   arbitrarily far from the reference just to chase reward-model score.
+### Production connection
 
-Running it (`python code/rlhf_from_scratch.py`):
-
-Expected output:
-```
-ok: reward model loss 0.8440 -> 0.0160 after training; ranks chosen > rejected on 100% of pairs
-ok: KL-penalized reward falls monotonically as policy drifts from reference: [2.0, 1.8, 1.6, 1.2] (raw reward-model score fixed at 2.0)
-```
-
-(Exact loss/percentage values may vary slightly by PyTorch version even
-with a fixed random seed; the qualitative behavior — loss decreasing,
-ranking accuracy high, reward falling monotonically — is what the
-assertions check.)
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **reward hacking, preference-label bias, or an unstable policy/reference gap**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 

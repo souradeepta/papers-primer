@@ -439,60 +439,40 @@ describes.
 
 ## Runnable Code Example
 
-### Run it
+### Run from the repository root
 
-The implementation is intentionally small and self-checking. From the repository root, use Python 3; the module docstring states the learning goal, comments identify the paper-specific calculation, and assertions verify the toy invariant.
+Prerequisites: Python 3 and the dependencies imported by [`implementations/04-lora/code/lora_from_scratch.py`](implementations/04-lora/code/lora_from_scratch.py).
+The example is intentionally small enough to run on CPU; it is a teaching
+implementation, not a production training or serving benchmark.
 
 ```bash
-python3 papers/04-lora/code/lora_from_scratch.py
+python3 implementations/04-lora/code/lora_from_scratch.py
 ```
 
-### Read it in order
+### What the example demonstrates
 
-Start with the module docstring, then follow the named helper calculations and the final assertions. The example is a dependency-light teaching implementation, not a production training system; change one input at a time and rerun it to see which invariant changes.
+Read the module docstring first, then follow the functions implementing
+**low-rank adapter injection into a frozen linear layer**. The program turns `W′=W+BA` into executable operations,
+prints a compact result, and checks that **the base weight is unchanged while adapter shapes and merge/unmerge logits agree**. The assertion matters:
+it tests the semantic contract near the mechanism instead of treating a
+plausible final number as proof that the implementation is correct.
 
+### Expected behavior and useful experiments
 
-See `code/lora_from_scratch.py` for a minimal, runnable PyTorch
-implementation of a `LoRALinear` module — a frozen base `nn.Linear`
-plus trainable low-rank `A`/`B` matrices, about 60 lines, no external
-dependencies beyond `torch`.
+The command should finish without a traceback and print a successful summary
+or assertion message. You should observe the paper-specific behavior, not a
+particular random numeric value. Change one input at a time: inspect the
+intermediate tensor or state, rerun with a boundary case, and then compare the
+result with the expected invariant. A useful first experiment is to **compare merged and unmerged logits and assert the frozen parameter checksum**.
 
-Running it (`python code/lora_from_scratch.py`) does four things:
+### Production connection
 
-1. Builds a `LoRALinear(in_features=64, out_features=32, r=4, alpha=8)`
-   layer and checks that, at initialization (`B` all zeros), its output
-   on a random input exactly matches the frozen base layer's output
-   alone — confirming the update `BA` really is zero at the start of
-   training, as the paper's initialization scheme requires.
-2. Checks that only the parameters named `A` and `B` have
-   `requires_grad=True`, and that the base layer's weight is frozen —
-   the mechanical core of "freeze the pretrained model, train a small
-   side path."
-3. Compares parameter counts: the base weight has `64 x 32 = 2048`
-   parameters, while `A` (`4 x 64`) and `B` (`32 x 4`) together have
-   only `256 + 128 = 384` — asserting the LoRA side is meaningfully
-   smaller, the small-scale analogue of the paper's 10,000x reduction
-   claim on GPT-3 175B.
-4. Perturbs `B` to simulate a few steps of training (so the update is no
-   longer zero), then computes the merged weight `W0 + (alpha/r) BA` and
-   checks its output matches the unmerged two-path forward pass exactly —
-   demonstrating the zero-extra-inference-latency merge described above.
-
-Expected output:
-```
-ok: forward pass matches frozen base exactly at init (B zero-initialized)
-ok: only ['A', 'B'] are trainable; base W0 is frozen
-ok: W0 has 2048 params, A+B have 384 (5.3x fewer trainable params)
-ok: merged weight W0 + (alpha/r)*BA reproduces the unmerged forward pass exactly
-```
-
-If you want to extend it: try wrapping two `LoRALinear` layers to stand
-in for `Wq` and `Wv` on a toy multi-head attention block (see paper
-01's `attention_from_scratch.py` in this repo for a base
-`MultiHeadAttention` implementation you could adapt), freeze its
-existing `q_proj`/`v_proj` weights, and add LoRA layers alongside them —
-this is a small-scale version of exactly what the paper's Table 5
-ablation is comparing.
+The toy program does not model every distributed or large-scale concern. In a
+real service, version the preprocessing and configuration, record the relevant
+intermediate statistic, and measure peak memory, throughput, p95/p99 latency,
+and task quality. The first production guard should target **wrong adapter rank, dtype, target module, or accidental base-weight updates**;
+preserve a transparent reference path or a canary comparison before replacing
+it with a fused, distributed, or highly optimized implementation.
 
 ## Common Misconceptions & Pitfalls
 
