@@ -199,6 +199,15 @@ methods. That clarity is why it remains a good baseline and teaching tool.
 Modern contextual models add flexibility, yet global-count embeddings can be
 smaller, easier to inspect, and appropriate when compute or data is limited.
 
+## Implementation Walkthrough
+
+The code constructs only observed window pairs, applies inverse-distance
+weights, and learns separate word/context embeddings plus biases. This is the
+sparse version of the paper's objective; a dense count matrix would waste
+memory on absent pairs. After fitting, inspect neighbors and downstream
+retrieval, because reducing log-count reconstruction loss alone does not
+guarantee useful semantics.
+
 ## Further Reading
 
 - [Original paper](https://aclanthology.org/D14-1162/)

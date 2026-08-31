@@ -169,6 +169,15 @@ The code is deliberately small: it demonstrates the paper’s probabilistic comp
 **Q:** Why is chunk size a quality trade-off?
 **A:** It balances semantic context against retrieval precision and generator context budget.
 
+## Implementation Walkthrough
+
+RAG first embeds a query, retrieves a small set of document chunks, then
+conditions generation on those chunks. Retrieval quality is therefore part of
+the model output: chunk size, overlap, embedding version, index freshness, and
+metadata filters can change an answer before the generator runs. Evaluate
+retrieval recall separately from answer quality, and retain citations or chunk
+identifiers so an incorrect answer can be traced to retrieval versus synthesis.
+
 ## Further Reading
 
 - [Original RAG paper](https://arxiv.org/abs/2005.11401)

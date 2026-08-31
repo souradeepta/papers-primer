@@ -250,6 +250,14 @@ residuals.
 **Q:** Does lower loss justify deployment?
 **A:** No. Cost, reliability, safety, governance, and task metrics also matter.
 
+## Implementation Walkthrough
+
+Scaling-law fits relate validation loss to model size, data, or compute over a
+measured range. Fit in log space, preserve uncertainty and held-out points,
+then treat extrapolation as a planning estimate rather than a guarantee. Data
+quality, architecture, and optimizer changes can shift the curve, so do not
+mix incompatible runs into one tidy-looking power law.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/2001.08361)

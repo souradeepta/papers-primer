@@ -141,6 +141,15 @@ python3 papers/15-pagedattention-vllm/code/block_manager.py
 **Q:** What is the principal operational trade-off?
 **A:** Better utilization and sharing versus allocator, scheduler, metadata, and block-size complexity.
 
+## Implementation Walkthrough
+
+PagedAttention stores each request's key-value cache in fixed-size blocks and
+maps logical token positions to physical blocks. This avoids reserving one
+large contiguous cache for every possible request length and permits sharing
+prefix blocks safely. A serving implementation must track block ownership,
+reference counts, eviction, and request cancellation; a cache leak or mistaken
+shared writable block is both a throughput and correctness failure.
+
 ## Further Reading
 
 - [Original PagedAttention/vLLM paper](https://arxiv.org/abs/2309.06180)

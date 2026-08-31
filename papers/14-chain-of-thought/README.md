@@ -154,6 +154,15 @@ python3 papers/14-chain-of-thought/code/trace_majority_vote.py
 **Q:** What is the main production trade-off?
 **A:** Potential accuracy gains versus more tokens, latency, cost, and sensitive generated content.
 
+## Implementation Walkthrough
+
+Chain-of-thought prompting changes the intermediate text a model is invited to
+produce before its final answer. It can help multi-step tasks because earlier
+generated steps become part of the context for later steps, but it does not
+make every intermediate statement true. Use held-out answers, multiple prompt
+forms, and task-specific verification rather than grading only whether an
+explanation sounds plausible.
+
 ## Further Reading
 
 - [Original Chain-of-Thought paper](https://arxiv.org/abs/2201.11903)

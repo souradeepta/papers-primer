@@ -204,6 +204,14 @@ recurrent dependencies within its layers during training. Still, the central
 lesson survives: a representation can be a searchable collection, not only a
 single compressed summary.
 
+## Implementation Walkthrough
+
+The implementation projects encoder states once, then reuses those keys for
+multiple decoder queries. It masks invalid positions before softmax and checks
+that their probability is zero. In a full translation model, log the alignment
+matrix with source and target tokens; it helps diagnose repeated, skipped, or
+misaligned content without claiming a causal explanation.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1409.0473)

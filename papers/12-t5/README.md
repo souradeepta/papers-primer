@@ -164,6 +164,15 @@ The program is a data transformation, not a trained Transformer. That is intenti
 **Q:** What is a common data-pipeline bug?
 **A:** Mishandling pad labels, sentinel order, or the decoder shift so the target no longer matches the corrupted source.
 
+## Implementation Walkthrough
+
+T5 converts every task into text-to-text form: a textual prefix identifies the
+task, the encoder reads the input, and the decoder predicts target tokens.
+Span corruption replaces consecutive source spans with sentinel tokens, so the
+target teaches the decoder to restore missing spans in order. Keep sentinel
+construction, target shifting, and task prefixes identical between pretraining
+and fine-tuning or the model receives a different interface than it learned.
+
 ## Further Reading
 
 - [Original T5 paper](https://arxiv.org/abs/1910.10683)

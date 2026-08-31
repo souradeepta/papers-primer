@@ -259,6 +259,14 @@ so the latent code carries little information.
 **A:** No. Useful or separated factors require evidence and often additional
 assumptions or objectives.
 
+## Implementation Walkthrough
+
+A VAE encoder outputs a mean and log variance, samples a latent using the
+reparameterization trick, and a decoder reconstructs the input. Its loss joins
+reconstruction error with a KL term that keeps latents near a simple prior.
+Inspect both terms: a tiny reconstruction loss with collapsed KL means the
+decoder may be ignoring the latent code.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1312.6114)

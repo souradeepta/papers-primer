@@ -248,6 +248,15 @@ deep, wide stages more efficiently.
 **A:** No. The residual parameterization is widely used wherever deep transforms
 benefit from an identity reference path.
 
+## Implementation Walkthrough
+
+A residual block computes a transformation and adds the untouched input through
+a shortcut. When dimensions change, a projection shortcut aligns shape and
+channel count; otherwise addition is invalid. Track tensor shapes at each
+stage, use normalization and activation in the intended order, and compare a
+plain-depth control to confirm that residual paths—not just more parameters—
+improve optimization.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1512.03385)

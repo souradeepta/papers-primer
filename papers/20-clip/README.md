@@ -253,6 +253,15 @@ image embedding.
 **A:** A preprocessing, tokenizer, index, or prompt mismatch can invalidate
 scores without a runtime error.
 
+## Implementation Walkthrough
+
+CLIP encodes a batch of images and matching text, computes every image-text
+similarity, and trains the diagonal pairs to outrank off-diagonal pairs. The
+batch itself supplies negatives, so batch composition, distributed gathering,
+and duplicate captions matter. At zero-shot inference, compare an image
+embedding to carefully chosen text prompts; prompt wording is an input feature,
+not an afterthought.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/2103.00020)

@@ -255,6 +255,15 @@ recognizes fakes.
 **A:** No. Plausible appearance does not establish authenticity, accuracy, or
 permission to use the depicted content.
 
+## Implementation Walkthrough
+
+GAN training alternates discriminator and generator updates. The discriminator
+learns to separate real from generated samples; the generator uses its gradient
+to make samples harder to distinguish. Balance matters: an overpowered
+discriminator can provide poor gradients, while a weak one gives little useful
+signal. Monitor sample diversity, discriminator behavior, and mode coverage,
+not a single scalar loss alone.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1406.2661)

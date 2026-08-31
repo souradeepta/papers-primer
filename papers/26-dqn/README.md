@@ -256,6 +256,15 @@ target.
 **A:** No. Replay contains behavior from past policies while current parameters
 are optimized off-policy.
 
+## Implementation Walkthrough
+
+DQN stores transitions in replay memory, samples decorrelated batches, and
+uses a slowly updated target network to form more stable temporal-difference
+targets. The target must stop gradients through the next-state estimate.
+Track replay coverage, epsilon schedule, target-update cadence, and episodic
+returns; one unusually high reward is not evidence that value learning is
+stable.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1312.5602)

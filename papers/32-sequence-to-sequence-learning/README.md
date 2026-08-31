@@ -205,6 +205,14 @@ and source-length slices expose that failure better than a single aggregate
 token accuracy. Attention addresses access to source detail, but faithful
 generation also depends on data coverage and decoding constraints.
 
+## Implementation Walkthrough
+
+The code packs variable-length sources, transfers both hidden and cell state,
+then contrasts teacher-forced logits with greedy decoding. That distinction is
+the central operational risk: a low teacher-forced loss can coexist with poor
+free-running output. Test exact token shifts, end-token termination, and
+length-stratified generation before optimizing beam search.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1409.3215)

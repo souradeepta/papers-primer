@@ -163,6 +163,15 @@ It is intentionally not a replacement for SentencePiece training. Its invariant 
 **Q:** What must ship with a model checkpoint?
 **A:** The exact tokenizer model and configuration, special-token mapping, normalizer behavior, and ideally a tested wrapper revision.
 
+## Implementation Walkthrough
+
+SentencePiece trains its vocabulary directly from raw text, so whitespace is
+represented as a visible symbol rather than discarded before tokenization.
+At inference, the same normalization and model turn a string into pieces and
+can reconstruct it without a language-specific word splitter. Test round trips
+on punctuation, multiple spaces, and languages without word boundaries; those
+cases reveal pipeline assumptions that ordinary English examples hide.
+
 ## Further Reading
 
 - [Original SentencePiece paper](https://arxiv.org/abs/1808.06226)

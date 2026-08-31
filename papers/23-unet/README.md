@@ -251,6 +251,14 @@ label interpolation must preserve categorical values.
 **Q:** What causes tiled-inference seams?
 **A:** Inadequate context, inconsistent padding, or naive merging at patch borders.
 
+## Implementation Walkthrough
+
+U-Net sends downsampled features through an encoder, then upsamples while
+concatenating matching-resolution skip features from the encoder. The skip
+paths restore location detail that a bottleneck alone loses. Check alignment
+after every crop or resize, because an off-by-one spatial mismatch can either
+crash concatenation or quietly shift segmentation boundaries.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1505.04597)

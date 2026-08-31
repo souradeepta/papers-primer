@@ -251,6 +251,14 @@ examples in a batch.
 **A:** At inference, fixed running statistics allow an equivalent fused transform
 in many runtimes.
 
+## Implementation Walkthrough
+
+Batch normalization uses current batch statistics in training and running
+averages at inference. The mode switch is part of the algorithm, not a
+framework detail. Small or nonrepresentative batches make estimates noisy, so
+verify train/eval behavior, checkpoint running statistics, and consider group
+or layer normalization when batch size is constrained.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1502.03167)

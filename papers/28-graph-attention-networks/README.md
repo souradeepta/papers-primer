@@ -253,6 +253,15 @@ node IDs, and split policy remain part of the model contract.
 **Q:** What is an inductive graph task?
 **A:** A learned local rule must apply to unseen nodes or unseen graphs.
 
+## Implementation Walkthrough
+
+A graph-attention layer transforms neighboring node features, scores each edge,
+normalizes scores separately for every destination node, then aggregates
+neighbor messages. Add self-loops deliberately so a node can retain its own
+feature. Inspect normalization by node degree and use sparse edge operations;
+building a dense adjacency square makes even a modest graph unnecessarily
+expensive.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1710.10903)

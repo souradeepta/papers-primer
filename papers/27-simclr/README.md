@@ -255,6 +255,15 @@ compete.
 **A:** No. It uses instance identity created by augmentations, then evaluates
 features with labels later.
 
+## Implementation Walkthrough
+
+SimCLR makes two augmented views of each image, pulls their projected
+representations together, and pushes other batch examples apart with a
+temperature-scaled contrastive objective. Augmentations define which invariances
+are learned, so tune crop, color, blur, and batch size as part of the method.
+Evaluate frozen representations with a linear probe to separate representation
+quality from classifier fine-tuning.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/2002.05709)

@@ -210,6 +210,14 @@ positions. The two ideas are complementary in early neural translation:
 gating makes sequence processing stable, while attention makes detailed source
 information available when the decoder needs it.
 
+## Implementation Walkthrough
+
+The implementation exposes the four packed gate projections and uses a length
+mask after each recurrent update. This mirrors real padded batches: zeros are
+not harmless once a learned bias is present. Inspect forget-gate averages and
+gradient norms across long sequences, but do not mistake a large gate value for
+proof that a particular word caused a prediction.
+
 ## Further Reading
 
 - [Original paper](https://doi.org/10.1162/neco.1997.9.8.1735)

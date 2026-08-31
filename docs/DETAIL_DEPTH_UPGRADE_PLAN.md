@@ -29,11 +29,11 @@ padding for a numeric target:
 ## Execution order
 
 - [x] 06–10: compute-efficient Transformers and alignment
-- [ ] 11–15: text processing, retrieval, reasoning, and serving
-- [ ] 16–20: embeddings, optimizers, and vision foundations
-- [ ] 21–25: generative modeling, normalization, RL, and vision Transformers
-- [ ] 26–30: RL, contrastive learning, graph attention, diffusion, scaling
-- [ ] 31–35: recurrent memory, Seq2Seq, additive attention, dropout, GloVe
+- [x] 11–15: text processing, retrieval, reasoning, and serving
+- [x] 16–20: embeddings, optimizers, and vision foundations
+- [x] 21–25: generative modeling, normalization, RL, and vision Transformers
+- [x] 26–30: RL, contrastive learning, graph attention, diffusion, scaling
+- [x] 31–35: recurrent memory, Seq2Seq, additive attention, dropout, GloVe
 
 Every batch receives a prose review, full validator run, implementation run,
 and a commit before the next batch begins.

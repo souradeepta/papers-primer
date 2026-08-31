@@ -247,6 +247,15 @@ from broad visual supervision.
 **A:** Yes, by using patch-level features with an appropriate dense-prediction
 decoder and spatial evaluation pipeline.
 
+## Implementation Walkthrough
+
+ViT turns fixed-size image patches into token embeddings, adds position
+information, and processes them with Transformer layers. Patch size controls
+the token count and thus attention cost: smaller patches preserve more detail
+but make sequence-square attention expensive. Validate image normalization,
+patch ordering, class-token handling, and resolution changes before attributing
+a result to architecture.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/2010.11929)

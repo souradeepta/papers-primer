@@ -253,6 +253,14 @@ is separate from moment bias correction.
 **A:** A variant that applies weight decay directly to parameters rather than
 mixing it into the adaptive gradient.
 
+## Implementation Walkthrough
+
+Adam keeps a first-moment moving average for direction and a second-moment
+average for scale, then bias-corrects both early in training. The optimizer
+state belongs to each parameter tensor and must be checkpointed with model
+weights. Log learning rate, gradient norm, and update norm; these distinguish
+a data issue from an optimizer configuration whose effective step is too large.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1412.6980)

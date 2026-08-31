@@ -254,6 +254,15 @@ value at that state.
 **A:** No. It stabilizes optimization; safety needs constraints, evaluation, and
 operational controls.
 
+## Implementation Walkthrough
+
+PPO collects trajectories with an old policy, estimates advantages, then makes
+several clipped updates without allowing probability ratios to move too far.
+The clip is not a promise of safe improvement; monitor approximate KL,
+clip fraction, entropy, reward, and value error together. Normalize advantages
+and keep terminal masks correct, since a mistaken bootstrap target can dominate
+the policy signal.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1707.06347)

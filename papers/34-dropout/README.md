@@ -203,6 +203,14 @@ improves while training quality falls slightly, the regularizer is doing its
 intended job. If both collapse, reduce the rate or revisit the model and data.
 This comparison keeps “randomness helped” from becoming an unsupported story.
 
+## Implementation Walkthrough
+
+The example deliberately runs the same batch twice in training and evaluation
+mode. Training outputs should differ because masks are resampled; evaluation
+outputs should match because inverted scaling already corrected expected
+activation size. This simple test catches a common deployment bug where a
+model is exported while still in training mode.
+
 ## Further Reading
 
 - [Original paper](https://www.jmlr.org/papers/v15/srivastava14a.html)

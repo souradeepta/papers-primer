@@ -241,6 +241,15 @@ broader topical association and increase the number of training pairs.
 **A:** They learn token representations in task context, so `bank` can differ
 by sentence. They still use learned embedding lookups at their input.
 
+## Implementation Walkthrough
+
+Skip-gram starts with a center word and learns to score nearby context words
+above sampled noise words. Negative sampling avoids a full vocabulary softmax,
+but its noise distribution and number of negatives change the learned space.
+Build examples from a fixed window, exclude padding and self-pairs, then inspect
+nearest neighbors and a downstream task rather than assuming lower loss means
+better semantic behavior.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/1301.3781)

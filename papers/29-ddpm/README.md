@@ -260,6 +260,15 @@ latency, cost, and operational failure opportunities.
 **Q:** Is DDPM one reverse network call?
 **A:** No. Standard sampling repeatedly applies the denoiser through a schedule.
 
+## Implementation Walkthrough
+
+DDPM training adds noise at a randomly chosen timestep and teaches a network
+to predict that noise from the noisy sample and timestep. Sampling reverses
+the schedule one step at a time, using the prediction to remove noise.
+Precompute schedule coefficients with care, keep timestep broadcasting correct,
+and inspect generated samples across the reverse trajectory rather than only
+the final image.
+
 ## Further Reading
 
 - [Original paper](https://arxiv.org/abs/2006.11239)
