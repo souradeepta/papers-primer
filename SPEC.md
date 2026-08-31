@@ -15,8 +15,8 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 10. Runnable Code Example (references a documented file in implementations/NN-slug/code/, with prerequisites, exact command, expected behavior, and a short explanation of the implementation)
 11. Common Misconceptions & Pitfalls (>=2 items)
 12. Interview Q&A (SDE2 depth: >=3 scenario pairs plus follow-ups; every answer
-must be a paragraph of at least 40 prose words and explain implementation,
-trade-offs, or debugging evidence)
+  must be a paragraph of at least 40 prose words and explain implementation,
+  trade-offs, or debugging evidence)
 13. Further Reading (>=3 markdown links, must include the original arXiv paper)
 
 The first four learner-first sections are short bridges into the deeper
@@ -44,6 +44,26 @@ generic study advice that could describe any paper.
   >=3 scenario pairs, >=3 explicit follow-ups, and >=6 paragraph-length answers
   of at least 40 prose words each. Answers should cover mechanism, production
   trade-offs, failure modes, and testing/debugging evidence at SDE2 level.
+- Every answer must be paper-specific. The official section must name the
+  paper's equation or data path, state a local invariant, identify a concrete
+  failure mode, and prescribe a paper-appropriate test or debugging experiment.
+  Generic scaffolding such as “check the inputs and compare outputs” does not
+  satisfy this requirement, even when it meets the word count.
+- Use Markdown semantically: `inline code` for symbols and APIs, fenced
+  `text`, `python`, or `mermaid` blocks for runnable or visual material,
+  **bold** for labels and invariants, and *italics* sparingly for emphasis.
+  Do not depend on arbitrary font colors; they are not portable across GitHub,
+  terminals, and screen readers. Prefer blockquotes and bold labels for notes.
+
+## Review gate and accountability
+
+Run `python3 scripts/validate_paper.py papers/NN-slug` for each page, or loop
+over all `papers/*` directories before merging. A review is incomplete if it
+checks only section names or word counts: inspect the rendered Markdown and
+sample the final papers for repeated interview prose. The validator must fail
+on missing diagrams/GIFs, short interview answers, absent follow-ups, and
+generic interview-template filler. New papers inherit this same gate; there
+is no lower standard for later entries.
 - Further Reading >= 3 links
 
 ## Accuracy requirement

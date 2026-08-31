@@ -26,6 +26,13 @@ _QA_RE = re.compile(r"\*\*Q:\*\*")
 _FOLLOWUP_RE = re.compile(r"\*\*Follow-up:\*\*")
 _ANSWER_RE = re.compile(r"\*\*A:\*\*(.*?)(?=\n\n\*\*(?:Q|Follow-up):|\Z)", re.DOTALL)
 _LINK_RE = re.compile(r"\[[^\]]+\]\((https?://[^)]+)\)")
+_GENERIC_INTERVIEW_PHRASES = (
+    "Start by identifying the data structure entering the operation",
+    "Assert the property that makes the method meaningful",
+    "Reject it when it changes the evaluation contract",
+    "Reproduce the smallest production-shaped input and compare intermediate values",
+    "Show one minimal failing example, the expected invariant, the observed intermediate divergence",
+)
 
 
 def check_sections(text: str) -> list[str]:
@@ -146,6 +153,12 @@ def check_interview_quality(text: str) -> list[str]:
         errors.append(f"only {len(answers)} answers; need >=6 including follow-ups")
     if short:
         errors.append(f"{len(short)} answers are shorter than 40 words")
+    generic_hits = sum(phrase in body for phrase in _GENERIC_INTERVIEW_PHRASES)
+    if generic_hits >= 2:
+        errors.append("interview answers contain generic template filler; add paper-specific mechanism, invariant, failure, and test evidence")
+    code_terms = re.findall(r"`[^`\n]+`", body)
+    if len(code_terms) < 3:
+        errors.append("interview section needs at least 3 concrete inline code/equation references")
     return errors
 
 

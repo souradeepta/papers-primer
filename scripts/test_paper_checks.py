@@ -6,6 +6,7 @@ from paper_checks import (
     check_code_dir,
     check_further_reading,
     check_gifs,
+    check_interview_quality,
     check_mechanism_mermaid,
     check_qa_pairs,
     check_sections,
@@ -102,6 +103,31 @@ def test_check_code_dir_script_passes(tmp_path):
 def test_check_qa_pairs_counts():
     text = "**Q:** a\n**A:** b\n**Q:** c\n**A:** d"
     assert check_qa_pairs(text) == 2
+
+
+def test_check_interview_quality_rejects_generic_template_filler():
+    answer = "This is a deliberately long answer with enough prose to make the paragraph look complete while still failing the substantive review requirement. " * 5
+    text = """## Interview Q&A
+**Q:** one
+**A:** Start by identifying the data structure entering the operation. {answer}
+
+**Follow-up:** two
+**A:** Assert the property that makes the method meaningful. {answer}
+
+**Q:** three
+**A:** {answer}
+
+**Follow-up:** four
+**A:** {answer}
+
+**Q:** five
+**A:** {answer}
+
+**Follow-up:** six
+**A:** {answer}
+""".format(answer=answer)
+    errors = check_interview_quality(text)
+    assert any("generic template filler" in error for error in errors)
 
 
 def test_check_further_reading_counts_links():
