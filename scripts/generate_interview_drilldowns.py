@@ -57,8 +57,6 @@ DATA = {
 def interview_section(mechanism: str, equation: str, invariant: str, tradeoff: str, failure: str, test: str) -> str:
     return f'''## Interview Q&A
 
-> **SDE2 drill-down:** Explain the mechanism, show the invariant, name the production trade-off, and give evidence from a test or debugging experiment. Use inline `code`, fenced snippets, and **bold** labels to make the reasoning scannable.
-
 **Q:** Walk through **{mechanism}** end to end. How would you implement `{equation}`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `{equation}` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 

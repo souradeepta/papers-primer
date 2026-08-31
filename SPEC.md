@@ -54,6 +54,8 @@ generic study advice that could describe any paper.
   **bold** for labels and invariants, and *italics* sparingly for emphasis.
   Do not depend on arbitrary font colors; they are not portable across GitHub,
   terminals, and screen readers. Prefer blockquotes and bold labels for notes.
+- Authoring instructions and quality-gate explanations belong in `SPEC.md`,
+  templates, or scripts; they must not be copied into published paper pages.
 
 ## Review gate and accountability
 
