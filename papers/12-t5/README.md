@@ -97,6 +97,20 @@ The paper investigates a number of design choices, so resist attributing every l
 
 Task prefixes create a simple multi-task interface but not a formal schema. Text labels must be canonicalized: `entailment` and `yes` are distinct targets even if a human considers them equivalent. Evaluation needs to map decoded strings back to task labels carefully and reject unexpected strings instead of silently coercing them. For generation tasks, decoding strategy changes output quality and cost; for classification framed as generation, a constrained vocabulary or log-probability comparison may be more reliable than unconstrained free decoding.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on task-prefixed text and sentinel-marked spans. A faithful
+forward pass should follow this order: encode corrupted input, autoregressively decode sentinel targets, and stop at EOS. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is treating textual labels as free-form strings without exact evaluation rules. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

@@ -94,6 +94,20 @@ The index is non-parametric memory: adding or changing a document can change ret
 
 Document chunking determines the units a retriever can return. Large chunks may contain needed context but dilute vector similarity and consume prompt budget. Tiny chunks improve targeting but may omit qualifiers, tables, or antecedents. Metadata such as timestamps, source authority, tenant ID, and ACLs must be filtered before retrieval—not merely removed from a final answer—because retrieved text can influence generation even when hidden from a user.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on query, retriever scores, passages, and generator tokens. A faithful
+forward pass should follow this order: retrieve and filter evidence, assemble context, score candidate answers, and preserve provenance. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is authorizing or caching documents after retrieval instead of before it. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

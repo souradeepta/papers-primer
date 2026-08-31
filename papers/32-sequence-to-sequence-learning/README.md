@@ -83,6 +83,20 @@ flowchart LR
     P --> D
 ```
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on source sequence, encoder state, decoder state, and EOS. A faithful
+forward pass should follow this order: encode once, initialize decoder, teacher-force during training, and feed predictions at inference. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is forgetting that teacher forcing hides exposure bias during training. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

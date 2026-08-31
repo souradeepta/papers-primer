@@ -106,6 +106,20 @@ Extrapolation becomes weak beyond observed range, after architecture changes, or
 when data quality shifts. A large run is a hypothesis to validate with held-out
 measurements, not a result guaranteed by a fitted line.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on runs with measured N, D, compute, and validation loss. A faithful
+forward pass should follow this order: fit a scaling form, inspect residuals, choose a candidate budget, and test it. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is extrapolating across an architecture or data-quality regime change. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

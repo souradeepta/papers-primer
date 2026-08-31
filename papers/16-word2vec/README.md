@@ -140,6 +140,20 @@ skip-gram and stronger syntactic accuracy for CBOW; results depend on corpus,
 window, vocabulary, and metric. The central contribution is the efficient
 architecture, not a claim that a single benchmark establishes understanding.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on center/context ids and sampled negatives. A faithful
+forward pass should follow this order: score the positive pair, score negatives, compute binary logistic gradients, and update vectors. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is sampling negatives from an unsuitable frequency distribution. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

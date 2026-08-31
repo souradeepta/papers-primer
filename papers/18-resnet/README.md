@@ -123,6 +123,20 @@ network, ReLU and normalization affect exact identity behavior, and a learned
 block need not have a small numerical residual. The empirical claim is about
 easier optimization of the architecture family, not a universal proof.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on residual branch and identity shortcut. A faithful
+forward pass should follow this order: transform the branch, align dimensions if needed, add the shortcut, then activate. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is using a projection with the wrong stride or changing the identity path unexpectedly. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

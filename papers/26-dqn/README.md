@@ -111,6 +111,20 @@ universal perception guidance. The GIF is illustrative, not a score curve.
 DQN's maximization assumes a manageable discrete action set; continuous control
 needs another method or an explicit discretization tradeoff.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on replay transition and online/target Q networks. A faithful
+forward pass should follow this order: select action values, build a detached Bellman target, regress online Q, and periodically sync. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is allowing gradients through the target network or terminal next-state value. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

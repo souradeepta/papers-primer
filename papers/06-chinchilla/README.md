@@ -110,6 +110,20 @@ The animation below uses a deliberately simple symmetric teaching loss under fix
 
 One operational detail deserves emphasis: the learning-rate schedule must be part of a fair token-budget experiment. The paper argues that decaying the learning rate over a horizon matched to the training-token horizon gives the best final loss in its setup. Reusing a long schedule and reading intermediate checkpoints can make short runs look worse than properly scheduled short runs. In other words, a scaling sweep is an experiment about a *training recipe*, not only a model shape.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on parameter count, token count, and measured loss. A faithful
+forward pass should follow this order: fit comparable runs, estimate the frontier, allocate a budget, and validate the forecast. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is comparing runs with different data quality or hidden compute budgets. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

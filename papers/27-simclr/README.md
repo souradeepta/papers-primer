@@ -119,6 +119,20 @@ provide too few negatives, while a large batch has communication and memory
 cost. Later methods such as BYOL and SimSiam changed the negative-pair design;
 they are not implementation settings of the original objective.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on two augmented views per image and normalized projections. A faithful
+forward pass should follow this order: form positive indices, compare every view with batch negatives, and average both directions. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is including the anchor itself or treating two views of different samples as positive. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

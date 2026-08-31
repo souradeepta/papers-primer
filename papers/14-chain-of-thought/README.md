@@ -89,6 +89,20 @@ Prompt design is a data interface. Demonstrations should match the task distribu
 
 Scale is central to the paper’s finding. Its abstract says reasoning abilities emerge naturally in sufficiently large models and identifies one 540B example; it does not establish a fixed parameter threshold that applies across datasets, tokenizers, training mixtures, or future architectures. Small models can be confused by long rationales, and a larger model may still fail on tasks requiring precise tools or missing information. Test the actual model and prompt budget instead of assuming CoT is monotonic.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on one prompt and multiple sampled traces. A faithful
+forward pass should follow this order: generate independent traces, extract final answers, and aggregate them. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is counting correlated traces as independent evidence. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

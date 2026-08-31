@@ -112,6 +112,20 @@ Finally, the phrase “relative position” should not obscure the retained abso
 
 This is a small mathematical intervention with a large systems consequence: position becomes part of attention’s comparison operation, where sequence order is actually used.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on query/key pairs and position indices. A faithful
+forward pass should follow this order: pair dimensions, rotate each pair by its position angle, then take attention dot products. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is using a different rotation convention or position base for cached tokens. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

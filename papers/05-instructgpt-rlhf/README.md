@@ -314,6 +314,20 @@ regression, but separately acknowledges residual gaps remained on some
 of them, specifically calling out DROP and SQuADv2 as datasets where a
 performance gap persisted even with PPO-ptx.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on prompt, sampled response, reward, and reference log-probabilities. A faithful
+forward pass should follow this order: score the response, subtract KL-shaped control, estimate advantages, and update the policy. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is optimizing a reward model outside the distribution of responses it judged. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

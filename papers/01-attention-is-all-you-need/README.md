@@ -288,6 +288,20 @@ attention has gathered the relevant context.
   parameters. Big model: 300,000 steps, 3.5 days, ~213M parameters.
 - Inference: beam search with beam size 4, length penalty α = 0.6.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on Q, K, and V projections. A faithful
+forward pass should follow this order: compute scores, scale, mask, softmax, then mix values. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is mixing masks after softmax, which leaves invalid positions with probability. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

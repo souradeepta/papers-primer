@@ -98,6 +98,20 @@ Subword fallback matters. If every character in a normalized input is representa
 
 The original paper emphasizes self-contained processing: raw sentences are accepted directly, and detokenization restores readable text without external word-boundary logic. That makes pipelines more portable, but it does not erase normalization policy. Training data and serving inputs still need clear Unicode, whitespace, and special-token rules. “Language independent” means the framework does not require a language-specific pre-tokenizer; it does not mean every trained vocabulary performs equally well for every language or domain.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on normalized characters and a piece vocabulary. A faithful
+forward pass should follow this order: construct candidate edges, accumulate log scores, and backtrack the best path. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is normalization changing offsets or making training and serving vocabularies disagree. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

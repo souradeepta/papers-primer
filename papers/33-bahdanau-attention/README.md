@@ -85,6 +85,20 @@ flowchart LR
     C --> D[next-token decoder]
 ```
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on decoder state and every valid encoder state. A faithful
+forward pass should follow this order: project query/keys, score additively, mask padding, normalize, and form context. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is normalizing over padded positions or assuming an alignment is a causal proof. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

@@ -103,6 +103,20 @@ There is also a distinction between routing *probability* and routing *assignmen
 
 At inference, routing is usually deterministic given model weights and token states, but the token states themselves depend on earlier generated tokens and sampling choices. Consequently, an MoE request can have variable communication and expert utilization across otherwise similar prompts. Capacity planning should include percentile load and tail latency tests, not just an average token-per-expert figure. Sparse conditional computation buys scalable model capacity; it introduces a workload-distribution problem that dense layers largely avoid.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on token representations and router logits. A faithful
+forward pass should follow this order: softmax router scores, select top one, dispatch within capacity, and combine outputs. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is dropping overflow tokens silently or letting one expert monopolize capacity. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

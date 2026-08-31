@@ -112,6 +112,20 @@ LayerNorm normalize different axes and have different behavior. The original
 paper's placement and training recipe should not be confused with every later
 pre-activation or fused implementation.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on feature batch and running statistics. A faithful
+forward pass should follow this order: compute batch moments, normalize, apply γ/β, update running estimates, and switch modes. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is using batch statistics in serving or updating running statistics during validation. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

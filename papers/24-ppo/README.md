@@ -84,12 +84,20 @@ flowchart LR
 
 For an action sampled from old policy \(\pi_{old}\), define probability ratio
 \(r_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{old}(a_t\mid s_t)\). With advantage
-estimate \(\hat A_t\), PPO's clipped objective is
+estimate \(\hat A_t\), PPO's clipped objective is:
 
-\[
-L^{CLIP}=E_t[\min(r_t\hat A_t,
-\mathrm{clip}(r_t,1-\epsilon,1+\epsilon)\hat A_t)].
-\]
+```text
+L^CLIP(θ) = E_t[min(r_t(θ) Â_t,
+                    clip(r_t(θ), 1 − ε, 1 + ε) Â_t)]
+
+r_t(θ) = π_θ(a_t | s_t) / π_old(a_t | s_t)
+```
+
+Here, \(\pi_\theta\) is the policy being updated, \(\pi_{old}\) is the policy
+that collected the rollout, \(a_t\) is the recorded action, \(s_t\) is its
+state, \(\hat A_t\) estimates whether that action was better or worse than
+expected, and \(\epsilon\) is the allowed ratio range. The expectation \(E_t\)
+means average the term over rollout timesteps or minibatch examples.
 
 For a positive advantage, increasing an action's probability helps until the
 ratio reaches \(1+\epsilon\); beyond that, clipping removes extra objective
@@ -122,6 +130,20 @@ or an overly large learning rate, the ratio can still drift; clipping is not a
 hard global divergence constraint. Monitor approximate KL divergence and clip
 fraction. A policy can improve the surrogate while exploiting a misspecified
 reward, so reward design and environment evaluation remain central.
+
+### Mechanism in Code
+
+At implementation level, the mechanism operates on rollout actions, old log-probabilities, returns, and advantages. A faithful
+forward pass should follow this order: recompute current log-probabilities, form ratios, clip the surrogate, and perform limited epochs. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is using stale rollouts or bootstrapping through a true terminal state. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
 
 ## Practical Engineering Notes
 

@@ -107,6 +107,20 @@ Beta is a knob, not merely a cosmetic temperature. A larger multiplier makes the
 
 DPO removes online exploration during its own fine-tuning loop. That is a simplification and a limitation. It learns from the fixed pair distribution rather than repeatedly generating new candidate responses, querying a reward signal, and correcting behavior on-policy. PPO can in principle incorporate online rewards, constraints, and exploration but pays for rollout and stability complexity. DPO has no separate adaptive KL controller in the PPO sense; its reference-relative loss supplies a fixed-form regularization connection.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on chosen/rejected completions and reference log-probabilities. A faithful
+forward pass should follow this order: compute sequence log-probabilities, form relative log-odds, and apply the preference loss. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is summing token scores with inconsistent length normalization. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

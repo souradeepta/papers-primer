@@ -124,6 +124,20 @@ can similarly erase useful latent information. Beta-VAEs, KL annealing, free
 bits, and alternative priors are later design choices with different tradeoffs,
 not requirements of the original objective.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on encoder parameters μ/log variance and decoder output. A faithful
+forward pass should follow this order: sample with reparameterization, compute reconstruction likelihood, and add KL. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is reducing KL across the wrong axes or evaluating with stochastic noise unintentionally. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

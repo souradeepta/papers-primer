@@ -120,6 +120,20 @@ encoder, and 400 million image-text pairs collected from public web sources.
 Exact transfer depends on encoder and prompt set. The geometry can capture useful
 concepts while absorbing web-data biases, shortcuts, and coverage gaps.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on paired image/text embeddings. A faithful
+forward pass should follow this order: normalize both modalities, build the full similarity matrix, and apply symmetric targets. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is duplicate or weak captions creating false negatives and shortcuts. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

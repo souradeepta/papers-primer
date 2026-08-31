@@ -101,6 +101,20 @@ flowchart TD
 
 **Measured results.** On an A100 GPU (192KB SRAM per streaming multiprocessor, ~19TB/s SRAM bandwidth vs. 1.5–2.0TB/s HBM bandwidth), a concrete GPT-2 medium configuration (sequence length 1024, head dimension 64, 16 heads, batch size 64) reduces measured HBM read/write traffic from 40.3GB to 4.4GB and end-to-end attention runtime from 41.7ms to 7.3ms. At the model-training level, the paper reports 15% end-to-end wall-clock speedup training BERT-large at sequence length 512 (an MLPerf 1.1 comparison), 3× speedup training GPT-2 at sequence length 1K over a well-tuned HuggingFace/Megatron-LM baseline, and up to 2.4× speedup on Long-Range Arena. Separately, training GPT-2 with FlashAttention's longer-context headroom for the same wall-clock budget yields 0.7 better perplexity than the baseline, plus a 6.4-point accuracy lift on a long-document classification task from using longer sequences that were previously too expensive to train on. Because standard attention's memory scales quadratically in N, FlashAttention's linear memory scaling (the paper reports up to 20× better memory efficiency than exact baselines at long sequence lengths) directly enabled experiments at sequence lengths that were previously impractical: the paper reports 61.4% accuracy on the Path-X challenge (sequence length 16K) with FlashAttention, and 63.1% on the harder Path-256 challenge (sequence length 64K) using block-sparse FlashAttention, tasks where standard Transformers had not previously done better than chance. That block-sparse variant, which combines the same IO-aware tiling with a sparsity mask, is reported as 2–4× faster than dense FlashAttention and scales to sequence lengths of 64K, and the paper reports it is faster than every approximate attention method it compares against, across all tested sequence lengths on Long-Range Arena.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on query, key, and value tiles. A faithful
+forward pass should follow this order: load a tile, update running max/sum, accumulate normalized values, and evict the tile. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is losing numerical precision in the running rescaling step. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

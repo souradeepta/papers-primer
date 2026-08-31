@@ -79,6 +79,20 @@ flowchart LR
     E --> P[deterministic prediction]
 ```
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on activation tensor and Bernoulli mask. A faithful
+forward pass should follow this order: sample a fresh mask in training, apply inverted scaling, and disable masks in evaluation. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is exporting a model still in training mode. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

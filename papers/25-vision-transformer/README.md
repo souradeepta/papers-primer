@@ -115,6 +115,20 @@ order of patch tokens without changing positions would otherwise have no spatial
 meaning. Interpolating learned positional embeddings to new resolutions is a
 common transfer technique, but requires validation and is not an exact equality.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on image patches, class token, and position embeddings. A faithful
+forward pass should follow this order: flatten patches in a fixed order, project them, add positions, and encode globally. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is changing image resolution without a tested positional interpolation policy. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

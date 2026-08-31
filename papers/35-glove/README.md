@@ -80,6 +80,20 @@ flowchart LR
     V --> U[similarity or downstream model]
 ```
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on sparse word-context pairs, counts, vectors, and biases. A faithful
+forward pass should follow this order: build window counts, apply distance/weight functions, fit log counts, and combine embeddings. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is materializing a vocabulary-square matrix or changing tokenization between runs. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

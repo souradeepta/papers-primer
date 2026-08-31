@@ -86,6 +86,20 @@ PagedAttention is distinct from FlashAttention. FlashAttention changes how atten
 
 The paper reports near-zero KV-cache waste and flexible sharing as system properties, plus 2–4× throughput gains at the same latency against named systems in its evaluation. Do not treat that range as a universal SLA. Throughput depends on model size, prompt/output lengths, decode algorithm, batch scheduler, GPU, network topology, kernel versions, and workload shape. Longer sequences and complex decoding are specifically noted in the abstract as settings where the reported improvement is more pronounced.
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on logical token blocks and physical KV pages. A faithful
+forward pass should follow this order: append block mappings, read physical pages during decode, share prefixes, and copy on write. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is reusing a page after one request frees it while another still references it. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow

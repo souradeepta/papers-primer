@@ -344,6 +344,20 @@ orders of magnitude — than the single full matrix it's adapting
 
 ![Trainable parameters scale linearly with LoRA rank r, staying orders of magnitude below full fine-tuning](assets/lora_rank_scaling.gif)
 
+### Mechanism in Code
+
+At implementation level, the mechanism operates on a frozen linear layer plus A and B. A faithful
+forward pass should follow this order: compute the base projection, compute the low-rank correction, scale it, and add it. Keep the intermediate
+representation available while debugging; collapsing everything into one
+opaque framework call makes shape and numerical errors much harder to isolate.
+
+The key production failure to guard against is training the base weights accidentally or merging an adapter twice. Add a tiny
+reference test with hand-checkable values, then add a property test that
+covers padding, empty/short inputs, boundary probabilities, and the largest
+supported shape. Compare intermediate tensors with tolerances appropriate to
+the dtype, and log the paper-specific statistic during a canary rollout.
+
+
 ## Practical Engineering Notes
 
 ### Worked Math & Dataflow
