@@ -1,5 +1,8 @@
 <!-- Copy this file to papers/NN-slug/README.md and fill in every section. -->
 <!-- Requirements: SPEC.md (root of this repo). Run scripts/validate_paper.py before committing. -->
+<!-- Selection standard: add a paper only when it fills a demonstrable conceptual
+gap in the collection. Record its primary source, predecessor it improves on,
+and successor concepts it enables in the batch plan before drafting. -->
 
 # <Paper Title>
 
@@ -23,6 +26,8 @@ or example for a high-school-math reader. -->
 <!-- Use two short paragraphs: what practitioners did before and its limitation;
 then why that limitation made this new idea necessary. Include a concrete
 practical consequence of the change. -->
+<!-- For a batch addition, explicitly name its relationship to earlier collection
+papers so readers can follow the historical learning path. -->
 
 ## Why It Matters
 <!-- context: what problem existed before, what changed after -->

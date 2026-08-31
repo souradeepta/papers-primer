@@ -3,6 +3,16 @@
 Date: 2026-08-30. Written for a fresh agent continuing the complete 30-paper
 collection.
 
+## Batch-selection learning
+
+Choose new papers as a coherent five-paper learning path, not as isolated
+popular titles. Before implementation, verify each primary source and record
+the conceptual gap it fills, what prior method it improves on, and which later
+collection ideas it unlocks. The next planned batch is: LSTM (1997), Seq2Seq
+Learning (2014), Bahdanau Attention (2014), Dropout (2014), and GloVe (2014).
+Together they supply recurrent memory, encoder-decoder sequence learning,
+pre-Transformer alignment, regularization, and count-based embeddings.
+
 Runnable examples live in the top-level `implementations/NN-slug/code/`
 tree, not inside the paper directories. Each must be independently runnable,
 start with a purpose-focused docstring, and use comments to explain the

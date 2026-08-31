@@ -67,6 +67,11 @@ training reproductions.
 | 28 | Graph Attention Networks | [neighbor attention](28-graph-attention-networks/code/neighbor_attention.py) |
 | 29 | DDPM | [noise schedule](29-ddpm/code/noise_schedule.py) |
 | 30 | Scaling Laws | [power law](30-scaling-laws/code/power_law.py) |
+| 31 | Long Short-Term Memory | [gated LSTM cell](31-long-short-term-memory/code/lstm_cell.py) |
+| 32 | Sequence to Sequence Learning | [LSTM encoder-decoder](32-sequence-to-sequence-learning/code/seq2seq_lstm.py) |
+| 33 | Bahdanau Attention | [additive attention](33-bahdanau-attention/code/additive_attention.py) |
+| 34 | Dropout | [training/inference behavior](34-dropout/code/dropout_training.py) |
+| 35 | GloVe | [weighted least squares](35-glove/code/glove_weighted_least_squares.py) |
 
 The matching prose explainer, diagrams, and source links remain under
 `papers/NN-slug/`. The two locations intentionally keep reading material

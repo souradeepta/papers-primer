@@ -78,7 +78,11 @@ def check_gifs(text: str, paper_dir: Path) -> list[str]:
 
 
 def check_code_dir(paper_dir: Path) -> list[str]:
+    """Run a paper's canonical top-level implementation, or legacy local code."""
     code_dir = paper_dir / "code"
+    canonical_dir = paper_dir.parent.parent / "implementations" / paper_dir.name / "code"
+    if not code_dir.exists() and canonical_dir.exists():
+        code_dir = canonical_dir
     py_files = list(code_dir.glob("*.py"))
     if not py_files:
         return ["no .py file in code/"]
