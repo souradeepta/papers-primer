@@ -1,7 +1,6 @@
 # Scaling Laws for Neural Language Models
 
-## TL;DR
-
+## 1. TL;DR
 Scaling laws describe empirical power-law trends between language-model loss and
 model size, dataset size, and training compute. Kaplan and colleagues found
 smooth trends across their experimental range and used them to reason about
@@ -9,8 +8,7 @@ budget allocation. Small controlled runs can therefore guide larger experiments.
 These fits are planning tools, not guarantees of capability, safety, or product
 value.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 Scaling laws use small experiments to estimate what larger training runs may do, like testing recipe sizes before cooking for a stadium.
 
 `🧪 small runs → 📉 measure loss → 📈 fit trend → ⚙️ plan compute, model, and data`
@@ -21,8 +19,23 @@ A team can train several smaller models, plot their losses, then estimate whethe
 
 💻 **CS analogy:** it is empirical capacity planning: benchmark several system sizes, fit a trend, then use the curve to decide where the next compute budget should go.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **empirical loss fitting across model and data scales**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **training budgets, token quality, optimizer settings, and evaluation splits are comparable across runs**.
+The equation `L(N,D)=A/Nᵅ+B/Dᵝ+C` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -35,16 +48,14 @@ L is error and N is model size. The negative exponent means diminishing returns:
 
 L∞ represents the fitted floor, not necessarily an absolute limit of intelligence. α controls how quickly the curve falls; different data, architectures, and metrics can have different values.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Teams knew larger language models often improved, but compute budgets were allocated with scattered rules of thumb: scale parameters, data, or training steps without a shared quantitative guide. That made expensive runs easy to undertrain or mis-size. Scaling-laws studies were needed to turn repeated measurements into forecasts for planning the next training run.
 
 This gave teams a quantitative way to plan expensive runs instead of relying only on scattered rules of thumb.
 
 This made empirical measurement part of model planning, while also warning teams not to extrapolate a smooth curve far beyond the conditions they actually tested.
 
-## Why It Matters
-
+## 5. Why It Matters
 Large language-model training is expensive, so design decisions cannot rely on
 one final run. Before scaling laws, it was clear that larger models and more data
 often helped, but there was little compact guidance for estimating diminishing
@@ -57,8 +68,7 @@ is conditional on architecture, data mixture, tokenizer, optimizer, metric, and
 experimental range. It does not predict benchmark behavior, reliability,
 misuse risk, serving cost, or whether an application needs a larger model.
 
-## Core Intuition
-
+## 6. Core Intuition
 Think of small runs as survey points on a hillside. Extra parameters, tokens, or
 FLOPs lower loss, but each increment helps less than the one before it. A
 log-log plot can look roughly straight, which corresponds to a power law in
@@ -75,8 +85,7 @@ flowchart LR
  P --> V[validate larger run]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 The paper uses relationships of the form
 \(L(N)\approx L_\infty+aN^{-\alpha}\), with analogous forms for data and
 compute. N is model size under a stated counting convention, L-infinity is a
@@ -120,8 +129,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -232,8 +240,7 @@ Update the model with new controlled points, preserve earlier versions, and
 state which decisions were made under which evidence. Good scaling work is an
 iterative measurement process, not a single extrapolation ceremony.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/30-scaling-laws/code/power_law.py`](implementations/30-scaling-laws/code/power_law.py).
@@ -269,15 +276,13 @@ and task quality. The first production guard should target **regime change or ov
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `L(N,D)=A/Nᵅ+B/Dᵝ+C` is the whole implementation.** The equation describes the paper's central relationship, but `empirical loss fitting across model and data scales` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **training budgets, token quality, optimizer settings, and evaluation splits are comparable across runs**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **regime change or overconfident extrapolation from noisy pilot data** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **fit held-out scales with confidence intervals and validate against task-level metrics**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **empirical loss fitting across model and data scales**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -296,8 +301,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **empirical loss fitting across model and data scales** end to end. How would you implement `L(N,D)=A/Nᵅ+B/Dᵝ+C`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `L(N,D)=A/Nᵅ+B/Dᵝ+C` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -316,8 +320,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **training budgets, token quality, optimizer settings, and evaluation splits are comparable across runs**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/2001.08361)
 - [Chinchilla](https://arxiv.org/abs/2203.15556)
 - [OpenAI scaling laws](https://openai.com/index/scaling-laws-for-neural-language-models/)

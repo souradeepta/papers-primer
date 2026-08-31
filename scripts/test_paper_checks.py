@@ -18,9 +18,9 @@ from paper_checks import (
 
 REQUIRED_SECTIONS = [
     "TL;DR",
-    "Fun Map for First Years 🧭",
-    "Math Playground 🧮",
-    "Background: What Came Before 🕰️",
+    "Fun Map for First Years",
+    "Math Playground",
+    "Background: What Came Before",
     "Why It Matters",
     "Core Intuition",
     "The Mechanism",
@@ -35,7 +35,7 @@ REQUIRED_SECTIONS = [
 def test_check_sections_all_present():
     text = "\n".join(
         f"## {section}\ncontent"
-        + ("\n💻 **CS analogy:** content" if section == "Fun Map for First Years 🧭" else "")
+            + ("\n💻 **CS analogy:** content" if section == "Fun Map for First Years" else "")
         for section in REQUIRED_SECTIONS
     )
     assert check_sections(text) == []

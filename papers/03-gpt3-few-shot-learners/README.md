@@ -1,7 +1,6 @@
 # Language Models are Few-Shot Learners (GPT-3)
 
-## TL;DR
-
+## 1. TL;DR
 In May 2020, OpenAI released GPT-3: a 175-billion-parameter autoregressive
 language model, roughly 10x larger than any previous non-sparse language
 model at the time. The paper's central claim isn't about a new
@@ -18,8 +17,7 @@ finding — that task adaptation could happen entirely inside a prompt,
 with no fine-tuning step — is the direct ancestor of the "prompt
 engineering" and general-purpose chat-assistant paradigm that followed.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 GPT-3 is a next-word machine that can learn a pattern from examples placed in its prompt, like copying a worksheet format without changing its brain.
 
 `📝 examples in prompt → 🤖 spot the pattern → 🔮 predict next text → 📤 answer`
@@ -30,8 +28,23 @@ A prompt can show “red → rojo” and “blue → azul,” then ask “green 
 
 💻 **CS analogy:** autoregressive generation is a loop whose next iteration receives every previous output as state.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **autoregressive in-context learning**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **the demonstration examples and query remain in order and the causal mask hides future tokens**.
+The equation `p(xₜ|x₍<ₜ₎)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 **Essential equation:** p(x₁,…,xₙ) = ∏ p(xᵢ | x₁,…,xᵢ₋₁). The probability of a whole sentence is found by multiplying the chance of each next word after the earlier words. It is like calculating a sequence of dependent events: predict word 1, then word 2 given word 1, and so on. Few-shot learning comes from putting examples in that earlier-word history.
 
 The essential equation or rule is:
@@ -44,16 +57,14 @@ The ∏ sign means “multiply all these pieces.” A good next-word predictor c
 
 If each next word has a probability, a sentence’s probability shrinks when any one necessary word is very unlikely. Training improves the whole chain by improving many local next-word predictions.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 After pretraining, NLP systems commonly needed labeled task data and gradient-based fine-tuning for each new job. Earlier language models showed transfer, but their in-context abilities were less broadly demonstrated. GPT-3 was needed to test whether scale alone could let one next-token model pick up a task from instructions and examples placed in its prompt.
 
 It showed a route to task adaptation at use time: describe the task with examples instead of changing the model’s weights.
 
 This turned prompts into a practical adaptation interface, although results still depend heavily on wording, examples, and model scale.
 
-## Why It Matters
-
+## 5. Why It Matters
 Before GPT-3, the dominant recipe for applying a pretrained language model
 to a new NLP task was the one GPT-3's own predecessor helped popularize:
 pretrain a large Transformer on unlabeled text, then **fine-tune** it —
@@ -109,8 +120,7 @@ instruction-following chat assistants that followed (InstructGPT, ChatGPT,
 and their many successors), build directly on the in-context-learning
 capability this paper measured and named.
 
-## Core Intuition
-
+## 6. Core Intuition
 Think of it this way: **a fine-tuned model is a specialist who went to
 school for one specific job. An in-context-learned model is a generalist
 who reads the first few pages of a new job's manual, right there at their
@@ -174,8 +184,7 @@ demonstrations = a longer, more specific pattern for the model to
 recognize and continue, and a bigger model is better at recognizing
 subtler versions of that pattern from fewer demonstrations.**
 
-## The Mechanism
-
+## 7. The Mechanism
 ### Architecture: scaled-up GPT-2, not a new design
 
 GPT-3 uses the same decoder-only Transformer architecture as GPT-2,
@@ -358,8 +367,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -450,8 +458,7 @@ it's the paper that made getting them right, per-task, a routine part of
 using an LLM in production, since there's no other lever left once
 weights are frozen.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/03-gpt3-few-shot-learners/code/gpt3_incontext_decoder.py`](implementations/03-gpt3-few-shot-learners/code/gpt3_incontext_decoder.py).
@@ -487,15 +494,13 @@ and task quality. The first production guard should target **prompt-format sensi
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `p(xₜ|x₍<ₜ₎)` is the whole implementation.** The equation describes the paper's central relationship, but `autoregressive in-context learning` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the demonstration examples and query remain in order and the causal mask hides future tokens**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **prompt-format sensitivity and context-window truncation** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **hold weights fixed, replay prompts byte-for-byte, and compare task accuracy across controlled prompt variants**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **autoregressive in-context learning**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -514,8 +519,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **autoregressive in-context learning** end to end. How would you implement `p(xₜ|x₍<ₜ₎)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `p(xₜ|x₍<ₜ₎)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -534,8 +538,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **the demonstration examples and query remain in order and the causal mask hides future tokens**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Language Models are Few-Shot Learners (arXiv:2005.14165)](https://arxiv.org/abs/2005.14165) — the original paper
 - [Language Models are Unsupervised Multitask Learners (GPT-2 paper)](https://cdn.openai.com/better-language-models/language_models_are_unsupervised_multitask_learners.pdf) — the predecessor whose zero-shot task-transfer results this paper scales up and studies systematically
 - [Generating Long Sequences with Sparse Transformers (Child et al., 2019)](https://arxiv.org/abs/1904.10509) — the sparse attention pattern GPT-3's architecture description cites directly

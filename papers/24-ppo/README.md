@@ -1,7 +1,6 @@
 # Proximal Policy Optimization Algorithms (PPO)
 
-## TL;DR
-
+## 1. TL;DR
 PPO is a policy-gradient algorithm that reuses rollout data for several
 minibatch epochs while discouraging an updated policy from moving too far from
 the policy that collected that data. Its common clipped surrogate objective
@@ -10,8 +9,7 @@ is simpler than trust-region methods and became a common reinforcement-learning
 baseline. It does not guarantee safe behavior, monotonic improvement, or sample
 efficiency in every environment.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 PPO teaches an agent from rewards but stops it from changing its behavior too wildly after one lucky lesson.
 
 `🎮 try action → 🏆 reward signal → 📏 clip giant change → 🤖 safer learning step`
@@ -22,8 +20,23 @@ An agent that discovers a good jump in a game should become more likely to jump,
 
 💻 **CS analogy:** PPO is a rate limiter around a policy update: a promising change is allowed, but a giant jump is capped before it destabilizes the running system.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **clipped on-policy policy optimization**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **the ratio uses the behavior-policy log-probability, terminated transitions do not bootstrap, and clipping is sign-aware**.
+The equation `L^CLIP(θ)=E_t[min(r_t(θ)Â_t, clip(r_t(θ),1−ε,1+ε)Â_t)]` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -36,16 +49,14 @@ r compares a new action probability with its old probability; A says whether the
 
 When r stays between 1−ε and 1+ε, the unclipped improvement is used. Outside that range, clipping removes the incentive for an excessively large probability change.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Policy-gradient methods could learn directly from rewards but often made updates so large that a previously useful policy collapsed. Trust-region methods improved stability but needed more complicated constrained optimization. PPO was needed as a practical approximation that keeps the update guardrail simple enough for broad adoption.
 
 PPO made policy-gradient reinforcement learning more stable and easier to use than earlier methods with delicate update constraints.
 
 This gave practitioners a simple trust-region-like safety mechanism and became a common baseline for control and later preference optimization.
 
-## Why It Matters
-
+## 5. Why It Matters
 A policy maps observations to an action distribution. Standard on-policy policy
 gradients collect trajectories, estimate which actions were better than expected,
 and adjust probabilities. A single large update can make the new policy unlike
@@ -61,8 +72,7 @@ simplicity, sample complexity, and wall time on Atari and simulated locomotion.
 PPO later became important in RLHF pipelines, but language-model PPO adds reward
 models, KL controls, token masks, and distributed systems beyond this paper.
 
-## Core Intuition
-
+## 6. Core Intuition
 Suppose a coach reviews yesterday's plays. If one action looked helpful, it is
 reasonable to make it somewhat more likely. It is risky to turn a modest signal
 into an absolute rule after one batch: yesterday's evidence was collected under
@@ -80,8 +90,7 @@ flowchart LR
  S --> N[new policy]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 For an action sampled from old policy \(\pi_{old}\), define probability ratio
 \(r_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{old}(a_t\mid s_t)\). With advantage
 estimate \(\hat A_t\), PPO's clipped objective is:
@@ -145,8 +154,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -239,8 +247,7 @@ Record failures as carefully as successes: they reveal reward loopholes,
 environment assumptions, and distribution shifts that summary metrics conceal.
 They are essential evidence for responsible model operation.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/24-ppo/code/clipped_objective.py`](implementations/24-ppo/code/clipped_objective.py).
@@ -276,15 +283,13 @@ and task quality. The first production guard should target **stale rollouts, inc
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `L^CLIP(θ)=E_t[min(r_t(θ)Â_t, clip(r_t(θ),1−ε,1+ε)Â_t)]` is the whole implementation.** The equation describes the paper's central relationship, but `clipped on-policy policy optimization` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the ratio uses the behavior-policy log-probability, terminated transitions do not bootstrap, and clipping is sign-aware**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **stale rollouts, incorrect advantage normalization, or confusing clip fraction with a hard constraint** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **monitor approximate KL, clip fraction, entropy, and advantage statistics with a one-step hand check**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **clipped on-policy policy optimization**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -303,8 +308,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **clipped on-policy policy optimization** end to end. How would you implement `L^CLIP(θ)=E_t[min(r_t(θ)Â_t, clip(r_t(θ),1−ε,1+ε)Â_t)]`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `L^CLIP(θ)=E_t[min(r_t(θ)Â_t, clip(r_t(θ),1−ε,1+ε)Â_t)]` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -323,8 +327,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **the ratio uses the behavior-policy log-probability, terminated transitions do not bootstrap, and clipping is sign-aware**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1707.06347)
 - [Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438)
 - [Stable-Baselines3 PPO documentation](https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html)

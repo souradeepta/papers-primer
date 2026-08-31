@@ -1,7 +1,6 @@
 # A Simple Framework for Contrastive Learning of Visual Representations (SimCLR)
 
-## TL;DR
-
+## 1. TL;DR
 SimCLR learns visual features without class labels by treating two random
 augmentations of one image as a positive pair and views from other images as
 negatives. A shared encoder produces representations and a small projection head
@@ -10,8 +9,7 @@ matching views while lowering similarity to other batch examples. The paper
 showed that augmentation composition, a nonlinear projection head, and large
 batches are central to strong self-supervised visual learning.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 SimCLR shows a model two altered versions of the same picture and says “these still belong together,” while other pictures should stay apart.
 
 `🖼️ one image → ✂️ two random views → 🧠 shared encoder → 🤝 pull together / ↔️ push apart`
@@ -22,8 +20,23 @@ Take one photo, crop it twice, and adjust colors differently. The two views shou
 
 💻 **CS analogy:** treat two transformed copies as duplicate records that must hash nearby, while every other record in the batch is a temporary negative test case.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **contrastive visual representation learning with augmented positive pairs**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **positive indices are correct, self-similarity is excluded, and temperature has the intended scale**.
+The equation `−log exp(sim(i,j)/τ)/Σ_kexp(sim(i,k)/τ)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -36,16 +49,14 @@ The top is the true pair’s similarity and the bottom includes all competing im
 
 Cosine similarity compares vector direction rather than length. A smaller temperature τ makes the softmax contest sharper, so the model is punished more for confusing close competitors.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Image representations usually relied on manual labels, while earlier self-supervised approaches used hand-designed pretext tasks whose benefit did not always transfer. Contrastive ideas existed but their training recipes were complicated. SimCLR was needed to show that strong augmentations, a projection head, and a simple contrastive objective could learn highly useful visual features without labels.
 
 This was needed because labeled images are costly, while simple image augmentations can create learning signals for free.
 
 This showed that strong image representations can emerge from instance discrimination, provided augmentations are chosen carefully enough to preserve identity.
 
-## Why It Matters
-
+## 5. Why It Matters
 Supervised vision representation learning requires labels that can be expensive,
 narrow, or unavailable. Earlier self-supervised methods designed proxy tasks
 such as predicting rotation or image patch location, which can teach shortcuts
@@ -61,8 +72,7 @@ larger batch size, and more training steps materially improved linear evaluation
 CLIP also uses contrastive learning, but its positives are image-text pairs;
 SimCLR's positives are two views of the same image.
 
-## Core Intuition
-
+## 6. Core Intuition
 If two photographers crop and recolor the same bicycle photo, an embedding for
 downstream recognition should still identify them as related. If one photo is a
 bicycle and another is a volcano, their embeddings should separate. SimCLR asks
@@ -81,8 +91,7 @@ flowchart LR
  P --> L[contrastive loss across batch]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 For each of \(N\) source images, sample two transformed views, yielding \(2N\)
 examples. An encoder \(f\) produces representation \(h\), and projection head
 \(g\) produces normalized vector \(z\). For an anchor \(i\) and its matching
@@ -133,8 +142,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -234,8 +242,7 @@ research representation into dependable shared infrastructure.
 It also preserves clear accountability for model behavior.
 It supports measured, safe iteration across dependent products.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/27-simclr/code/contrastive_pair.py`](implementations/27-simclr/code/contrastive_pair.py).
@@ -271,15 +278,13 @@ and task quality. The first production guard should target **augmentation leakag
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `−log exp(sim(i,j)/τ)/Σ_kexp(sim(i,k)/τ)` is the whole implementation.** The equation describes the paper's central relationship, but `contrastive visual representation learning with augmented positive pairs` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **positive indices are correct, self-similarity is excluded, and temperature has the intended scale**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **augmentation leakage, false negatives, or a batch too small to supply useful negatives** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **assert pair indexing and inspect retrieval before linear evaluation across augmentation ablations**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **contrastive visual representation learning with augmented positive pairs**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -298,8 +303,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **contrastive visual representation learning with augmented positive pairs** end to end. How would you implement `−log exp(sim(i,j)/τ)/Σ_kexp(sim(i,k)/τ)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `−log exp(sim(i,j)/τ)/Σ_kexp(sim(i,k)/τ)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -318,8 +322,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **positive indices are correct, self-similarity is excluded, and temperature has the intended scale**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/2002.05709)
 - [SimCLR code](https://github.com/google-research/simclr)
 - [PyTorch distributed documentation](https://pytorch.org/docs/stable/distributed.html)

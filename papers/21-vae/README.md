@@ -1,7 +1,6 @@
 # Auto-Encoding Variational Bayes (VAE)
 
-## TL;DR
-
+## 1. TL;DR
 A variational autoencoder learns a probability distribution over compact latent
 variables rather than mapping an input to one fixed code. An encoder predicts a
 mean and variance for an approximate posterior, samples a latent value through
@@ -10,8 +9,7 @@ balances reconstruction quality against keeping latent distributions near a
 simple prior. This makes sampling possible, but a VAE is not simply an ordinary
 autoencoder with noise added.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 A VAE learns a tidy hidden sketch space. It compresses an example into a fuzzy point, then learns to rebuild examples from nearby points.
 
 `🖼️ input → 🎒 latent distribution → 🎲 sample code → 🛠️ decoder rebuilds image`
@@ -22,8 +20,23 @@ A photo of a face can become a point in a smooth hidden map. Nearby points decod
 
 💻 **CS analogy:** a VAE is a lossy compressor with a random, structured code: it must reconstruct an input while keeping its codes organized enough to sample later.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **variational encoding with a reconstruction objective and KL regularizer**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **reconstruction and KL terms are logged separately and latent samples use the reparameterization path**.
+The equation `ELBO=E_q[logp(x|z)]−KL(q||p)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -36,16 +49,14 @@ The first term rewards good reconstruction. The second keeps the code space near
 
 KL is a measure of how different two probability distributions are. Penalizing it prevents every input from hiding in its own isolated code region, which would make random sampling fail.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Autoencoders could compress and reconstruct data, but their latent spaces could be irregular: picking a random point might decode to nonsense. Probabilistic latent-variable models supplied structure but were hard to train with modern neural networks. VAEs were needed to connect neural encoders and decoders with a latent space that supports both reconstruction and sampling.
 
 This was needed to combine compression and generation in one model whose hidden space could be sampled smoothly.
 
 This supplied a principled probabilistic latent-variable model, trading some sample sharpness for a structured and controllable hidden space.
 
-## Why It Matters
-
+## 5. Why It Matters
 Latent-variable generative models aim to explain observations using hidden
 causes. For images, a hidden code might capture factors that make a particular
 image likely. Exact posterior inference, \(p(z\mid x)\), is generally
@@ -61,8 +72,7 @@ probabilistic representation learning, latent diffusion components, and many
 generative architectures. It does not make every learned coordinate
 interpretable or guarantee that random prior samples will be high quality.
 
-## Core Intuition
-
+## 6. Core Intuition
 An ordinary autoencoder can assign each training example a private code and
 decode it well, leaving arbitrary gaps between codes. A VAE asks every example
 to occupy a small cloud in a shared, organized latent space. The cloud must be
@@ -80,8 +90,7 @@ flowchart LR
  D --> H[reconstruction x-hat]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 The model specifies a prior \(p(z)\), commonly a standard normal, and decoder
 likelihood \(p_\theta(x\mid z)\). The encoder produces
 \(q_\phi(z\mid x)\), commonly a diagonal Gaussian. Maximizing the evidence
@@ -138,8 +147,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -235,8 +243,7 @@ comparable, rather than merely more elaborate.
 It preserves useful engineering evidence across iterations.
 It also supports clearer review and rollback decisions.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/21-vae/code/reparameterization.py`](implementations/21-vae/code/reparameterization.py).
@@ -272,15 +279,13 @@ and task quality. The first production guard should target **posterior collapse,
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `ELBO=E_q[logp(x|z)]−KL(q||p)` is the whole implementation.** The equation describes the paper's central relationship, but `variational encoding with a reconstruction objective and KL regularizer` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **reconstruction and KL terms are logged separately and latent samples use the reparameterization path**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **posterior collapse, KL dominance, or a decoder that ignores the latent** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **plot both loss terms and sample from the prior rather than evaluating encodings only**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **variational encoding with a reconstruction objective and KL regularizer**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -299,8 +304,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **variational encoding with a reconstruction objective and KL regularizer** end to end. How would you implement `ELBO=E_q[logp(x|z)]−KL(q||p)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `ELBO=E_q[logp(x|z)]−KL(q||p)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -319,8 +323,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **reconstruction and KL terms are logged separately and latent samples use the reparameterization path**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1312.6114)
 - [Understanding disentangling in beta-VAE](https://arxiv.org/abs/1804.03599)
 - [PyTorch distributions documentation](https://pytorch.org/docs/stable/distributions.html)

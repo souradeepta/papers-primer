@@ -1,7 +1,6 @@
 # Attention Is All You Need
 
-## TL;DR
-
+## 1. TL;DR
 In 2017, a team at Google proposed the Transformer: a sequence model built
 entirely out of attention layers, with no recurrence (RNNs/LSTMs) and no
 convolutions at all. Instead of processing a sentence one token at a time
@@ -13,8 +12,7 @@ training in a fraction of the wall-clock time. Almost every large language
 model built since — BERT, GPT, T5, LLaMA — is a descendant of this
 architecture.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 Words are like students in a group project: each word can look around and decide who to listen to most. Attention is the set of “who should I listen to?” scores.
 
 `📚 words → 👀 attention looks around → 🧠 richer word meanings → ✍️ next word`
@@ -25,8 +23,23 @@ In “The animal did not cross the street because it was tired,” attention can
 
 💻 **CS analogy:** attention is a database query: each word asks which records are most relevant, then combines their values.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **scaled dot-product self-attention**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **causal and padding masks must prevent invalid keys from contributing**.
+The equation `softmax(QKᵀ/√dₖ)V` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 **Essential equation:** softmax(QKᵀ/√d)V. First, each question vector Q scores every key K: a large score means “pay attention here.” Softmax turns scores into percentages that add to 100%; those percentages average the value vectors V. The √d divisor prevents large vectors from making one percentage unfairly close to 100%.
 
 The essential equation or rule is:
@@ -39,16 +52,14 @@ You can read the equation left to right: score possible connections, turn scores
 
 For one query, the row of softmax values is a set of weights that sums to 1. If one key scores far above the rest, its value contributes most; if scores are similar, the result blends several values.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Before this paper, translation models usually processed text one word at a time with recurrent networks, sometimes aided by convolutional layers and an attention add-on. Long paths made distant relationships hard to learn and limited parallel training. The Transformer was needed to make attention itself the main computation, so every token could connect directly to the others.
 
 This direct connection path let the architecture handle distant relationships while doing much more work in parallel than recurrent models.
 
 This direct path changed the cost of relating distant words from walking through many recurrent steps to a single attention comparison.
 
-## Why It Matters
-
+## 5. Why It Matters
 Before 2017, the dominant approach to sequence-to-sequence tasks
 (translation, summarization) was recurrent: an RNN or LSTM read a
 sentence one word at a time, carrying a hidden state forward, sometimes
@@ -90,8 +101,7 @@ pretraining on top of the Transformer decoder), and eventually every large
 language model in production today, including the one that may have
 generated part of this sentence.
 
-## Core Intuition
-
+## 6. Core Intuition
 Think of self-attention as **each word in a sentence asking a question,
 and every other word (including itself) answering it, weighted by how
 relevant the answer is.**
@@ -141,8 +151,7 @@ that encodes its position using sine and cosine waves at different
 frequencies. Nothing is learned here; it's a deterministic geometric
 trick that gives the model position information it can then learn to use.
 
-## The Mechanism
-
+## 7. The Mechanism
 ### Scaled dot-product attention
 
 The core operation, applied to matrices Q (queries), K (keys), and V
@@ -302,8 +311,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -385,8 +393,7 @@ Transformer's capacity, in the original design, sits outside the
 attention mechanism itself, even though attention is what the paper (and
 this explainer) spends most of its words on.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/01-attention-is-all-you-need/code/attention_from_scratch.py`](implementations/01-attention-is-all-you-need/code/attention_from_scratch.py).
@@ -422,15 +429,13 @@ and task quality. The first production guard should target **quadratic score mem
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `softmax(QKᵀ/√dₖ)V` is the whole implementation.** The equation describes the paper's central relationship, but `scaled dot-product self-attention` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **causal and padding masks must prevent invalid keys from contributing**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **quadratic score memory and mask leakage** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **compare a masked reference with an optimized kernel and test a future-token perturbation**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **scaled dot-product self-attention**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -449,8 +454,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **scaled dot-product self-attention** end to end. How would you implement `softmax(QKᵀ/√dₖ)V`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `softmax(QKᵀ/√dₖ)V` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -469,8 +473,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **causal and padding masks must prevent invalid keys from contributing**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Attention Is All You Need (arXiv:1706.03762)](https://arxiv.org/abs/1706.03762) — the original paper
 - [The Illustrated Transformer (Jay Alammar)](https://jalammar.github.io/illustrated-transformer/) — a widely-used visual walkthrough of the same architecture
 - [The Annotated Transformer (Harvard NLP)](http://nlp.seas.harvard.edu/annotated-transformer/) — a line-by-line PyTorch implementation paired with the paper's text

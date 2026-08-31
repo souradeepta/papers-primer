@@ -1,7 +1,6 @@
 # BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding
 
-## TL;DR
-
+## 1. TL;DR
 In October 2018, a team at Google AI Language proposed BERT (Bidirectional
 Encoder Representations from Transformers): a way to pre-train a plain
 Transformer *encoder* stack (Vaswani et al., 2017) on unlabeled text so
@@ -20,8 +19,7 @@ tasks at the time. It became the template — pre-train once on raw text,
 fine-tune cheaply per task — that most subsequent encoder-based NLP
 systems followed.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 BERT is a reading student who practices filling in missing words while looking both left and right. That practice builds a useful understanding of whole sentences.
 
 `📖 sentence with blanks → 👀 read both directions → 🧩 guess blank → 🧠 reusable language skills`
@@ -32,8 +30,23 @@ For “The bank approved the loan,” the words “approved” and “loan” he
 
 💻 **CS analogy:** masked-language training is like a unit test with a deliberately deleted variable that the program must reconstruct from surrounding context.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **masked-language pretraining with bidirectional encoder layers**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **only selected masked positions contribute to the MLM loss and padding is ignored**.
+The equation `−log p(xᵢ|context)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 **Essential equation:** −log p(correct missing word | surrounding words). BERT fills in a hidden word and gives every possible word a probability. If it gives the real word 90%, the penalty is small; if it gives it 1%, the penalty is large. Training lowers this penalty, like grading a multiple-choice guess much more harshly when the correct answer was ranked last.
 
 The essential equation or rule is:
@@ -46,16 +59,14 @@ The vertical bar means “given”: predict the missing word given its context. 
 
 If BERT assigns 0.8 probability to the correct word, −log(0.8) is a small cost; at 0.01 it is much larger. The loss therefore rewards confidence on the right answer, not merely a correct top guess.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Language models were often trained left-to-right, so a word representation could not use the words after it during pretraining. Task-specific models also had to be built from scratch for each benchmark. BERT was needed to learn reusable bidirectional language features from unlabeled text, then adapt them with a small supervised fine-tuning step.
 
 This made it possible to pretrain one general language model and adapt it cheaply to many benchmarks instead of building a separate model for each.
 
 Bidirectional pretraining became a reusable starting point: later task data could teach a small final adjustment instead of teaching language from scratch.
 
-## Why It Matters
-
+## 5. Why It Matters
 Before BERT, the strongest pre-trained language representations came from
 one of two families, and both had a real limitation. ELMo (Peters et al.,
 2018) trained a *separate* left-to-right LSTM and a separate
@@ -98,8 +109,7 @@ RoBERTa, ALBERT, ELECTRA, and DistilBERT are all direct descendants that
 kept the masked/bidirectional pre-training idea and iterated on training
 recipe, parameter efficiency, or the pre-training objective itself.
 
-## Core Intuition
-
+## 6. Core Intuition
 Think of reading a sentence with one word blanked out: **"The chef seasoned
 the ___ before it went into the oven."** To guess the missing word, you
 don't read strictly left-to-right and stop — you use "chef" and "seasoned"
@@ -147,8 +157,7 @@ question answering. The heavy lifting (understanding language) was
 already learned during pre-training; fine-tuning is comparatively cheap
 and fast because it's adapting, not learning from scratch.
 
-## The Mechanism
-
+## 7. The Mechanism
 ### Architecture: it's a Transformer encoder, unmodified
 
 BERT's architecture is, deliberately, nothing new: it is a multi-layer
@@ -339,8 +348,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -429,8 +437,7 @@ layers to shrink the parameter count without shrinking depth) — both are
 later work responding to a real deployment cost this paper doesn't itself
 address.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/02-bert/code/bert_mlm_from_scratch.py`](implementations/02-bert/code/bert_mlm_from_scratch.py).
@@ -466,15 +473,13 @@ and task quality. The first production guard should target **train/serve tokeniz
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `−log p(xᵢ|context)` is the whole implementation.** The equation describes the paper's central relationship, but `masked-language pretraining with bidirectional encoder layers` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **only selected masked positions contribute to the MLM loss and padding is ignored**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **train/serve tokenizer drift or an incorrect mask-label alignment** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **assert masked positions and evaluate a small downstream classifier with a frozen preprocessing snapshot**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **masked-language pretraining with bidirectional encoder layers**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -493,8 +498,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **masked-language pretraining with bidirectional encoder layers** end to end. How would you implement `−log p(xᵢ|context)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `−log p(xᵢ|context)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -513,8 +517,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **only selected masked positions contribute to the MLM loss and padding is ignored**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding (arXiv:1810.04805)](https://arxiv.org/abs/1810.04805) — the original paper
 - [Attention Is All You Need explainer, this repo](../01-attention-is-all-you-need/README.md) — the Transformer encoder architecture BERT reuses unmodified
 - [Deep contextualized word representations / ELMo (Peters et al., 2018)](https://arxiv.org/abs/1802.05365) — the shallow bidirectional (concatenated forward/backward LSTM) approach BERT is explicitly contrasted against

@@ -1,7 +1,6 @@
 # Deep Residual Learning for Image Recognition (ResNet)
 
-## TL;DR
-
+## 1. TL;DR
 ResNet changes a stack of layers from “learn the whole desired mapping” to
 “learn a correction to the input.” A shortcut carries the input around a small
 convolutional branch and the two paths are added: \(y=F(x)+x\). That simple
@@ -9,8 +8,7 @@ reparameterization made very deep image networks substantially easier to
 optimize. It does not mean deeper is automatically better, or that every
 shortcut is an identity when shapes change.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 ResNet lets a layer learn a small change instead of rebuilding everything. A shortcut carries the original information around the new work.
 
 `📦 input → 🛠️ small correction + ➡️ shortcut → ➕ add together → 🧠 deeper network`
@@ -21,8 +19,23 @@ A block can preserve a clear edge detector and only add a small correction for a
 
 💻 **CS analogy:** a residual block is a patch or decorator: keep the original value and add only the small correction a function has learned.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **residual learning through identity or projection shortcuts**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **the shortcut and residual branch produce identical batch/spatial shapes before addition**.
+The equation `y=F(x)+x` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -35,16 +48,14 @@ x is the incoming value and F(x) is the correction. If no correction helps, F(x)
 
 When F(x) is zero, y equals x exactly. The plus sign also creates a short route for error signals during training, helping them reach earlier layers.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Researchers could make image networks deeper, but simply stacking layers eventually made even the training error worse, not just the test error. Better initialization and normalization helped, yet optimization paths were still fragile. ResNet was needed to let a deep stack learn incremental corrections instead of forcing every block to relearn its entire input.
 
 This solved the problem that adding more ordinary layers could make a network train worse, not better.
 
 This made very deep vision networks practical and turned residual connections into a general pattern used far beyond image classification.
 
-## Why It Matters
-
+## 5. Why It Matters
 By 2015, convolutional networks had shown that depth could improve image
 recognition, but simply stacking more layers exposed a degradation problem: a
 deeper plain network could have *higher training error* than a shallower one.
@@ -60,8 +71,7 @@ of neural nets. Today `torchvision.models.resnet50` is a useful baseline, but
 modern implementations vary in normalization order, stem, stride placement,
 and training recipe from the 2015 paper.
 
-## Core Intuition
-
+## 6. Core Intuition
 Suppose a photo-processing pipeline already passes a useful image feature
 forward. A new stage usually needs a small correction—sharpen this edge, add a
 texture cue, suppress a background—not a complete replacement. Asking the
@@ -83,8 +93,7 @@ in pixel space. It is a feature-space parameterization. The shortcut also gives
 gradients a direct additive route through a block, though successful deep
 training still depends on initialization, normalization, data, and schedules.
 
-## The Mechanism
-
+## 7. The Mechanism
 A basic residual block defines \(y=F(x,\{W_i\})+x\), followed by the paper's
 activation placement. For the two-layer example, \(F\) can be convolution,
 batch normalization, ReLU, then another convolutional transform. Addition is
@@ -137,8 +146,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -223,8 +231,7 @@ is valuable, but claiming its benchmark number requires reproducing the whole
 measurement path, including preprocessing and multi-crop or multi-scale
 inference where applicable.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/18-resnet/code/residual_block.py`](implementations/18-resnet/code/residual_block.py).
@@ -260,15 +267,13 @@ and task quality. The first production guard should target **a projection or nor
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `y=F(x)+x` is the whole implementation.** The equation describes the paper's central relationship, but `residual learning through identity or projection shortcuts` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the shortcut and residual branch produce identical batch/spatial shapes before addition**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **a projection or normalization mismatch that blocks the identity path** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **zero the residual branch and assert shortcut behavior, then compare gradient norms**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **residual learning through identity or projection shortcuts**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -287,8 +292,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **residual learning through identity or projection shortcuts** end to end. How would you implement `y=F(x)+x`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `y=F(x)+x` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -307,8 +311,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **the shortcut and residual branch produce identical batch/spatial shapes before addition**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1512.03385)
 - [Identity Mappings in Deep Residual Networks](https://arxiv.org/abs/1603.05027)
 - [Torchvision ResNet documentation](https://pytorch.org/vision/stable/models/resnet.html)

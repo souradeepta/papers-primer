@@ -2,16 +2,14 @@
 
 **Sutskever, Vinyals & Le, 2014** · [Original paper](https://arxiv.org/abs/1409.3215)
 
-## TL;DR
-
+## 1. TL;DR
 Seq2Seq uses one LSTM to read a source sequence and another LSTM to generate
 a target sequence. The encoder passes its final state to the decoder, making a
 single architecture usable for tasks such as translation. This paper showed
 that a deep LSTM encoder-decoder could learn competitive English-to-French
 translation end to end.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 source words 📥 → encoder memory 🧠 → decoder start state 🚀 → target words 📤
 
 The encoder is like compressing a sentence into a travel summary; the decoder
@@ -22,8 +20,23 @@ called teacher forcing.
 💻 **CS analogy:** The encoder returns a serialized request context; the
 decoder consumes that context to emit a variable-length response.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **LSTM encoder-decoder autoregressive generation**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **teacher-forced training and inference use compatible token boundaries while decoder state is initialized correctly**.
+The equation `p(y|x)=∏_tp(y_t|y<t,x)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The key factorization is p(y|x) = product over t of p(y_t | y_before_t, x).
 
 ```text
@@ -35,8 +48,7 @@ next token conditioned on the source and earlier target tokens. Multiplying
 these probabilities rewards a model only when it keeps making compatible
 choices through the whole output.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Phrase-based translation assembled outputs from hand-engineered statistical
 components. Early neural sequence models also struggled to represent
 variable-length input and output in one trainable system.
@@ -45,8 +57,7 @@ LSTM memory enabled an encoder to summarize an input and a decoder to emit a
 new sequence. Its fixed final vector later revealed a bottleneck, motivating
 Bahdanau attention in paper 33.
 
-## Why It Matters
-
+## 5. Why It Matters
 The encoder-decoder pattern became a general recipe for translation,
 summarization, speech, and structured generation. It separated “understand the
 input” from “produce an output,” so the two sides could have different lengths
@@ -54,16 +65,14 @@ and vocabularies. It is the direct ancestor of modern Transformer
 encoder-decoder systems, even though later systems replace recurrent state
 with attention-based representations.
 
-## Core Intuition
-
+## 6. Core Intuition
 The encoder reads until it has context; the decoder then writes one step at a
 time. A longer input must still fit into the final encoder state, which is both
 the idea's strength and its central limitation. Translating a short phrase is
 like passing a compact function argument; translating a long paragraph asks
 that one argument to preserve names, order, negation, and style at once.
 
-## The Mechanism
-
+## 7. The Mechanism
 An embedding layer feeds an LSTM encoder. Its final hidden and cell states
 initialize an LSTM decoder; the decoder output distribution is projected over
 the vocabulary. With two layers, both state tensors have a layer dimension and
@@ -97,8 +106,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -127,8 +135,7 @@ sequence lengths separately from token ids, mask loss after the end marker,
 and define beam-search termination and length normalization explicitly. Long
 inputs expose the fixed-vector bottleneck.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/32-sequence-to-sequence-learning/code/seq2seq_lstm.py`](implementations/32-sequence-to-sequence-learning/code/seq2seq_lstm.py).
@@ -164,15 +171,13 @@ and task quality. The first production guard should target **exposure bias, EOS 
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `p(y|x)=∏_tp(y_t|y<t,x)` is the whole implementation.** The equation describes the paper's central relationship, but `LSTM encoder-decoder autoregressive generation` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **teacher-forced training and inference use compatible token boundaries while decoder state is initialized correctly**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **exposure bias, EOS errors, or beam-search state aliasing** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **compare teacher-forced loss with greedy and beam outputs on exact fixtures**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **LSTM encoder-decoder autoregressive generation**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -191,8 +196,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **LSTM encoder-decoder autoregressive generation** end to end. How would you implement `p(y|x)=∏_tp(y_t|y<t,x)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `p(y|x)=∏_tp(y_t|y<t,x)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -211,8 +215,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **teacher-forced training and inference use compatible token boundaries while decoder state is initialized correctly**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1409.3215)
 - [LSTM](https://doi.org/10.1162/neco.1997.9.8.1735)
 - [Bahdanau attention](https://arxiv.org/abs/1409.0473)

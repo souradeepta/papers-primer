@@ -1,7 +1,6 @@
 # Playing Atari with Deep Reinforcement Learning (DQN)
 
-## TL;DR
-
+## 1. TL;DR
 DQN uses a convolutional neural network to estimate one action value for each
 discrete action directly from game pixels. It combines Q-learning with a replay
 buffer that randomly samples stored transitions and a target network that changes
@@ -9,8 +8,7 @@ more slowly than the network being trained. An epsilon-greedy policy collects
 experience while the network learns from replayed transitions. This is a
 foundational value-based RL design, not a general recipe for safe control.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 DQN learns which game move is worth most by remembering past moves and their rewards, like studying shuffled flashcards from old games.
 
 `🎮 state → 🎯 choose action → 🏆 reward → 🗃️ replay memory → 🧠 better values`
@@ -21,8 +19,23 @@ After moving right in a game, the immediate reward may be zero but the next stat
 
 💻 **CS analogy:** DQN is dynamic programming with a learned cache: store an estimate of each state–action value, then update it from the best estimate of the next state.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **replay-based deep Q-learning with a delayed target network**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **terminal transitions have no bootstrap term and target-network parameters update only on schedule**.
+The equation `y=r+γmax_aQ(s′,a)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -35,16 +48,14 @@ r is today’s reward; the max term is the best predicted future reward from the
 
 If γ is 0, the agent only cares about immediate reward; if γ is near 1, it values long-term outcomes more. The max says it assumes it will choose the best next action.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Q-learning had strong tabular results, but a table cannot cover every possible video-game screen. Deep neural networks could read pixels yet combining them directly with bootstrapped value targets was unstable. DQN was needed to make one agent learn Atari control from high-dimensional observations using replay memory and a stabilized target.
 
 This extended reinforcement learning from small hand-designed tables to high-dimensional inputs such as game pixels.
 
 This introduced a practical bridge between value-learning theory and deep networks, while target networks and replay buffers addressed instability from changing targets and correlated data.
 
-## Why It Matters
-
+## 5. Why It Matters
 Q-learning can learn values without an environment model, but a table cannot
 store a separate value for every possible visual frame. Combining neural
 approximation, bootstrapped targets, correlated sequential data, and a moving
@@ -58,8 +69,7 @@ target networks, Double DQN, prioritized replay, and distributional values; do
 not attribute every later stabilization to this workshop paper. PPO is a
 different policy-gradient family, not a DQN configuration option.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine learning a game from a scrapbook of past moves. Every entry records a
 screen, action, immediate reward, and next screen. Rather than reading only the
 latest page, DQN studies random pages so nearly identical consecutive frames do
@@ -78,8 +88,7 @@ flowchart LR
  L --> Q
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 For transition \(s,a,r,s'\), DQN estimates \(Q_\theta(s,a)\). The one-step
 target is \(y=r\) at a terminal transition and otherwise
 \(y=r+\gamma\max_{a'}Q_{\theta^-}(s',a')\), where \(\theta^-\) is a target
@@ -125,8 +134,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -234,8 +242,7 @@ rollback possible when later changes reveal an unintended reward, simulator, or
 measurement assumption.
 It supports responsible maintenance and reproducible scientific review.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/26-dqn/code/td_target.py`](implementations/26-dqn/code/td_target.py).
@@ -271,15 +278,13 @@ and task quality. The first production guard should target **overestimation, rep
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `y=r+γmax_aQ(s′,a)` is the whole implementation.** The equation describes the paper's central relationship, but `replay-based deep Q-learning with a delayed target network` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **terminal transitions have no bootstrap term and target-network parameters update only on schedule**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **overestimation, replay correlation, or online/target networks drifting unexpectedly** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **unit-test terminal targets and compare online/target drift under a fixed replay fixture**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **replay-based deep Q-learning with a delayed target network**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -298,8 +303,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **replay-based deep Q-learning with a delayed target network** end to end. How would you implement `y=r+γmax_aQ(s′,a)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `y=r+γmax_aQ(s′,a)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -318,8 +322,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **terminal transitions have no bootstrap term and target-network parameters update only on schedule**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1312.5602)
 - [Human-level control through deep reinforcement learning](https://www.nature.com/articles/nature14236)
 - [Stable-Baselines3 DQN documentation](https://stable-baselines3.readthedocs.io/en/master/modules/dqn.html)

@@ -1,7 +1,6 @@
 # U-Net: Convolutional Networks for Biomedical Image Segmentation
 
-## TL;DR
-
+## 1. TL;DR
 U-Net is an encoder-decoder convolutional network for assigning a class to every
 pixel, not one class to an entire image. Its contracting path gathers context by
 downsampling; its expanding path restores resolution. Skip connections concatenate
@@ -9,8 +8,7 @@ high-resolution encoder features with decoder features so localization detail is
 not lost. The original paper paired this architecture with strong augmentation
 to learn biomedical segmentation from relatively few annotated images.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 U-Net first zooms out to understand a whole image, then zooms back in while carrying fine details so it can color every pixel correctly.
 
 `🖼️ image → 🔍 zoom out for context → 🪜 skip details → 🎨 pixel-by-pixel mask`
@@ -21,8 +19,23 @@ For a medical scan, broad context can say “this is likely an organ,” while t
 
 💻 **CS analogy:** the encoder is a compressed index, while skip connections are direct links back to the full-resolution source records needed for precise output.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **encoder-decoder segmentation with skip connections**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **skip tensors align spatially and channels before concatenation or addition**.
+The equation `y=Decoder(Encoder(x), skips)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -35,16 +48,14 @@ For a pixel, y is 1 for the correct class and 0 otherwise, so the loss focuses o
 
 If the true pixel class has probability 0.9, the loss is low; if it has 0.01, the loss is high. Summing across classes is a compact way to select the one true label.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Classifiers could say what was in an image but discarded spatial detail as they pooled down to one label. Sliding-window methods preserved locality but repeated expensive work. U-Net was needed to combine broad context with exact localization, especially when labeled medical images were scarce.
 
 This was needed because classifiers could recognize an object but often lost the exact location and boundary needed for segmentation.
 
 This made dense prediction feasible with limited labeled data and established an encoder-decoder pattern now common in segmentation tasks.
 
-## Why It Matters
-
+## 5. Why It Matters
 Image classification can compress an image to one label, but segmentation must
 retain where each structure is. Sliding-window classifiers made pixel predictions
 by repeatedly evaluating local crops, which was redundant and limited global
@@ -60,8 +71,7 @@ not guarantee the original architecture: modern variants change padding,
 normalization, residual blocks, attention, dimensionality, loss, and decoder
 operations. Evaluate the actual model and labeling protocol.
 
-## Core Intuition
-
+## 6. Core Intuition
 To decide whether a pixel belongs to a cell, a model needs both a close look at
 the edge and a wide view of the surrounding structure. Downsampling provides a
 wide view but loses exact coordinates. U-Net keeps a copy of detailed features
@@ -81,8 +91,7 @@ flowchart LR
  D1 --> M[pixel mask]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 The contracting path repeatedly applies convolutions and downsampling, increasing
 channels while reducing spatial resolution. The expanding path upsamples,
 concatenates the corresponding encoder feature map, and applies convolutions to
@@ -131,8 +140,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -232,8 +240,7 @@ outputs.
 That evidence makes deployment decisions measurable and accountable.
 It also supports careful post-release monitoring.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/23-unet/code/skip_concat.py`](implementations/23-unet/code/skip_concat.py).
@@ -269,15 +276,13 @@ and task quality. The first production guard should target **crop/padding misali
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `y=Decoder(Encoder(x), skips)` is the whole implementation.** The equation describes the paper's central relationship, but `encoder-decoder segmentation with skip connections` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **skip tensors align spatially and channels before concatenation or addition**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **crop/padding misalignment and activation-memory pressure at high resolution** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **assert every join shape and evaluate boundary metrics on synthetic masks**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **encoder-decoder segmentation with skip connections**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -296,8 +301,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **encoder-decoder segmentation with skip connections** end to end. How would you implement `y=Decoder(Encoder(x), skips)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `y=Decoder(Encoder(x), skips)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -316,8 +320,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **skip tensors align spatially and channels before concatenation or addition**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1505.04597)
 - [MONAI U-Net documentation](https://docs.monai.io/en/stable/networks.html)
 - [nnU-Net](https://arxiv.org/abs/1809.10486)

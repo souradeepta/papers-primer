@@ -1,11 +1,9 @@
 # Direct Preference Optimization: Your Language Model is Secretly a Reward Model
 
-## TL;DR
-
+## 1. TL;DR
 Direct Preference Optimization (DPO) turns a dataset of “response A is preferred to response B” judgments into a direct language-model loss. It compares how much the trainable policy prefers the chosen answer over the rejected answer relative to a frozen reference model. Unlike the PPO stage in [InstructGPT](../05-instructgpt-rlhf/README.md), it does not first fit a separate reward model and then run an online reinforcement-learning loop. The result is a simple, stable pairwise classification objective, while still being motivated by KL-regularized RLHF.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 DPO learns from “this answer is better than that one” pairs directly. It nudges the model toward winners without running a separate reinforcement-learning loop.
 
 `❓ prompt → 👍 preferred answer / 👎 rejected answer → 📏 preference loss → 🤖 better choices`
@@ -16,8 +14,23 @@ Given one prompt and two responses, DPO only needs the label “this one is pref
 
 💻 **CS analogy:** DPO is a direct ranking-loss update, similar to teaching a search ranker from clicked-versus-skipped result pairs.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **direct preference optimization against a reference policy**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **chosen/rejected sequences use the same prompt boundary and reference log-probabilities are detached**.
+The equation `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -30,16 +43,14 @@ The essential equation or rule is:
 
 The two fractions compare the new policy with the reference separately for winner and loser. Subtracting them asks whether the new model improved the winner more than it improved the loser.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 RLHF could align a model with preferences, but it required training a separate reward model and running a delicate PPO loop. That pipeline adds moving parts and opportunities for instability. DPO was needed to learn directly from preferred-versus-rejected response pairs while keeping a reference model as an anchor.
 
 It was needed to keep the useful preference data of RLHF while removing several moving parts that can make RL training fragile.
 
 This simplified alignment experiments and deployment pipelines, though the quality of the outcome remains limited by the preference data and the chosen reference.
 
-## Why It Matters
-
+## 5. Why It Matters
 Instruction tuning teaches an LM to imitate demonstrations, but imitation alone cannot represent every trade-off people care about: helpfulness versus brevity, harmlessness versus compliance, or a clear answer versus a rambling one. Preference data is often easier to collect than a calibrated scalar reward: show an annotator two answers to the same prompt and ask which is better. The classic InstructGPT pipeline in paper 05 fits a reward model to those comparisons, samples completions from a policy, and uses PPO to increase reward while a KL term restrains drift from the supervised model.
 
 That pipeline is useful but operationally demanding. A reward model is another model to train, evaluate, version, and protect from exploitation. PPO introduces rollouts, a value function, clipping, reward scaling, multiple sensitive hyperparameters, and a moving distribution of sampled responses. A training failure can be caused by any one of those components. This is why the DPO paper calls conventional RLHF complex and often unstable, rather than claiming it is conceptually invalid.
@@ -48,8 +59,7 @@ Rafailov et al. (2023) observe that the KL-constrained optimum of the reward-max
 
 The paper reports DPO matches or improves PPO-based RLHF on its summarization and single-turn dialogue settings, and exceeds it on sentiment control, while avoiding sampling during fine-tuning and significant hyperparameter tuning. Those are experiment-specific results, not a guarantee that DPO dominates every online preference-optimization setting. Its lasting engineering contribution is an objective that makes an offline preference dataset look like ordinary supervised minibatch training.
 
-## Core Intuition
-
+## 6. Core Intuition
 Think of a reference model as a carefully parked car and the trainable model as the same car with a steering wheel. A preference pair says which of two nearby destinations is better. DPO does not ask for an absolute map score for either destination. It asks the policy to turn more toward the chosen destination than it would have turned from its original parked orientation, and less toward the rejected one. The reference makes “more” meaningful: a common, already-likely response should not earn credit simply for being common.
 
 The comparison is deliberately paired. A chosen answer with log probability \(-2\) is not intrinsically good or bad; it may be much more likely than the reference made it, or much less likely. DPO therefore evaluates the chosen answer’s change from reference and subtracts the rejected answer’s change. Increasing that gap makes the human-preferred completion more favored *relative to the baseline*.
@@ -69,8 +79,7 @@ flowchart LR
 
 This is not magic reward-model elimination in the philosophical sense. The data still encodes preferences, and the policy parameters learn behavior that scores well under those comparisons. “Secretly a reward model” means the policy/reference log-ratio provides a parameterization compatible with the optimal policy equation. It does not mean every arbitrary policy logit is a trustworthy human-value score outside the training distribution.
 
-## The Mechanism
-
+## 7. The Mechanism
 Start with the regularized RLHF objective for prompt \(x\), reward \(r(x,y)\), reference \(\pi_{ref}\), and policy \(\pi\): maximize expected reward minus \(\beta\) times \(\mathrm{KL}(\pi(\cdot|x)\|\pi_{ref}(\cdot|x))\). The coefficient convention matters: in the DPO derivation, \(\beta\) controls how sharply reward differences move the optimal policy away from reference. Solving the constrained objective gives
 
 \[
@@ -121,8 +130,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -164,8 +172,7 @@ Finally, separate training-time reference anchoring from serving-time behavior. 
 
 For reproducibility, log the reference checkpoint revision, tokenizer revision, chat-template text, beta, maximum lengths, truncation direction, dataset hash, and the exact preference-field mapping. These are part of the objective’s effective definition. A change in any of them can alter the computed log-ratio while leaving the training command apparently unchanged.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/09-dpo/code/dpo_toy_preference.py`](implementations/09-dpo/code/dpo_toy_preference.py).
@@ -201,15 +208,13 @@ and task quality. The first production guard should target **preference leakage,
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))` is the whole implementation.** The equation describes the paper's central relationship, but `direct preference optimization against a reference policy` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **chosen/rejected sequences use the same prompt boundary and reference log-probabilities are detached**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **preference leakage, length bias, or incorrect sequence log-prob summation** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **unit-test pairwise margins and monitor held-out preference accuracy by length bucket**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **direct preference optimization against a reference policy**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -228,8 +233,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **direct preference optimization against a reference policy** end to end. How would you implement `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `logit σ(β log(π(yw|x)/πref(yw|x)−log(π(yl|x)/πref(yl|x))))` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -248,8 +252,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **chosen/rejected sequences use the same prompt boundary and reference log-probabilities are detached**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original DPO paper](https://arxiv.org/abs/2305.18290)
 - [InstructGPT paper](https://arxiv.org/abs/2203.02155)
 - [TRL DPOTrainer documentation](https://huggingface.co/docs/trl/dpo_trainer)

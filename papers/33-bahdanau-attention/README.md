@@ -2,15 +2,13 @@
 
 **Bahdanau, Cho & Bengio, 2014** · [Original paper](https://arxiv.org/abs/1409.0473)
 
-## TL;DR
-
+## 1. TL;DR
 This paper adds soft attention to an encoder-decoder translation model. Rather
 than compressing every source word into one final vector, the decoder learns
 which encoder positions matter for each next target word. The resulting
 alignment is differentiable and learned jointly with translation.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 source states 📚 → decoder question ❓ → relevance scores 🔦 → weighted context 🎯 → next word ✍️
 
 When translating a word, a reader does not stare at a sentence summary; they
@@ -20,8 +18,23 @@ same movable focus.
 💻 **CS analogy:** It is a soft database query: the decoder supplies a query,
 every encoder state gets a score, and the answer is a weighted result set.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **additive attention alignment between decoder state and encoder outputs**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **alignment scores are masked before softmax and context uses the same source positions**.
+The equation `c_t=Σ_iα_tih_i` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential context is c_t = sum over i of alpha_ti times h_i.
 
 ```text
@@ -36,8 +49,7 @@ The decoder learns alpha values from its current state and every source state.
 Unlike choosing one hard word location, soft weighting remains differentiable
 and can blend nearby words when a translation depends on a phrase.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Seq2Seq LSTMs encoded an entire source sentence into one final vector. That
 works for short inputs but forces increasingly many facts into one bottleneck
 as sequences grow.
@@ -46,8 +58,7 @@ This paper lets the decoder revisit all encoder states. It solved the
 fixed-vector limitation and established the alignment pattern later transformed
 into scaled dot-product attention.
 
-## Why It Matters
-
+## 5. Why It Matters
 Attention made neural translation more accurate by allowing each decoder step
 to retrieve source details instead of relying on one compressed vector. It is
 also a useful inspection surface: a heatmap can show which source positions
@@ -55,16 +66,14 @@ received weight, although that weight is not automatically a faithful causal
 explanation. The method is the conceptual bridge between recurrent Seq2Seq
 systems and the Transformer architecture.
 
-## Core Intuition
-
+## 6. Core Intuition
 At each output step, the decoder asks “which source positions should I read
 now?” The answer is a probability distribution, not a single irreversible
 pointer. When a target word depends on a two-word phrase, the context can blend
 both encoder states; when it depends on one name, the distribution can become
 sharply concentrated.
 
-## The Mechanism
-
+## 7. The Mechanism
 An additive scoring network compares the decoder query against each encoder
 state. It projects both vectors, applies a nonlinear combination, and reduces
 that combination to one scalar score per source position. Softmax normalizes
@@ -99,8 +108,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -127,8 +135,7 @@ Attention costs source length per decode step; caching projected keys reduces
 repeated work. Modern frameworks implement related attention in PyTorch,
 TensorFlow, and JAX.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/33-bahdanau-attention/code/additive_attention.py`](implementations/33-bahdanau-attention/code/additive_attention.py).
@@ -164,15 +171,13 @@ and task quality. The first production guard should target **attention on paddin
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `c_t=Σ_iα_tih_i` is the whole implementation.** The equation describes the paper's central relationship, but `additive attention alignment between decoder state and encoder outputs` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **alignment scores are masked before softmax and context uses the same source positions**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **attention on padding or a fixed-vector bottleneck reappearing through bad state handling** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **test mask-before-softmax and alignment on synthetic sequences with known dependencies**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **additive attention alignment between decoder state and encoder outputs**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -191,8 +196,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **additive attention alignment between decoder state and encoder outputs** end to end. How would you implement `c_t=Σ_iα_tih_i`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `c_t=Σ_iα_tih_i` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -211,8 +215,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **alignment scores are masked before softmax and context uses the same source positions**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1409.0473)
 - [Seq2Seq](https://arxiv.org/abs/1409.3215)
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762)

@@ -1,15 +1,13 @@
 # Graph Attention Networks
 
-## TL;DR
-
+## 1. TL;DR
 Graph Attention Networks update each node by weighting its neighbors according
 to learned attention coefficients. A shared feature transform, an edge scoring
 function, and a neighborhood softmax form a local weighted aggregation. Multiple
 heads can learn several weighting patterns. This provides adaptive message
 passing without requiring spectral graph operations or a fixed graph size.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 GAT lets each dot in a network listen to nearby dots with different volumes, rather than treating every neighbor as equally useful.
 
 `🔵 node + 👥 neighbors → 🎚️ attention weights → 📬 weighted messages → 🧠 updated node`
@@ -20,8 +18,23 @@ In a citation graph, a paper may care more about a closely related citation than
 
 💻 **CS analogy:** each node runs a priority inbox: it reads messages from neighbors but turns their relevance scores into per-neighbor weights before combining them.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **masked attention over graph neighborhoods**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **attention weights normalize over each node’s incoming neighbors and self-loops are intentional**.
+The equation `h′ᵢ=σ(Σ_jαᵢⱼWh_j)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -34,16 +47,14 @@ The essential equation or rule is:
 
 Softmax makes all α weights positive and sum to 1, so the update is a weighted average. W first transforms all features into a shared space where those comparisons are meaningful.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Graph neural networks could average or sum neighbor features, but that treats every neighbor as equally useful and can blur distinct roles. Fixed graph filters also made it hard to adapt importance across nodes. GAT was needed to learn which neighboring messages deserve more weight while remaining usable on graphs with varying degrees.
 
 This improved on graph methods that treated every neighbor alike, even in noisy graphs.
 
 This added adaptive neighbor importance to graph learning and made the model more interpretable, though attention weights are not automatically causal explanations.
 
-## Why It Matters
-
+## 5. Why It Matters
 Graphs represent relationships that grids and sequences do not: citations,
 molecules, suppliers, software dependencies, and social links. Earlier graph
 convolutions aggregate neighbors with fixed structure-based weights. GAT lets
@@ -57,8 +68,7 @@ are learned routing values, not causal evidence. Later graph transformers,
 edge-aware layers, sampling schemes, and heterogeneous-graph methods extend the
 basic formulation and must be identified separately.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine a researcher reading collaborators' advice. A close collaborator on the
 same topic should influence a paper more than a loosely connected author. GAT
 learns this rule from features for every target node. It listens only to graph
@@ -75,8 +85,7 @@ flowchart LR
  G --> O[updated target feature]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 For node feature \(h_i\), GAT first applies learned matrix \(W\). For neighbor
 \(j\) into target \(i\), it scores a pair using a shared vector, commonly
 \(e_{ij}=\mathrm{LeakyReLU}(a^T[Wh_i\Vert Wh_j])\). The graph masks this score
@@ -123,8 +132,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -236,8 +244,7 @@ connected component is not masked by high performance on familiar densely linked
 regions. These tests align measured behavior with the intended inductive use.
 They provide meaningful evidence before release decisions.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/28-graph-attention-networks/code/neighbor_attention.py`](implementations/28-graph-attention-networks/code/neighbor_attention.py).
@@ -273,15 +280,13 @@ and task quality. The first production guard should target **dense adjacency con
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `h′ᵢ=σ(Σ_jαᵢⱼWh_j)` is the whole implementation.** The equation describes the paper's central relationship, but `masked attention over graph neighborhoods` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **attention weights normalize over each node’s incoming neighbors and self-loops are intentional**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **dense adjacency construction, isolated-node NaNs, or neighbor-order dependence** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **assert local weight sums, test permutation invariance, and compare sparse output with a tiny dense reference**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **masked attention over graph neighborhoods**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -300,8 +305,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **masked attention over graph neighborhoods** end to end. How would you implement `h′ᵢ=σ(Σ_jαᵢⱼWh_j)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `h′ᵢ=σ(Σ_jαᵢⱼWh_j)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -320,8 +324,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **attention weights normalize over each node’s incoming neighbors and self-loops are intentional**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1710.10903)
 - [PyTorch Geometric GATConv](https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.conv.GATConv.html)
 - [DGL documentation](https://www.dgl.ai/)

@@ -1,11 +1,9 @@
 # Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity
 
-## TL;DR
-
+## 1. TL;DR
 Switch Transformer replaces a dense Transformer feed-forward network with many expert feed-forward networks and routes each token to just one expert. This top-1 “switch” routing lets total parameter count grow while each token activates roughly the compute of one ordinary FFN. The design is simpler than earlier top-k mixture-of-experts routing, but it needs capacity limits and an auxiliary loss to stop every token choosing the same expert. Fedus, Zoph, and Shazeer showed this sparse design could train very large language models efficiently, including a trillion-parameter model.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 Switch Transformers have many expert helpers, but each token visits only one. It is like sending a question to one specialist instead of waking every specialist.
 
 `🔤 token → 🚦 router picks expert → 🧑‍🔧 one expert works → 🧠 large capacity, lower cost`
@@ -16,8 +14,23 @@ A token about Python syntax might be routed to one expert while a multilingual p
 
 💻 **CS analogy:** the router is a load balancer that picks one worker for each request while trying not to overload one machine.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **top-1 sparse mixture-of-experts routing**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **each token is dispatched to exactly one selected expert and capacity overflow is observable**.
+The equation `y=Expert[argmax p(x)](x)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -30,16 +43,14 @@ argmax means “choose the biggest.” Softmax changes raw router scores into pe
 
 argmax ignores every score except the largest one after routing. That makes the forward pass cheap, but it also means training needs a balancing term so all tokens do not choose the same expert.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Dense Transformers use every parameter for every token, so expanding parameter count also expands compute. Earlier mixture-of-experts designs existed but routing multiple experts made training and communication harder. Switch Transformer was needed to scale capacity with a simple one-expert-per-token routing rule.
 
 The paper made sparse models easier to scale by reducing a multi-expert routing problem to one clear routing choice per token.
 
 The paper showed that conditional computation can scale parameter count separately from per-token work, with networking and load balance becoming central engineering concerns.
 
-## Why It Matters
-
+## 5. Why It Matters
 Every dense model in the earlier parts of this collection uses all of its layer parameters for every token. Scaling a dense FFN from billions to hundreds of billions of weights increases both what can be stored and how much arithmetic each token requires. That coupling is expensive: capacity and per-token latency rise together. Mixture of Experts (MoE) breaks it by storing a collection of specialist FFNs but calling only a small subset for each token.
 
 Earlier MoE systems often used top-k routing: a gate chooses several experts, their outputs are combined, and distributed workers exchange the relevant token activations. That can improve capacity but brings duplicated expert computation, more all-to-all communication, routing complexity, and load-balancing problems. The Switch paper’s key simplification is exactly one selected expert per token. The router computes probabilities over experts, takes an argmax, and sends the token to that expert alone.
@@ -48,8 +59,7 @@ The paper is therefore a scaling-systems paper as much as an architecture paper.
 
 The central bargain is appealing: increase *total* parameters without making every token visit every parameter. But it changes the bottleneck. A dense FFN is regular matrix multiplication; a sparse MoE layer requires routing, packing variable-sized token batches, cross-device transfer in expert-parallel layouts, capacity decisions, and recovery from imbalance. Switch made that bargain practical enough to become a major ancestor of modern sparse models, including the style of sparse expert layers popularized by Mixtral.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine a customer-support desk with many specialist queues. A normal dense FFN is one giant generalist desk: every request is handled by the same workforce. An MoE layer has many desks, but sending every request to every desk would be wasteful. A Switch router reads the ticket and stamps it for one desk. The company can employ many specialists, yet each ticket receives one desk’s worth of work.
 
 That stamp creates a traffic-management problem. If the router decides that every ticket belongs to expert 0, expert 0 has a long queue while other desks are idle. The model has nominally many parameters but functionally uses one. Switch therefore gives each expert a finite number of slots per batch and charges a balancing penalty when routing probabilities and actual traffic concentrate. Overflow tickets are dropped or bypass the expert according to the implementation policy; they cannot make an expert’s batch unbounded.
@@ -68,8 +78,7 @@ flowchart LR
 
 The analogy also clarifies specialization. The router is not given human labels such as “math expert” or “French expert.” Its decisions and expert weights are learned from the training objective. Some experts may become correlated with domains or token patterns, but one should not assume an interpretable profession for each. The balancing term asks for usable traffic distribution, not semantic diversity by itself.
 
-## The Mechanism
-
+## 7. The Mechanism
 Replace a Transformer block’s dense FFN with \(N\) expert FFNs \(E_i\). For token state \(x\), a learned router produces \(p(x)=\mathrm{softmax}(W_r x)\). Switch chooses \(i^*=\arg\max_i p_i(x)\), then produces the selected expert output scaled by that gate value: \(y=p_{i^*}(x)E_{i^*}(x)\). Only one expert’s two FFN projections execute for that token. The surrounding attention, residual, and normalization layers remain dense Transformer components.
 
 ```mermaid
@@ -117,8 +126,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -150,8 +158,7 @@ Router initialization, auxiliary-loss coefficient, z-loss or other later stabili
 
 Finally, sparse total parameter count can mislead capacity planning. It affects checkpoint storage and aggregate memory across devices, whereas active parameters and communication dominate request latency. Quote both total and active parameters, plus expert count, top-k, and capacity policy. Those fields explain far more about a sparse model’s operating envelope than a headline parameter number alone.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/10-switch-transformer/code/switch_routing_demo.py`](implementations/10-switch-transformer/code/switch_routing_demo.py).
@@ -187,15 +194,13 @@ and task quality. The first production guard should target **expert load imbalan
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `y=Expert[argmax p(x)](x)` is the whole implementation.** The equation describes the paper's central relationship, but `top-1 sparse mixture-of-experts routing` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **each token is dispatched to exactly one selected expert and capacity overflow is observable**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **expert load imbalance, dropped tokens, and all-to-all communication spikes** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **log per-expert counts, overflow rate, routing entropy, and quality for overflowed tokens**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **top-1 sparse mixture-of-experts routing**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -214,8 +219,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **top-1 sparse mixture-of-experts routing** end to end. How would you implement `y=Expert[argmax p(x)](x)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `y=Expert[argmax p(x)](x)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -234,8 +238,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **each token is dispatched to exactly one selected expert and capacity overflow is observable**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original Switch Transformer paper](https://arxiv.org/abs/2101.03961)
 - [GShard: Scaling Giant Models with Conditional Computation](https://arxiv.org/abs/2006.16668)
 - [ST-MoE: Designing Stable and Transferable Sparse Expert Models](https://arxiv.org/abs/2202.08906)

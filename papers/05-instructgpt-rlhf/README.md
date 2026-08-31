@@ -1,7 +1,6 @@
 # Training Language Models to Follow Instructions with Human Feedback (InstructGPT)
 
-## TL;DR
-
+## 1. TL;DR
 In March 2022, OpenAI published InstructGPT: a version of GPT-3 fine-tuned
 with human feedback to actually follow instructions rather than just
 continue text in whatever way is statistically likely given internet
@@ -16,8 +15,7 @@ InstructGPT model having over 100x fewer parameters. This paper is the
 direct methodological ancestor of essentially every "helpful assistant"
 LLM product that followed it, including ChatGPT.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 RLHF teaches a model from human preferences: people compare answers, a reward model learns their taste, and the assistant practices earning better scores.
 
 `🤖 draft answers → 🧑‍⚖️ humans compare → 🏆 reward signal → 📈 improved assistant`
@@ -28,8 +26,23 @@ If two replies are factually similar but one is concise and polite, an annotator
 
 💻 **CS analogy:** RLHF resembles training a ranking service from A/B preference logs, then optimizing a policy against that learned scorer.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **reward-model-guided policy optimization**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **the KL penalty is measured against the frozen reference policy and reward inputs use the same prompt contract**.
+The equation `E[reward]−βKL(π||πref)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -42,16 +55,14 @@ If the chosen answer scores much higher, the sigmoid is near 1 and the penalty i
 
 The score difference is all that matters: adding 10 to both answer scores changes nothing. The sigmoid only asks whether the chosen answer is ahead, and by how confidently.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Next-token pretraining teaches a model to imitate internet text, not necessarily to follow a helpful, safe instruction. Supervised prompts helped, but they could not capture every quality judgment with one target answer. InstructGPT was needed to turn human preference comparisons into an optimization signal that steers a pretrained model’s behavior.
 
 The new idea connected subjective human judgments to a training signal, so usefulness could be optimized rather than assumed from internet text.
 
 This made product-quality preferences—helpfulness, tone, and harmlessness—part of the training loop, while also creating the need to guard against reward hacking.
 
-## Why It Matters
-
+## 5. Why It Matters
 Before this paper, the standard way to make a large language model useful
 was pretraining at scale (GPT-3, Brown et al. 2020) followed, at most, by
 few-shot prompting or light supervised fine-tuning on a task-specific
@@ -95,8 +106,7 @@ own subsequent public communications and industry reporting, not a claim
 made inside this specific paper — worth keeping the paper's own claims and
 later industry history distinct.
 
-## Core Intuition
-
+## 6. Core Intuition
 Think of pretraining a large language model as raising a very
 well-read but never-supervised writer: it has absorbed an enormous amount
 of text and can continue almost any prompt fluently, but nobody ever told
@@ -145,8 +155,7 @@ flowchart LR
     D --> E["InstructGPT<br/>(follows instructions)"]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 The three stages below, and exactly what data and reward signal flows
 between them for a single training example:
 
@@ -328,8 +337,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -411,8 +419,7 @@ question anyone learning this pipeline asks ("do I really need the full
 RL machinery?") and the answer, for a meaningful chunk of use cases, has
 turned out to be no.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/05-instructgpt-rlhf/code/rlhf_from_scratch.py`](implementations/05-instructgpt-rlhf/code/rlhf_from_scratch.py).
@@ -448,15 +455,13 @@ and task quality. The first production guard should target **reward hacking, pre
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `E[reward]−βKL(π||πref)` is the whole implementation.** The equation describes the paper's central relationship, but `reward-model-guided policy optimization` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the KL penalty is measured against the frozen reference policy and reward inputs use the same prompt contract**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **reward hacking, preference-label bias, or an unstable policy/reference gap** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **track reward, KL, human preference, and adversarial slices separately during an ablation**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **reward-model-guided policy optimization**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -475,8 +480,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **reward-model-guided policy optimization** end to end. How would you implement `E[reward]−βKL(π||πref)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `E[reward]−βKL(π||πref)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -495,8 +499,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **the KL penalty is measured against the frozen reference policy and reward inputs use the same prompt contract**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Training language models to follow instructions with human feedback (arXiv:2203.02155)](https://arxiv.org/abs/2203.02155) — the original paper
 - [Language Models are Few-Shot Learners (arXiv:2005.14165)](https://arxiv.org/abs/2005.14165) — the GPT-3 paper; the pretrained base model this paper fine-tunes and compares against
 - [Deep Reinforcement Learning from Human Preferences (Christiano et al., 2017, arXiv:1706.03741)](https://arxiv.org/abs/1706.03741) — the earlier general RLHF framework this paper applies to language models

@@ -1,7 +1,6 @@
 # Learning Transferable Visual Models From Natural Language Supervision (CLIP)
 
-## TL;DR
-
+## 1. TL;DR
 CLIP learns an image encoder and text encoder together by making matching
 image-caption pairs close in one embedding space and mismatched pairs distant.
 At inference, candidate labels become text prompts; their text embeddings are
@@ -9,8 +8,7 @@ compared with an image embedding to form a zero-shot classifier. The paper
 trained on large-scale web image-text pairs and found transfer across many
 tasks. It is a matching representation, not a guarantee that a prompt is true.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 CLIP puts pictures and captions on one shared map. A photo of a dog should land close to the words “a photo of a dog.”
 
 `🖼️ image + 📝 caption → 🧠 two encoders → 🗺️ shared space → 🔎 compare with prompts`
@@ -21,8 +19,23 @@ A batch might pair a dog photo with “a photo of a dog” and a car photo with 
 
 💻 **CS analogy:** CLIP builds a shared search index: a picture query and a text query should retrieve the same matching record.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **symmetric image-text contrastive learning**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **image-text positives align on both retrieval directions and temperature is applied consistently**.
+The equation `sim(I,T)=ĨᵀT̃` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -35,16 +48,14 @@ I is an image arrow and T is a text arrow; their dot product is high when they p
 
 The score matrix has one row per image and one column per text. The diagonal entries are true pairs; contrastive training makes those diagonal scores win against off-diagonal mismatches.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Vision models were commonly trained on fixed human-written class labels, so adding a new label set required a new supervised dataset and training run. Text and image systems also tended to live in separate pipelines. CLIP was needed to use plentiful captioned web data to connect the two modalities and make text-defined, zero-shot classification possible.
 
 This was needed to escape fixed class lists and use the broader supervision in image-caption pairs.
 
 This made text a flexible classifier interface: new categories can be described in language, though prompt wording and web-data biases affect results.
 
-## Why It Matters
-
+## 5. Why It Matters
 Traditional image classification starts with a fixed label taxonomy and requires
 human-curated examples for each class. Natural language supplies a broader form
 of supervision: captions, titles, alt text, and nearby prose connect images to
@@ -59,8 +70,7 @@ biased, incomplete, or unrelated to pixels, and benchmark overlap matters. A
 newer model called CLIP may use different data, encoders, losses, and safety
 policies than the original paper.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine placing photographs and their descriptions on the same map. A golden
 retriever image should land near “a photo of a golden retriever,” not near “a
 photo of a traffic light.” Repeated pairings teach which visual patterns and
@@ -81,8 +91,7 @@ softmax vocabulary. Prompts define the candidate classes at inference, which is
 useful but sensitive: “a photo of a dog” and “a satellite image of a dog” are
 different queries.
 
-## The Mechanism
-
+## 7. The Mechanism
 For a batch of \(N\) paired examples, CLIP encodes images as \(I_i\) and text
 as \(T_j\), L2-normalizes both, and forms logits
 \(L_{ij}=\tau I_i^TT_j\), with learned temperature \(\tau\). The diagonal
@@ -134,8 +143,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -232,8 +240,7 @@ when retention policy requires. If a document is removed, propagate removal to
 the vector index and its backups. These details make CLIP's flexible matching
 capability reliable within a real application rather than only in a notebook.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/20-clip/code/contrastive_ranking.py`](implementations/20-clip/code/contrastive_ranking.py).
@@ -269,15 +276,13 @@ and task quality. The first production guard should target **duplicate captions,
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `sim(I,T)=ĨᵀT̃` is the whole implementation.** The equation describes the paper's central relationship, but `symmetric image-text contrastive learning` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **image-text positives align on both retrieval directions and temperature is applied consistently**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **duplicate captions, batch composition bias, or preprocessing mismatch between modalities** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **test image-to-text and text-to-image retrieval with duplicate and hard-negative slices**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **symmetric image-text contrastive learning**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -296,8 +301,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **symmetric image-text contrastive learning** end to end. How would you implement `sim(I,T)=ĨᵀT̃`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `sim(I,T)=ĨᵀT̃` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -316,8 +320,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **image-text positives align on both retrieval directions and temperature is applied consistently**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/2103.00020)
 - [OpenCLIP](https://github.com/mlfoundations/open_clip)
 - [FAISS documentation](https://faiss.ai/)

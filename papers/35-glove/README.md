@@ -2,16 +2,14 @@
 
 **Pennington, Socher & Manning, 2014** · EMNLP 2014
 
-## TL;DR
-
+## 1. TL;DR
 GloVe learns word vectors from global word co-occurrence counts. It fits dot
 products between word and context vectors to the logarithm of observed counts,
 with a weighting function that prevents very rare or very frequent pairs from
 dominating. The result captures useful semantic and syntactic relationships in
 a compact vector space.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 text corpus 📚 → nearby-word counts 🔢 → weighted statistics ⚖️ → vectors 📍 → similarity and analogies 🔗
 
 If “ice” often appears near “cold” and “steam” near “hot,” their count
@@ -22,8 +20,23 @@ shared neighborhood patterns into positions in vector space.
 matrix factorization compresses recurring usage patterns into small feature
 vectors.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **weighted factorization of global word co-occurrence counts**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **count construction, weighting cutoff, and bias terms use the same vocabulary snapshot**.
+The equation `wᵀw̃+b+b̃≈logX` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The central goal is w_i dot w_tilde_j plus b_i plus b_tilde_j approximately
 equals log of X_ij.
 
@@ -35,8 +48,7 @@ X_ij is the number of times word i occurs near context word j. A dot product
 acts as a compatibility score. Taking a logarithm makes huge raw count
 differences easier to fit, while GloVe weights each pair to limit extremes.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Count-based distributional methods used large co-occurrence matrices, while
 predictive methods such as word2vec learned embeddings by predicting local
 contexts. Both observed that nearby-word statistics encode useful meaning.
@@ -45,24 +57,21 @@ GloVe combined global counts with a vector-learning objective. It gave a
 simple way to factorize corpus-wide statistics while retaining small dense
 embeddings useful in downstream models.
 
-## Why It Matters
-
+## 5. Why It Matters
 GloVe became a standard pretrained embedding source and a clear demonstration
 of how global corpus structure can become vectors. It complements paper 16,
 word2vec, which emphasizes local predictive training. The contrast is useful:
 GloVe starts with an explicit sparse statistical object, while word2vec learns
 from sampled prediction events without directly reconstructing that matrix.
 
-## Core Intuition
-
+## 6. Core Intuition
 Words are represented by how their context distributions compare, not by their
 spelling. The important signal is often a ratio: a context that is common near
 “ice” but not “steam” helps distinguish the two. Common words such as “the”
 can appear beside almost everything, so relative patterns are more informative
 than one raw count.
 
-## The Mechanism
-
+## 7. The Mechanism
 The model keeps separate word and context embeddings plus biases. For each
 nonzero co-occurrence pair it minimizes a weighted squared error between its
 score and the log count. The weighting function grows for small counts and
@@ -94,8 +103,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -125,8 +133,7 @@ static embeddings cannot resolve different senses of the same word from
 sentence context. Evaluate nearest neighbors for corpus bias, not only for
 pleasant-looking analogies.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/35-glove/code/glove_weighted_least_squares.py`](implementations/35-glove/code/glove_weighted_least_squares.py).
@@ -162,15 +169,13 @@ and task quality. The first production guard should target **corpus-count memory
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `wᵀw̃+b+b̃≈logX` is the whole implementation.** The equation describes the paper's central relationship, but `weighted factorization of global word co-occurrence counts` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **count construction, weighting cutoff, and bias terms use the same vocabulary snapshot**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **corpus-count memory blow-up, rare-word noise, or separate embedding tables being mishandled** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **snapshot counts and evaluate reconstruction plus downstream similarity and retrieval**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **weighted factorization of global word co-occurrence counts**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -189,8 +194,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **weighted factorization of global word co-occurrence counts** end to end. How would you implement `wᵀw̃+b+b̃≈logX`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `wᵀw̃+b+b̃≈logX` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -209,8 +213,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **count construction, weighting cutoff, and bias terms use the same vocabulary snapshot**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://aclanthology.org/D14-1162/)
 - [word2vec](https://arxiv.org/abs/1301.3781)
 - [SentencePiece](https://arxiv.org/abs/1808.06226)

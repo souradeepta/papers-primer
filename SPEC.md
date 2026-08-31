@@ -4,10 +4,10 @@ Full design rationale: docs/superpowers/specs/2026-08-28-papers-primer-design.md
 
 ## Required sections, in order
 1. TL;DR (3-5 sentences, plain language)
-2. Fun Map for First Years 🧭 (a simple emoji flow diagram and two short, accessible paragraphs)
+2. Fun Map for First Years (a simple flow diagram and accessible beginner/CS-student explanation)
 3. CS analogy (a compact, explicit analogy to a familiar computing idea)
-4. Math Playground 🧮 (the paper's single most essential equation, or central mathematical concept when no equation is appropriate; render it in a fenced text block and explain it in two short paragraphs for a reader with high-school mathematics)
-5. Background: What Came Before 🕰️ (two short paragraphs covering the previous approach, its limitation, and why this paper was needed)
+4. Math Playground (the paper's single most essential equation, or central mathematical concept when no equation is appropriate; render it in a fenced text block and explain it in two short paragraphs for a reader with high-school mathematics)
+5. Background: What Came Before (two short paragraphs covering the previous approach, its limitation, and why this paper was needed)
 6. Why It Matters (context: before/after this paper)
 7. Core Intuition (analogy, no math, >=1 diagram)
 8. The Mechanism (math/architecture, CS-student depth; >=1 Mermaid diagram AND >=1 GIF)

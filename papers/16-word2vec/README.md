@@ -1,7 +1,6 @@
 # Efficient Estimation of Word Representations in Vector Space (word2vec)
 
-## TL;DR
-
+## 1. TL;DR
 Mikolov and colleagues introduced two very small neural objectives, CBOW and
 skip-gram, for learning a vector for each word from its neighboring words.
 Instead of treating `coffee` and `tea` as unrelated integer IDs, training puts
@@ -11,8 +10,7 @@ layer made it practical to learn useful vectors from very large corpora. These
 are static embeddings, so one vector cannot choose a different meaning for
 `bank` in a river sentence and a finance sentence.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 word2vec learns a map where words used in similar neighborhoods stand near each other, like classmates grouped by the clubs they join.
 
 `📝 nearby words → 🧠 adjust word vectors → 🗺️ similar contexts nearby → 🔎 useful comparisons`
@@ -23,8 +21,23 @@ In “I drink coffee” and “I drink tea,” coffee and tea see similar neighb
 
 💻 **CS analogy:** this is an embedding table plus a vector-search score: a word ID looks up a row, and dot products rank candidate neighbors.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **skip-gram training with negative sampling**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **positive pairs are rewarded while sampled negatives use the configured frequency distribution**.
+The equation `logσ(vᵀv′)+Σlogσ(−vᵀvₙ)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -37,16 +50,14 @@ The dot product measures how well two word arrows agree. Dividing by the total t
 
 If two vectors point in similar directions, their dot product is large. The exponential makes that large score stand out before the division converts all candidates into a probability distribution.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Before word2vec, programs often represented a word as a huge one-hot ID or counted co-occurrences in a table. Those representations made related words look unrelated and were costly to use at scale. This paper was needed to make compact, reusable word features practical on very large text collections.
 
 This gave NLP compact features where related words could be discovered from usage instead of manually coded.
 
 This made word meaning usable as a compact numeric feature, though one static vector still cannot separate every sense of a word.
 
-## Why It Matters
-
+## 5. Why It Matters
 Older count tables and one-hot encodings made vocabulary items independent:
 an application had to rediscover that `Paris` and `Rome` behave similarly.
 Neural language models could learn dense representations, but their hidden
@@ -64,8 +75,7 @@ embedding lookup is learnable rather than merely a table of numbers. It also
 introduced engineering ideas—sampling, frequency-aware output coding, and
 streaming corpus updates—that recur in large-scale training.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine learning a map of a city from who regularly shares a table at lunch.
 You never receive labels such as “beverage” or “capital”; you only observe
 neighbors. If `coffee` often occurs near `tea`, `cup`, and `cafe`, their map
@@ -87,8 +97,7 @@ whole document or understands a sentence grammar. The useful pressure comes
 from many overlapping local windows: words that substitute for one another
 receive related training signals.
 
-## The Mechanism
-
+## 7. The Mechanism
 Let each vocabulary item have an input vector \(v_w\) and an output vector
 \(u_w\). In skip-gram, a center word \(c\) and one observed neighboring word
 \(o\) should score highly through the dot product \(u_o^T v_c\). With a full
@@ -154,8 +163,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -209,8 +217,7 @@ segment, and decide explicitly how a missing token is represented. If vectors
 are exposed through nearest-neighbor search, retain document-level permission
 filters outside the vector lookup: embedding proximity is not authorization.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/16-word2vec/code/skipgram_negative_sampling.py`](implementations/16-word2vec/code/skipgram_negative_sampling.py).
@@ -246,15 +253,13 @@ and task quality. The first production guard should target **subsampling or nega
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `logσ(vᵀv′)+Σlogσ(−vᵀvₙ)` is the whole implementation.** The equation describes the paper's central relationship, but `skip-gram training with negative sampling` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **positive pairs are rewarded while sampled negatives use the configured frequency distribution**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **subsampling or negative-sampling bias that produces plausible but unusable vectors** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **check positive scores against sampled negatives and audit nearest neighbors on held-out relations**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **skip-gram training with negative sampling**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -273,8 +278,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **skip-gram training with negative sampling** end to end. How would you implement `logσ(vᵀv′)+Σlogσ(−vᵀvₙ)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `logσ(vᵀv′)+Σlogσ(−vᵀvₙ)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -293,8 +297,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **positive pairs are rewarded while sampled negatives use the configured frequency distribution**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/1301.3781)
 - [Distributed Representations of Words and Phrases and their Compositionality](https://arxiv.org/abs/1310.4546)
 - [Gensim Word2Vec documentation](https://radimrehurek.com/gensim/models/word2vec.html)

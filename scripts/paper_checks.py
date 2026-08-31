@@ -6,9 +6,9 @@ from pathlib import Path
 
 REQUIRED_SECTIONS = [
     "TL;DR",
-    "Fun Map for First Years 🧭",
-    "Math Playground 🧮",
-    "Background: What Came Before 🕰️",
+    "Fun Map for First Years",
+    "Math Playground",
+    "Background: What Came Before",
     "Why It Matters",
     "Core Intuition",
     "The Mechanism",
@@ -37,7 +37,7 @@ _QUICK_ANSWER_RE = re.compile(r"\*\*A:\*\*\s*(.*?)(?=\n\n\*\*Q:|\Z)", re.DOTALL)
 
 
 def check_sections(text: str) -> list[str]:
-    missing = [s for s in REQUIRED_SECTIONS if f"## {s}" not in text]
+    missing = [s for s in REQUIRED_SECTIONS if _section_body(text, s) is None]
     if CS_ANALOGY_MARKER not in text:
         missing.append("CS analogy")
     if missing:
@@ -45,10 +45,10 @@ def check_sections(text: str) -> list[str]:
 
     ordered_markers = [
         "## TL;DR",
-        "## Fun Map for First Years 🧭",
+        "## Fun Map for First Years",
         CS_ANALOGY_MARKER,
-        "## Math Playground 🧮",
-        "## Background: What Came Before 🕰️",
+        "## Math Playground",
+        "## Background: What Came Before",
         "## Why It Matters",
         "## Core Intuition",
         "## The Mechanism",
@@ -58,7 +58,7 @@ def check_sections(text: str) -> list[str]:
         "## Interview Q&A",
         "## Further Reading",
     ]
-    positions = [text.index(marker) for marker in ordered_markers]
+    positions = [section_position(text, marker) if marker.startswith("## ") else text.index(marker) for marker in ordered_markers]
     if positions != sorted(positions):
         return ["sections are not in the required learner-first order"]
     return []
@@ -116,11 +116,21 @@ def _section_body(text: str, heading: str) -> str | None:
     """Return the text between `## {heading}` and the next `## ` heading (or EOF)."""
     matches = list(_SECTION_RE.finditer(text))
     for i, m in enumerate(matches):
-        if m.group(1).strip() == heading:
+        actual = re.sub(r"^(?:\d+|[A-Z])[.)]\s+", "", m.group(1).strip())
+        if actual == heading:
             start = m.end()
             end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
             return text[start:end]
     return None
+
+
+def section_position(text: str, marker: str) -> int:
+    """Find a required h2 while allowing a numeric or alphabetic prefix."""
+    heading = marker.removeprefix("## ")
+    match = re.search(rf"^##\s+(?:(?:\d+|[A-Z])[.)]\s+)?{re.escape(heading)}\s*$", text, re.MULTILINE)
+    if not match:
+        raise ValueError(f"missing section: {heading}")
+    return match.start()
 
 
 def check_mechanism_mermaid(text: str) -> list[str]:

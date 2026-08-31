@@ -1,11 +1,9 @@
 # Chain-of-Thought Prompting Elicits Reasoning in Large Language Models
 
-## TL;DR
-
+## 1. TL;DR
 Chain-of-thought (CoT) prompting gives a language model few-shot examples that include intermediate reasoning steps as well as final answers. Wei et al. show that this can substantially improve arithmetic, commonsense, and symbolic reasoning in sufficiently large language models. It is an inference-time prompting method, not a new architecture, training objective, or proof that a displayed rationale faithfully caused an answer. The original paper reports that eight CoT demonstrations with a 540B-parameter model achieved state-of-the-art GSM8K accuracy, surpassing a finetuned GPT-3 verifier baseline in that experiment.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 Chain-of-thought prompting shows worked examples, so a model can write intermediate steps before its final answer. Steps can help, but they still need checking.
 
 `🧮 problem → 🪜 intermediate steps → ✅ final answer → 🔍 verify important work`
@@ -16,8 +14,23 @@ For 17 + 25, a trace can write “17 + 20 = 37; plus 5 = 42” before the final 
 
 💻 **CS analogy:** a reasoning trace is an execution trace: intermediate state can make a hard final result easier to compute and debug.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **self-consistency over sampled reasoning traces**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **vote aggregation uses only final answers and preserves sample identity for diagnosis**.
+The equation `argmax_y Σ_k1[y=y_k]` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -30,16 +43,14 @@ The comma means the model predicts the steps and final answer together. The vert
 
 The expression is a joint probability, not a proof rule: the model can assign high probability to plausible but wrong steps. That is why verification tools and answer checks remain important.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Large language models could answer many questions from a direct prompt, yet multi-step arithmetic and symbolic tasks often failed because the final answer had to appear in one jump. Fine-tuning a reasoning model was not always available. Chain-of-thought prompting was needed to show that demonstrations containing intermediate steps can unlock better in-context problem solving.
 
 It was needed because direct prompts often forced a multi-step problem into one jump with too little room for intermediate state.
 
 This made prompting a more capable problem-solving interface, and it motivated later work on sampling multiple traces, tools, and verifiers.
 
-## Why It Matters
-
+## 5. Why It Matters
 GPT-3 established that a decoder-only language model can adapt from examples placed in its context. A conventional few-shot example maps question directly to answer: input, then label. Many reasoning tasks have a harder shape. A word problem must identify quantities, select operations, apply them in order, and only then emit a number. Asking for the final answer in one jump can leave the model little textual structure in which to represent intermediate state.
 
 CoT prompting changes the demonstrations. Instead of `Q: ... A: 42`, they show a natural-language sequence that decomposes the calculation or inference and ends with the answer. At test time the model continues that pattern. The paper’s central empirical claim is scale-sensitive: the benefit emerges naturally in sufficiently large models, rather than being a universal prompt trick for every small model. It evaluates three large language models across arithmetic, commonsense, and symbolic tasks.
@@ -48,8 +59,7 @@ This distinction matters for engineering. CoT is not a guarantee of correct reas
 
 The method also separates training from deployment. No model weights are changed in ordinary few-shot CoT prompting; performance and cost are changed by the request context and generated output. That makes experimentation easy but puts prompt examples, token budget, privacy, and evaluation squarely in the application layer. A hidden prompt edit can materially change behavior even when the model version is unchanged.
 
-## Core Intuition
-
+## 6. Core Intuition
 Consider asking someone to solve a long-division problem while forbidding scratch paper. They may know the operations but make a slip because all intermediate state must remain in working memory. Give them a page and ask them to write each step, and the page becomes an external workspace. A CoT prompt gives a language model examples of what that workspace looks like in text.
 
 The examples are not merely longer answers. They establish a format: identify facts, transform them, state a conclusion. The model is then more likely to emit a sequence whose early tokens constrain later tokens. This can make a hard direct mapping easier to express as several simpler next-token predictions. But the notebook analogy has a limit: seeing written work does not prove the writer used it honestly or correctly.
@@ -65,8 +75,7 @@ flowchart LR
 
 For example, an answer-only demonstration might teach `3 plus 4 → 7`. A CoT demonstration teaches `start at 3; add 4; total is 7`. The additional words can expose an operation and a state transition. They also consume tokens and can introduce extra opportunities for error, so more verbose prompting is not automatically better.
 
-## The Mechanism
-
+## 7. The Mechanism
 An autoregressive LM assigns probability to an output sequence token by token, \(p(y\mid x)=\prod_t p(y_t\mid x,y_{<t})\). Few-shot prompting prepends demonstrations to \(x\); the model is not updated, but conditioning changes every next-token distribution. In CoT, each demonstration includes a rationale \(r\) and answer \(a\). The requested completion is effectively a joint sequence \(p(r,a\mid x)\), rather than only the short answer distribution \(p(a\mid x)\).
 
 The useful interpretation is decomposition, not a magical new inference engine. Generating a rationale creates intermediate tokens that subsequent tokens can attend to. A model may turn “solve this” into smaller text-prediction subproblems: extract numbers, describe an operation, compute a result, state an answer. Whether that sequence corresponds to an internally faithful causal process is a separate research question; the original paper demonstrates performance, not guaranteed interpretability.
@@ -103,8 +112,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -144,8 +152,7 @@ Sampling needs care. Temperature zero produces one deterministic continuation fo
 
 Finally, reasoning tasks may be under-specified. A model can write a flawless calculation based on a missing assumption, such as a tax rate, date, unit conversion, or definition. A good CoT prompt can encourage the model to state uncertainty, but application logic should make missing inputs explicit and request clarification when needed. Better reasoning format cannot create absent evidence.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/14-chain-of-thought/code/trace_majority_vote.py`](implementations/14-chain-of-thought/code/trace_majority_vote.py).
@@ -181,15 +188,13 @@ and task quality. The first production guard should target **correlated wrong tr
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `argmax_y Σ_k1[y=y_k]` is the whole implementation.** The equation describes the paper's central relationship, but `self-consistency over sampled reasoning traces` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **vote aggregation uses only final answers and preserves sample identity for diagnosis**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **correlated wrong traces, parsing errors, and latency from excessive sampling** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **score final answers independently from trace text and test adversarial problems with fixed seeds**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **self-consistency over sampled reasoning traces**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -208,8 +213,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **self-consistency over sampled reasoning traces** end to end. How would you implement `argmax_y Σ_k1[y=y_k]`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `argmax_y Σ_k1[y=y_k]` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -228,8 +232,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **vote aggregation uses only final answers and preserves sample identity for diagnosis**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original Chain-of-Thought paper](https://arxiv.org/abs/2201.11903)
 - [Self-Consistency Improves Chain of Thought Reasoning](https://arxiv.org/abs/2203.11171)
 - [Hugging Face generation strategies](https://huggingface.co/docs/transformers/generation_strategies)

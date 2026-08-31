@@ -1,7 +1,6 @@
 # An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale
 
-## TL;DR
-
+## 1. TL;DR
 Vision Transformer (ViT) applies a standard Transformer encoder to a sequence
 of fixed-size image patches. Each patch is flattened and linearly embedded like
 a token, position embeddings preserve layout, and self-attention mixes global
@@ -10,8 +9,7 @@ pretraining, this simple architecture can compete with or exceed convolutional
 networks on image recognition. ViT does not eliminate image preprocessing,
 compute tradeoffs, or the need to validate data scale and transfer behavior.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 ViT cuts an image into square patches and treats them like word tokens, letting attention connect a patch in one corner to one far away.
 
 `🖼️ image → 🧩 patches → 📍 add positions → 👀 Transformer attention → 🏷️ label`
@@ -22,8 +20,23 @@ A 224×224 image split into 16×16 patches produces 196 tokens. A patch containi
 
 💻 **CS analogy:** split an image file into fixed-size chunks, turn each chunk into a record, and let an attention-based service decide which records should exchange information.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **image patchification followed by transformer token mixing**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **patch ordering and positional embeddings preserve the mapping back to image coordinates**.
+The equation `N=HW/P²` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -36,16 +49,14 @@ H and W are image height and width, while P is patch side length. Dividing image
 
 Halving patch side P creates four times as many patches because area grows with P². More tokens preserve finer detail but attention must compare many more pairs.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Convolutional networks dominated vision because locality and translation assumptions made them data-efficient. Transformers had succeeded in language but their all-pairs attention seemed ill-suited to raw image pixels. ViT was needed to test whether a nearly unchanged transformer could become a strong vision model when images were represented as patches and enough data was available.
 
 This tested whether Transformer attention could replace vision-specific convolutional assumptions.
 
 This questioned the assumption that local convolutions were necessary for vision, while showing that enough data and regularization make a general Transformer competitive.
 
-## Why It Matters
-
+## 5. Why It Matters
 Convolutional networks bake in locality and translation equivariance through
 small shared filters. That inductive bias makes them data-efficient, but it also
 means long-range interactions are built through many layers. The Transformer
@@ -60,8 +71,7 @@ for vision-language models and modern image backbones. The result is not that
 convolutions are obsolete: smaller data regimes, latency, resolution, and
 hardware constraints can favor CNNs or hybrid approaches.
 
-## Core Intuition
-
+## 6. Core Intuition
 Treat an image as a page made of equal tiles. Each tile becomes a short
 description of local visual content, much as a word embedding summarizes a
 word. A Transformer can then compare every tile with every other tile, allowing
@@ -78,8 +88,7 @@ flowchart LR
  X --> H[classification head]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 For image height \(H\), width \(W\), channels \(C\), and square patch size
 \(P\), ViT forms \(N=HW/P^2\) non-overlapping patches. Each flattened patch has
 \(P^2C\) values and a learned linear projection maps it to model dimension
@@ -129,8 +138,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -224,8 +232,7 @@ Documenting that decision and its evidence makes model maintenance substantially
 more reliable as data, hardware, and product requirements evolve.
 It supports transparent technical review and controlled future updates.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/25-vision-transformer/code/patch_tokens.py`](implementations/25-vision-transformer/code/patch_tokens.py).
@@ -261,15 +268,13 @@ and task quality. The first production guard should target **patch-size informat
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `N=HW/P²` is the whole implementation.** The equation describes the paper's central relationship, but `image patchification followed by transformer token mixing` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **patch ordering and positional embeddings preserve the mapping back to image coordinates**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **patch-size information loss, quadratic token cost, or a patchify normalization mismatch** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **round-trip patchify/unpatchify and compare attention cost and accuracy by patch size**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **image patchification followed by transformer token mixing**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -288,8 +293,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **image patchification followed by transformer token mixing** end to end. How would you implement `N=HW/P²`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `N=HW/P²` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -308,8 +312,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **patch ordering and positional embeddings preserve the mapping back to image coordinates**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/2010.11929)
 - [Hugging Face ViT documentation](https://huggingface.co/docs/transformers/model_doc/vit)
 - [timm Vision Transformer models](https://huggingface.co/docs/timm/en/reference/models)

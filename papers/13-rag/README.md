@@ -1,11 +1,9 @@
 # Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks
 
-## TL;DR
-
+## 1. TL;DR
 RAG combines a language model’s parametric knowledge with a searchable external document index. For a query, a dense retriever selects passages; a seq2seq generator conditions on them to produce an answer. Lewis et al. formulate generation as a marginal over retrieved documents, rather than treating retrieval as an unexamined preprocessing step. This is foundational because updating or inspecting a corpus is often easier than trying to edit facts stored in model weights.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 RAG lets a language model open a library before answering. It finds useful passages and uses them as extra notes while writing.
 
 `❓ question → 🔎 retrieve passages → 📚 useful evidence → ✍️ generated answer`
@@ -16,8 +14,23 @@ For a question with two retrieved passages, one may strongly support “Paris”
 
 💻 **CS analogy:** RAG is a weighted fan-out query: several retrieved documents each contribute an answer probability, then the system combines them.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **retrieval-augmented generation**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **retrieved evidence is traceable to the answer and stale or empty retrieval is handled explicitly**.
+The equation `p(y|x)=Σ_zp(z|x)p(y|x,z)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -30,16 +43,14 @@ p(y|x) = Σ_z p(z|x)p(y|x,z)
 
 If a document gets retrieval probability 0.8 and gives an answer probability 0.9, its contribution is 0.72. Summing contributions is ordinary weighted averaging over possible evidence sources.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Parametric language models store knowledge only in their fixed weights, so facts can be stale, hard to audit, and expensive to update. Search systems can retrieve current documents but do not by themselves compose fluent answers. RAG was needed to couple retrieval with generation so a model can consult external evidence at answer time.
 
 RAG addressed the need for knowledge that can be updated and inspected without retraining every parameter in a language model.
 
 This added an external, replaceable memory to generation, enabling provenance and updates but also introducing risks from missing, stale, or malicious documents.
 
-## Why It Matters
-
+## 5. Why It Matters
 GPT-style models can answer factual questions because information is partially encoded in their weights, but that information is difficult to update, hard to attribute, and not guaranteed to be recalled precisely. The RAG paper identifies these limits explicitly: provenance and updating world knowledge remain open problems for parametric-only language models. A retrieval system offers a separate, non-parametric memory that can be refreshed without retraining every generator weight.
 
 The original RAG system combines a pre-trained seq2seq model with a dense vector index of Wikipedia accessed through a pre-trained neural retriever. This connects two subsystems with different responsibilities. The retriever turns a question into a vector and finds passages whose vectors have high inner product. The generator turns question-plus-passage evidence into language. Neither subsystem alone is sufficient: an excellent generator cannot cite information it was not given, and an excellent retriever cannot produce a well-formed explanation by itself.
@@ -48,8 +59,7 @@ The paper compares RAG-Sequence, which uses the same retrieved passages for a wh
 
 For engineers, RAG changed an architectural boundary. Knowledge can be indexed, permission-filtered, refreshed, observed, and evaluated outside model training. It also creates a pipeline: embedding choice, chunking, index construction, retrieval latency, prompt composition, answer grounding, and citation rendering are all potential failures. Treating “add vector search” as a feature toggle obscures those dependencies.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine an expert taking an open-book exam. A closed-book model must answer from memory. A RAG model first asks a librarian for the most relevant pages, then writes using both its learned language ability and those pages. The librarian may bring more than one page, and the writer should weigh them rather than believing every page equally.
 
 The key distinction is that retrieval is evidence selection, not answer generation. A passage with a high similarity score is only a candidate. The generator still assigns probabilities to possible output strings conditioned on the query and that passage. RAG combines those conditional probabilities across retrieved passages, weighted by retriever confidence. This makes the retrieved document a latent variable in the probabilistic model.
@@ -66,8 +76,7 @@ flowchart LR
 
 An open book is not automatically a correct book. If the librarian returns the wrong edition, the writer can confidently repeat it. If the answer is not supported by any retrieved page, fluent text is still unsupported. Good RAG systems therefore expose retrieval results, measure retrieval separately, and use citations as inspectable links rather than decorative footnotes.
 
-## The Mechanism
-
+## 7. The Mechanism
 Let \(x\) be an input query, \(z\) a document, and \(y\) a generated answer. A dense retriever encodes query and documents into vectors and scores them with an inner product. Over the retrieved top \(k\) documents it produces a normalized distribution \(p_\eta(z\mid x)\). A generator supplies \(p_\theta(y\mid x,z)\). RAG-Sequence marginalizes the same document choice over an entire output:
 
 \[
@@ -108,8 +117,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -157,8 +165,7 @@ For cost planning, separate index storage from model memory and account for embe
 
 Measure it continuously.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/13-rag/code/retrieval_marginalization.py`](implementations/13-rag/code/retrieval_marginalization.py).
@@ -194,15 +201,13 @@ and task quality. The first production guard should target **retriever miss, sta
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `p(y|x)=Σ_zp(z|x)p(y|x,z)` is the whole implementation.** The equation describes the paper's central relationship, but `retrieval-augmented generation` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **retrieved evidence is traceable to the answer and stale or empty retrieval is handled explicitly**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **retriever miss, stale index, prompt overflow, or unsupported generation** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **measure retrieval recall, citation support, and answer quality independently with an index snapshot**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **retrieval-augmented generation**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -221,8 +226,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **retrieval-augmented generation** end to end. How would you implement `p(y|x)=Σ_zp(z|x)p(y|x,z)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `p(y|x)=Σ_zp(z|x)p(y|x,z)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -241,8 +245,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **retrieved evidence is traceable to the answer and stale or empty retrieval is handled explicitly**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original RAG paper](https://arxiv.org/abs/2005.11401)
 - [FAISS](https://github.com/facebookresearch/faiss)
 - [Hugging Face RAG documentation](https://huggingface.co/docs/transformers/model_doc/rag)

@@ -1,11 +1,9 @@
 # RoFormer: Enhanced Transformer with Rotary Position Embedding
 
-## TL;DR
-
+## 1. TL;DR
 Transformers need position information because attention alone can see a bag of tokens. The original Transformer in [paper 01](../01-attention-is-all-you-need/README.md) adds a position vector to each token representation; RoFormer instead rotates each query and key in two-dimensional coordinate pairs. The rotation angle grows with token position, and the query--key dot product consequently depends on their relative displacement. That compact change, now called RoPE, preserves vector length, works at arbitrary sequence lengths in the formula, and became a common positional mechanism in open-weight decoder LLMs.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 RoPE gives each word a tiny spin based on where it sits. Comparing two spun vectors lets attention notice how far apart words are.
 
 `📍 position → 🌀 rotate vectors → 👀 compare relative distance → 🧠 ordered language`
@@ -16,8 +14,23 @@ Two identical token embeddings at positions 2 and 20 receive different rotations
 
 💻 **CS analogy:** RoPE is like encoding an array index as an angle, so subtracting positions becomes a simple relative phase comparison.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **rotary position encoding applied to query and key pairs**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **relative offsets, tensor shape, and rotation pairing stay consistent across positions**.
+The equation `R(m)ᵀR(n)=R(n−m)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -30,24 +43,21 @@ x and y are two coordinates of an arrow, while θ is its turn angle. Sine and co
 
 A 90-degree rotation turns (1,0) into (0,1), so the formula is a familiar geometry operation rather than mysterious new arithmetic. RoPE applies many such two-number rotations at different frequencies.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Transformers need position information because attention alone does not know token order. Absolute position embeddings worked but did not naturally express a relative distance inside an attention score or extrapolate gracefully. RoPE was needed to encode position as a rotation, so the query–key interaction directly reflects relative offset.
 
 RoPE answered the need for position information that naturally appears inside attention comparisons rather than as a separate position label.
 
 This gave later Transformer builders a compact positional mechanism that preserves vector length while changing the attention score in a distance-aware way.
 
-## Why It Matters
-
+## 5. Why It Matters
 Attention computes a compatibility score between a query at one token and keys at other tokens. Without a position signal, swapping two identical word embeddings changes nothing: a model cannot tell whether an adjective came before or after a noun. The 2017 Transformer solved this by adding fixed sine/cosine vectors to token embeddings before the projections. Addition is simple and effective, but the attention score then mixes content-position, position-content, and position-position terms. A relative offset is not isolated by construction.
 
 RoFormer (Su et al., submitted 2021 and revised 2023) asked for a representation that injects absolute position while making the attention comparison explicitly sensitive to *relative* position. Its answer is not a learned lookup table or an extra relative-position bias. It is a rotation applied after query/key projection. The paper evaluates RoFormer on long-text classification and reports that its rotary method consistently beats the positional alternatives considered there; its abstract also highlights compatibility with linear attention and a decaying-dependency property.
 
 This matters because a positional scheme sits on a very hot path. It is applied for every layer, head, token, and query/key pair. A method that is algebraically clean, preserves norms, and needs no table of learned vectors is attractive to model builders. Later decoder architectures such as LLaMA, GPT-NeoX, and Mistral use RoPE-family implementations. That is later practice, not evidence that the original RoFormer paper invented their context-extension recipes. The historical point is narrower and more useful: RoPE changed how positional information enters attention scores.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine two people carrying compass needles while walking along a trail. At every trail marker, each person turns their needle by a prescribed amount. Looking at one needle alone tells you an absolute location; comparing the two needle directions tells you how far apart their markers are. If both people walk forward five markers, both needles rotate another five turns and their angle *between each other* stays the same.
 
 RoPE does this with tiny compass planes inside a query and key vector. It pairs coordinates, such as dimensions 0 and 1, and rotates that pair. Different pairs rotate at different speeds, so a whole vector carries a multi-scale positional signature. A nearby displacement is visible to fast and slow pairs; a large displacement is distinguished by the slower pairs. Content still determines the initial direction of each pair, so position is not replacing meaning.
@@ -65,8 +75,7 @@ flowchart LR
 
 The important contrast with a clock is that RoPE is not trying to make every token point in one shared direction. It makes query and key directions rotate together according to their own positions. That shared motion is exactly what cancels absolute position in their dot product. The model can still learn that “previous token” and “twenty tokens ago” are different relations, but it does not have to rediscover the arithmetic of subtracting two absolute embedding vectors.
 
-## The Mechanism
-
+## 7. The Mechanism
 Let a head have even dimension \(d\). For pair \(i\), RoPE uses angular frequency \(\theta_i = 10000^{-2i/d}\), matching the frequency schedule familiar from sinusoidal encodings. At position \(m\), it rotates coordinates \((x_{2i},x_{2i+1})\) by \(m\theta_i\):
 
 \[
@@ -126,8 +135,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -157,8 +165,7 @@ For kernels, fuse rotation into Q/K preparation when possible, but keep a clear 
 
 The design also has a product implication: a relative relationship is available inside the score without adding a position-bias lookup. That helps a model generalize patterns such as locality, but it does not supply document structure, timestamps, or segment semantics. Those may still require tokenization choices, special tokens, attention masks, or other features. RoPE is a positional coordinate system, not a complete long-context strategy.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/08-roformer-rope/code/rope_relative_position.py`](implementations/08-roformer-rope/code/rope_relative_position.py).
@@ -194,15 +201,13 @@ and task quality. The first production guard should target **frequency extrapola
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `R(m)ᵀR(n)=R(n−m)` is the whole implementation.** The equation describes the paper's central relationship, but `rotary position encoding applied to query and key pairs` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **relative offsets, tensor shape, and rotation pairing stay consistent across positions**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **frequency extrapolation failure or an off-by-one position/cache index** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **test relative-offset invariance and compare long-context perplexity with a no-rotation control**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **rotary position encoding applied to query and key pairs**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -221,8 +226,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **rotary position encoding applied to query and key pairs** end to end. How would you implement `R(m)ᵀR(n)=R(n−m)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `R(m)ᵀR(n)=R(n−m)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -241,8 +245,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **relative offsets, tensor shape, and rotation pairing stay consistent across positions**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original RoFormer paper](https://arxiv.org/abs/2104.09864)
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
 - [Hugging Face RoFormer documentation](https://huggingface.co/docs/transformers/model_doc/roformer)

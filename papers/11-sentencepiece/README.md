@@ -1,11 +1,9 @@
 # SentencePiece: A Simple and Language Independent Subword Tokenizer and Detokenizer for Neural Text Processing
 
-## TL;DR
-
+## 1. TL;DR
 SentencePiece is a tokenizer framework that learns subword units directly from raw text instead of requiring a language-specific word splitter first. It makes whitespace a visible symbol, so a sequence of pieces can be concatenated and deterministically decoded back into text. This matters because a language model never sees characters or words directly: its vocabulary, lengths, costs, and failure modes all begin at tokenization. The 2018 paper provides an end-to-end, language-independent approach and open-source C++ and Python implementations for neural text processing.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 SentencePiece turns raw text into reusable word pieces, including a visible marker for spaces. It helps a model read languages without guessing where “words” begin.
 
 `📝 raw text → ⬜ visible spaces → 🧩 subword pieces → 🔢 token IDs`
@@ -16,8 +14,23 @@ The word “unhappiness” might stay whole if common, or become “un”, “ha
 
 💻 **CS analogy:** choosing subword pieces is a shortest-path problem over string positions, where each valid piece is an edge with a cost.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **unigram subword segmentation over raw Unicode text**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **normalization, whitespace markers, and encode/decode round trips are versioned together**.
+The equation `argmax_segmentation ∏p(piece)` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -30,16 +43,14 @@ The ∏ sign means multiply. Programs use −log p instead because adding costs 
 
 A segmenter compares complete paths, not individual pieces alone: a high-probability prefix can be a bad choice if it leaves an impossible suffix. Dynamic programming keeps the best cost for each text position.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 Word tokenizers often depended on language-specific rules and produced unknown tokens for rare or misspelled words. Character tokenization avoids unknowns but makes sequences long. SentencePiece was needed to learn a language-agnostic subword vocabulary directly from raw text and make tokenization reproducible as part of a model artifact.
 
 This supplied a language-independent middle ground between brittle whole-word vocabularies and very long character sequences.
 
 This removed a hidden English-centric assumption that text must be split into words before a subword model can be trained.
 
-## Why It Matters
-
+## 5. Why It Matters
 The Transformer papers in this repository begin with token IDs and embeddings. That is a useful abstraction, but it can conceal a consequential design decision: where did the IDs come from? A word vocabulary has trouble with unknown words, spelling variants, morphology, and languages that do not mark word boundaries with spaces. A character vocabulary avoids unknown words but makes sequences long. Subword tokenization is the middle ground: common sequences get compact pieces while rare words can be assembled from smaller ones.
 
 Before SentencePiece, many subword tools assumed input was already split into words. That quietly imports an English-like assumption into the data pipeline. “Word” boundaries are not equally explicit in every writing system, and normalization or pre-tokenization rules can make training and serving disagree. Kudo and Richardson describe SentencePiece as language independent because it trains subword models from raw sentences. The paper’s English--Japanese NMT validation reports comparable accuracy to direct subword training from raw sentences, rather than treating a pre-tokenizer as a prerequisite.
@@ -48,8 +59,7 @@ The framework is often associated with the special visible whitespace character 
 
 SentencePiece is not one single vocabulary-learning objective. Its library supports both BPE-style merge vocabularies and unigram language-model vocabularies. The paper presents a framework and implementation; a careful explainer must not blur its raw-text interface with the algorithm that selected a particular vocabulary. Modern checkpoints may use SentencePiece with a unigram model, a BPE model, byte fallback, customized normalization, or special-token conventions. The serialized tokenizer model is therefore part of a checkpoint’s compatibility contract, not a disposable preprocessing detail.
 
-## Core Intuition
-
+## 6. Core Intuition
 Imagine cutting a strip of printed text into reusable tiles. A word tokenizer owns only whole-word tiles: when it sees an unfamiliar name, it has no tile. A character tokenizer owns every letter tile: it can spell anything but must carry many tiles. A subword tokenizer owns a practical cabinet: whole common words, frequent roots, endings, punctuation, and a few small fallback pieces. It covers arbitrary text while keeping common text compact.
 
 Now imagine that the space between words is also a tile. If someone hands you the tiles `▁hello`, `▁world`, you do not need a language-specific “insert a space after this word” rule. Put them together and the boundary is already present. This is the small but powerful SentencePiece idea: represent the input faithfully enough that segmentation and detokenization form one self-contained round trip.
@@ -66,8 +76,7 @@ flowchart LR
 
 A vocabulary is also a compression policy. A long piece such as `▁international` uses one ID but deserves a place only if it is frequent enough. Smaller pieces cover more cases but lengthen sequences. Training chooses a finite set of pieces; encoding chooses a segmentation from that set. The key intuition is not that the tokenizer “understands words.” It chooses a reproducible spelling of text in a learned alphabet that is useful for the downstream model.
 
-## The Mechanism
-
+## 7. The Mechanism
 SentencePiece begins with a normalization step and a whitespace convention. A commonly shown representation prepends a space to the input and maps spaces to `▁`, making the beginning of a word visible: `hello world` becomes `▁hello▁world`. The exact normalizer is configurable and must be retained with the model. Unicode normalization, case conversion, and whitespace treatment can change the byte/character stream before segmentation; an encoder and decoder that use different versions are not compatible.
 
 At inference, encoding chooses a sequence of vocabulary pieces whose concatenation is the normalized stream. In a unigram language-model tokenizer, each candidate piece has a probability (or negative log score), and the best segmentation minimizes the sum of negative log probabilities. Dynamic programming solves this efficiently. Let \(x_{a:b}\) be a candidate piece and \(C(b)\) the best cost for the prefix ending at index \(b\):
@@ -112,8 +121,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -151,8 +159,7 @@ During generation, decoding should normally be incremental and stateful at the a
 
 The framework also separates a normal vocabulary piece from control behavior. A user-defined symbol can be protected from splitting; a control symbol may affect an encoder without appearing as ordinary decoded text. These distinctions are model-specific. When integrating tools, retrieval citations, or multimodal placeholders, assign and validate their token behavior explicitly rather than assuming angle-bracket spelling makes a string special.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/11-sentencepiece/code/unigram_segmentation.py`](implementations/11-sentencepiece/code/unigram_segmentation.py).
@@ -188,15 +195,13 @@ and task quality. The first production guard should target **unknown pieces, cha
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `argmax_segmentation ∏p(piece)` is the whole implementation.** The equation describes the paper's central relationship, but `unigram subword segmentation over raw Unicode text` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **normalization, whitespace markers, and encode/decode round trips are versioned together**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **unknown pieces, changed normalization, or a tokenizer/model vocabulary mismatch** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **snapshot token IDs and test round trips on punctuation, repeated spaces, and non-segmented languages**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **unigram subword segmentation over raw Unicode text**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -215,8 +220,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **unigram subword segmentation over raw Unicode text** end to end. How would you implement `argmax_segmentation ∏p(piece)`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `argmax_segmentation ∏p(piece)` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -235,8 +239,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **normalization, whitespace markers, and encode/decode round trips are versioned together**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original SentencePiece paper](https://arxiv.org/abs/1808.06226)
 - [SentencePiece source repository](https://github.com/google/sentencepiece)
 - [Hugging Face tokenizers documentation](https://huggingface.co/docs/tokenizers/)

@@ -1,7 +1,6 @@
 # Denoising Diffusion Probabilistic Models
 
-## TL;DR
-
+## 1. TL;DR
 DDPMs generate data by learning to reverse a gradual Gaussian noising process.
 Training chooses a clean example and random timestep, adds schedule-defined
 noise, and trains a network to predict that noise. Sampling starts from random
@@ -9,8 +8,7 @@ noise and repeatedly applies learned reverse steps. The method made diffusion a
 practical high-quality image-generation approach, but naive sampling is slower
 than a one-pass generator.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 DDPM learns to remove a little noise at a time. It practices on messy data, then starts from static and slowly turns it into a sample.
 
 `🖼️ clean data → 🌨️ add noise → 🧠 predict noise → 🧼 many denoise steps → ✨ sample`
@@ -21,8 +19,23 @@ A clean image becomes increasingly hard to recognize as noise is added. The netw
 
 💻 **CS analogy:** it is like learning a robust cleanup function: first deliberately corrupt a file in many tiny steps, then train a program to undo one step at a time.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **diffusion forward noising and sequential reverse denoising**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **the timestep schedule and noise parameterization agree between training and sampling**.
+The equation `x_t=√ᾱ_tx₀+√(1−ᾱ_t)ε` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -35,16 +48,14 @@ x₀ is a clean image, ε is random static, and ᾱ controls how much signal re
 
 At early t, ᾱ is close to 1 so most signal remains; later it is close to 0 so noise dominates. Predicting ε is convenient because the exact noise added during training is known.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 GANs could make sharp images but their adversarial game could collapse or miss parts of the data distribution. Likelihood-based alternatives often had other architectural constraints. DDPM was needed to offer a stable, simple generative recipe: turn data into noise gradually and learn the reverse denoising process.
 
 This provided a stable alternative to adversarial generation, using a direct prediction task rather than a two-player game.
 
 This turned generation into many stable denoising predictions, avoiding some adversarial-game failures at the cost of a slower multi-step sampling process.
 
-## Why It Matters
-
+## 5. Why It Matters
 Generative models must capture complex distributions without merely memorizing
 examples. GANs use a two-player game and can miss modes; autoregressive models
 factor outputs sequentially. Diffusion defines a fixed corruption process and
@@ -57,8 +68,7 @@ guidance method, or fast sampler. Those additions alter representation,
 conditioning, objective, or reverse solver. The core idea remains learned
 iterative denoising.
 
-## Core Intuition
-
+## 6. Core Intuition
 Picture a photograph dropped into a snowstorm a little at a time. Eventually it
 becomes indistinguishable from static. A model practices identifying the fresh
 snow at every corruption level, then learns small moves back toward a plausible
@@ -75,8 +85,7 @@ flowchart LR
  T --> N[predict sampled noise]
 ```
 
-## The Mechanism
-
+## 7. The Mechanism
 Forward diffusion uses a fixed variance schedule \(\beta_t\):
 \(q(x_t|x_{t-1})=N(\sqrt{1-\beta_t}x_{t-1},\beta_tI)\). With
 \(\alpha_t=1-\beta_t\) and cumulative \(\bar\alpha_t=\prod_s\alpha_s\),
@@ -126,8 +135,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -243,8 +251,7 @@ Making these interfaces explicit keeps diffusion engineering testable as models
 and products evolve.
 It enables reliable technical review and safe iteration.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/29-ddpm/code/noise_schedule.py`](implementations/29-ddpm/code/noise_schedule.py).
@@ -280,15 +287,13 @@ and task quality. The first production guard should target **wrong schedule inde
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `x_t=√ᾱ_tx₀+√(1−ᾱ_t)ε` is the whole implementation.** The equation describes the paper's central relationship, but `diffusion forward noising and sequential reverse denoising` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **the timestep schedule and noise parameterization agree between training and sampling**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **wrong schedule indexing, accumulated reverse-step error, or excessive sampling latency** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **reconstruct known noised samples and check timestep-dependent noise statistics**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **diffusion forward noising and sequential reverse denoising**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -307,8 +312,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **diffusion forward noising and sequential reverse denoising** end to end. How would you implement `x_t=√ᾱ_tx₀+√(1−ᾱ_t)ε`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `x_t=√ᾱ_tx₀+√(1−ᾱ_t)ε` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -327,8 +331,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **the timestep schedule and noise parameterization agree between training and sampling**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original paper](https://arxiv.org/abs/2006.11239)
 - [Diffusers documentation](https://huggingface.co/docs/diffusers)
 - [Denoising Diffusion Implicit Models](https://arxiv.org/abs/2010.02502)

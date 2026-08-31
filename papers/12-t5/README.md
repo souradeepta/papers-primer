@@ -1,11 +1,9 @@
 # Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (T5)
 
-## TL;DR
-
+## 1. TL;DR
 T5 casts every NLP task as text in and text out: a prompt-like prefix identifies the task, and one encoder–decoder Transformer produces the answer. It supplies the missing third major Transformer family beside BERT’s encoder-only design and GPT’s decoder-only design. Its pre-training objective removes contiguous spans and asks the decoder to generate them, marked by ordered sentinel tokens. The paper is also a broad transfer-learning study: it compares objectives, architectures, data, and fine-tuning choices rather than presenting only one architectural novelty.
 
-## Fun Map for First Years 🧭
-
+## 2. Fun Map for First Years
 T5 treats every language task as text in and text out. It practices repairing missing spans, then can translate, summarize, or answer using the same interface.
 
 `📥 task text → 🧠 encoder understands → ✍️ decoder writes → 📤 task answer`
@@ -16,8 +14,23 @@ A classification input can be written as “sentiment: this film is great” and
 
 💻 **CS analogy:** span corruption is like replacing missing substrings with numbered placeholders, then asking a decoder to emit the patch file in order.
 
-## Math Playground 🧮
+### Beginner walkthrough
 
+Read the arrows as a sequence of responsibilities. First identify what enters
+the system, then ask what the paper changes, what information is preserved or
+discarded, and what leaves the operation. For **text-to-text transfer learning with task prefixes**, the key question
+is not “does the model sound clever?” but “which intermediate value carries the
+new information, and what would go wrong if it were missing?”
+
+### CS student checkpoint
+
+The map corresponds to a small program: input data enters a function, the
+paper-specific state or transformation runs, and an assertion checks **task prefix, target formatting, and special-token boundaries remain part of the model contract**.
+The equation `input text → target text` is the compact specification for that function. Trace
+one concrete item through each arrow before thinking about larger batches,
+parallel hardware, or production optimizations.
+
+## 3. Math Playground
 The essential equation or rule is:
 
 ```text
@@ -30,16 +43,14 @@ The ∏ sign means predict every output token in order. Each prediction sees bot
 
 For each output position, the model conditions on x and all earlier y tokens. That is why decoding is sequential: it cannot know the next output token until it has chosen the previous one.
 
-## Background: What Came Before 🕰️
-
+## 4. Background: What Came Before
 NLP systems used many different architectures and objectives for classification, translation, question answering, and summarization. That made transfer experiments hard to compare and implementations hard to reuse. T5 was needed to frame every task as text-to-text, so one encoder–decoder recipe and one training objective could cover them all.
 
 This was needed because task-specific output heads and formats made transfer-learning systems harder to compare and reuse.
 
 The text-to-text framing made experiments more comparable and made one model family easier to reuse across many NLP tasks.
 
-## Why It Matters
-
+## 5. Why It Matters
 Papers 02 and 03 establish two powerful but different patterns. BERT’s bidirectional encoder produces a representation that task-specific heads consume; GPT-style models predict the next token from a causal decoder. Before T5, benchmark practice often reflected this difference with a collection of custom heads, label mappings, and task-specific output formats. Classification might use a linear head, extractive QA might predict two positions, and translation might use a separate seq2seq model. The interface complexity makes transfer-learning comparisons harder than they need to be.
 
 Raffel et al. propose a deliberately uniform contract: convert a task to a string and train a model to emit a string. For sentiment, an input might be `sst2 sentence: ...` and an output `positive`; for translation, the prefix names source and target languages; for summarization, the input names the operation and the output is the summary. This does not make every task equally easy, but it puts tokenization, loss computation, decoding, and model architecture on one reusable path.
@@ -48,8 +59,7 @@ The paper’s abstract describes a systematic study over dozens of language-unde
 
 T5 also connects to later papers in this collection. Switch Transformer is built from T5-Base and T5-Large variants, while RAG’s original formulation uses a pre-trained seq2seq generator. The point is not that every modern text model is T5. Decoder-only LLMs dominate many chat settings because their simple autoregressive interface scales and serves well. T5 remains a clear explanation of when an encoder can read all source text before a decoder generates a potentially different target sequence.
 
-## Core Intuition
-
+## 6. Core Intuition
 Think of a workshop with one intake desk and one output desk. The intake desk reads the complete work order before any work starts; that is the encoder. The output desk writes the result one item at a time while consulting the intake desk’s notes; that is the decoder. A translation order, a classification order, and a summarization order use the same desks because each can be written as a request and a textual response.
 
 Span corruption trains the workshop like a document-restoration game. Someone removes several strips from a page and puts numbered blank labels in their places. The encoder sees the damaged page. The decoder writes a compact answer sheet: label zero followed by its missing words, label one followed by its missing words, and a final label. It need not reproduce all the untouched words, so training emphasizes reconstructing the informative missing spans.
@@ -67,8 +77,7 @@ flowchart LR
 
 The prefix is a label written in ordinary text, not a different neural head. This has practical charm: adding a task can look like adding examples to a shared API. But the model only follows the convention it learned. A poorly chosen prefix, ambiguous label spelling, or template mismatch is still a data-contract bug.
 
-## The Mechanism
-
+## 7. The Mechanism
 T5 uses an encoder–decoder Transformer. The encoder applies self-attention without a causal restriction over the source sequence, so each source token can incorporate information from both left and right context. The decoder predicts target token \(y_t\) autoregressively. Its masked self-attention sees earlier target tokens, and cross-attention queries the encoder’s source states. Training minimizes the standard conditional negative log likelihood:
 
 \[
@@ -111,8 +120,7 @@ supported shape. Compare intermediate tensors with tolerances appropriate to
 the dtype, and log the paper-specific statistic during a canary rollout.
 
 
-## Practical Engineering Notes
-
+## 8. Practical Engineering Notes
 ### Worked Math & Dataflow
 
 The compact view below makes the paper's central calculation concrete:
@@ -152,8 +160,7 @@ For fine-tuning, distinguish teacher-forced likelihood from generation-time qual
 
 The unified interface does not eliminate data licensing, corpus filtering, or contamination concerns. C4 is a web-derived corpus construction and the paper’s result must be read in that experimental context. When adapting T5-like models, record the data mixture and evaluation overlap policy just as carefully as model hyperparameters. Transfer learning is a workflow spanning data, pre-training, formatting, and evaluation—not merely a call to `generate`.
 
-## Runnable Code Example
-
+## 9. Runnable Code Example
 ### Run from the repository root
 
 Prerequisites: Python 3 and the dependencies imported by [`implementations/12-t5/code/span_corruption.py`](implementations/12-t5/code/span_corruption.py).
@@ -189,15 +196,13 @@ and task quality. The first production guard should target **a prefix or output-
 preserve a transparent reference path or a canary comparison before replacing
 it with a fused, distributed, or highly optimized implementation.
 
-## Common Misconceptions & Pitfalls
-
+## 10. Common Misconceptions & Pitfalls
 - **Misconception: `input text → target text` is the whole implementation.** The equation describes the paper's central relationship, but `text-to-text transfer learning with task prefixes` also requires explicit input contracts, ordering, masking or sampling rules, and numerical choices. If those details are left implicit, two implementations can share the same formula and still produce different results. Treat the equation as a contract and document each intermediate tensor or state transition.
 - **Misconception: the mechanism is automatically reliable when the final metric looks good.** A model can compensate for a wrong reduction, stale state, or malformed edge/token boundary on common examples. The local guard is **task prefix, target formatting, and special-token boundaries remain part of the model contract**. Check it on a tiny hand-worked fixture and on adversarial inputs before trusting an aggregate benchmark.
 - **Pitfall: optimizing the operation before measuring its actual bottleneck.** For this paper, watch for **a prefix or output-format regression that hides behind aggregate metrics** rather than assuming the largest theoretical term dominates every workload. Record memory, bandwidth, batch shape, tail latency, and quality slices. An optimization is only safe when it preserves the paper-specific contract and has a rollback path.
 - **Pitfall: debugging only the final prediction.** Start with **test exact target formatting and run task-balanced validation for every supported prefix**; compare intermediate values with a simple reference. Freeze preprocessing, configuration, seeds, and model versions; then bisect the first divergence. This makes a failure reproducible and distinguishes data-contract errors from numerical instability, integration bugs, and a genuinely unsuitable paper mechanism.
 
-## Quick Concept Checks
-
+## 11. Quick Concept Checks
 **Q:** What is the central idea behind **text-to-text transfer learning with task prefixes**?
 **A:** It is a structured data or optimization path, not a slogan: inputs are transformed, paper-specific relationships are computed, invalid choices are excluded when necessary, and the result is aggregated into an output or objective. The important implementation question is which intermediate values must remain observable so a reviewer can connect the code to the paper.
 
@@ -216,8 +221,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Q:** What should I remember when applying the paper in a real system?
 **A:** Keep the paper's assumptions in the production contract: version the preprocessing and configuration, expose the relevant intermediate statistic, and define quality slices before tuning performance. Compare throughput, peak memory, p95/p99 latency, and task quality against a baseline. The paper is useful only when its mechanism remains correct under the workload and failure modes you actually operate.
 
-## Interview Q&A
-
+## 12. Interview Q&A
 **Q:** Walk through **text-to-text transfer learning with task prefixes** end to end. How would you implement `input text → target text`?
 **A:** Decompose the expression into the actual data path: inputs enter the paper-specific transformation, intermediate scores or states are computed, invalid elements are excluded, and the result is reduced into the output or loss. For this paper, `input text → target text` is an executable contract, not decoration: document tensor shapes, ownership of mutable state, numerical precision, and where batching changes semantics. Keep a small reference implementation beside the optimized path so a reviewer can connect each line of `code` to one term in the equation.
 
@@ -236,8 +240,7 @@ it with a fused, distributed, or highly optimized implementation.
 **Follow-up:** What evidence would you present in the review or postmortem?
 **A:** Present one minimal failing input, the expected **task prefix, target formatting, and special-token boundaries remain part of the model contract**, the first intermediate value that diverged, and the regression test that now protects it. Include a before/after table for task quality, memory, throughput, p95/p99 latency, and cost, with slices for the failure population. A complete SDE2 answer also states the rollout guard, owner, and alert threshold. That turns a paper idea into an operable system rather than a one-line claim about an equation.
 
-## Further Reading
-
+## 13. Further Reading
 - [Original T5 paper](https://arxiv.org/abs/1910.10683)
 - [T5 in Hugging Face Transformers](https://huggingface.co/docs/transformers/model_doc/t5)
 - [C4 dataset paper](https://aclanthology.org/2021.eacl-main.98/)
