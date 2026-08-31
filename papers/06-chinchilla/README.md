@@ -182,6 +182,23 @@ The constants are intentionally illustrative. The point is executable intuition:
 **Q:** Why can a compute-optimal smaller model be operationally attractive?
 **A:** It can deliver stronger quality at a given training budget while lowering later fine-tuning and inference cost relative to a much larger, less fully trained model. Serving measurements are still necessary.
 
+## Worked Scaling Decision
+
+Suppose a team has a fixed training-compute budget. Increasing parameter count
+uses more compute per token, leaving fewer tokens affordable; increasing tokens
+with a tiny model eventually makes the model unable to absorb the additional
+evidence. Chinchilla's practical contribution is to treat this as a joint
+allocation problem, not a contest to maximize parameters. Estimate the budget,
+choose a model/data pair on the reported compute-optimal frontier, then verify
+the choice with small scaling experiments on the actual corpus.
+
+The result is not a permanent universal ratio. Architecture, data quality,
+tokenizer, sequence length, objective, and hardware can change the frontier.
+The durable lesson is methodological: record both parameters and training
+tokens, report compute, and compare models at matched budgets. A model that
+looks impressive at one size may be an inefficient use of the same training
+resources.
+
 ## Further Reading
 
 - [Original paper: Training Compute-Optimal Large Language Models](https://arxiv.org/abs/2203.15556)

@@ -169,6 +169,22 @@ The program is deliberately a single-head vector calculation, not a language mod
 **Q:** What is a common production bug?
 **A:** Giving cached keys and a new query inconsistent position IDs, especially after padding, a sliding window, or cache compaction.
 
+## Worked Relative-Position Example
+
+RoPE applies a two-dimensional rotation to neighboring coordinates of each
+query and key. Rotating both vectors by positions i and j makes their dot
+product depend on the difference i minus j, so attention can learn relative
+distance without adding a separate position vector to the token embedding.
+Different coordinate pairs rotate at different frequencies, giving the model
+both short- and long-distance signals.
+
+In an implementation, split the final feature dimension into pairs, rotate
+each pair with matching sine and cosine values, then reassemble it before the
+query-key dot product. The position index must agree with cache position during
+autoregressive generation. A common serving bug is restarting positions at
+zero for a newly appended cached chunk, which changes the intended relative
+geometry even though tensor shapes still look valid.
+
 ## Further Reading
 
 - [Original RoFormer paper](https://arxiv.org/abs/2104.09864)

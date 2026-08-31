@@ -167,6 +167,23 @@ Expected output reports a maximum absolute difference on the order of 1e-7 betwe
 **Q:** If you enable a fused/flash attention backend and see no speedup, what are some likely reasons?
 **A:** The configuration may be outside the kernel's supported regime (unsupported head dimension, dtype, or GPU generation), causing a silent fallback to a slower path; the workload may already be compute-bound or use very short sequences, where there is proportionally less HBM traffic to eliminate; or the framework may not actually be dispatching to the fused kernel even though it was requested, which is worth confirming directly rather than assuming.
 
+## Worked Memory-Traffic View
+
+Ordinary attention first materializes a large score matrix, then reads it
+again for softmax and another time for the weighted values. FlashAttention
+chooses a tile of queries and keys that fits in fast on-chip memory, updates
+the softmax normalization online, and writes only the final output. The answer
+is mathematically exact because each tile carries forward a running maximum
+and running denominator; it is not an approximation that drops attention
+entries.
+
+When profiling, separate arithmetic from memory movement. A kernel can have
+few floating-point operations yet run slowly if it repeatedly moves a
+sequence-square matrix through high-bandwidth memory. Check causal masking,
+dropout, head dimension, dtype, and sequence lengths against the supported
+kernel path. A correct fallback is preferable to silently choosing a fast
+kernel with incompatible masking semantics.
+
 ## Further Reading
 
 - [Original paper: FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135)

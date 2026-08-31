@@ -162,6 +162,22 @@ The code does not train experts because the routing invariant is the point. It s
 **Q:** Why can router precision matter so much?
 **A:** A small logit perturbation can change a discrete top-1 destination and therefore the entire expert computation path.
 
+## Worked Routing Path
+
+At one token position, the router computes a score for every expert and sends
+the token to the highest-scoring expert. Only that expert's feed-forward
+network runs, so active compute stays close to a dense layer while total
+parameter capacity grows. The router's auxiliary balancing loss matters
+because a router that sends nearly every token to one expert turns the other
+experts into unused storage and creates a capacity bottleneck.
+
+Production routing needs observability: log expert load, dropped-token rate,
+capacity factor, and quality by token class. Distributed all-to-all exchange
+can dominate runtime when expert placement is poor, so an apparently sparse
+model is not automatically cheap. Test router determinism, overflow handling,
+and the distinction between training-time noisy routing and inference-time
+dispatch before comparing throughput.
+
 ## Further Reading
 
 - [Original Switch Transformer paper](https://arxiv.org/abs/2101.03961)

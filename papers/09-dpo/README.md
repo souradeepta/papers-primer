@@ -176,6 +176,23 @@ This is not a language model or a benchmark. It isolates the gradient direction 
 **Q:** What does DPO give up relative to PPO RLHF?
 **A:** It does not perform on-policy exploration or use an online reward loop with adaptive PPO-style control.
 
+## Worked Preference Update
+
+For one prompt, DPO receives a preferred completion and a rejected completion.
+It compares how much more the current policy favors the preferred answer than
+the rejected one, relative to a fixed reference policy. If that relative gap
+is too small, the loss supplies a gradient that raises the preferred
+completion's log probability and lowers the rejected one. The reference term
+acts like a guardrail against drifting merely because a completion is easy to
+make more likely.
+
+The data pipeline is as important as the equation. Keep the prompt identical
+within each pair, tokenize both continuations under the same policy, mask prompt
+tokens out of completion likelihood, and audit pair quality. A preference pair
+with a malformed rejected answer can teach superficial formatting rather than
+the desired behavior. Evaluate both preference accuracy and task-specific
+safety or helpfulness after optimization.
+
 ## Further Reading
 
 - [Original DPO paper](https://arxiv.org/abs/2305.18290)
