@@ -38,11 +38,11 @@ All runnable teaching implementations are collected separately in
 | 28 | [Graph Attention Networks](papers/28-graph-attention-networks/README.md) | [1710.10903](https://arxiv.org/abs/1710.10903) | done |
 | 29 | [Denoising Diffusion Probabilistic Models](papers/29-ddpm/README.md) | [2006.11239](https://arxiv.org/abs/2006.11239) | done |
 | 30 | [Scaling Laws for Neural Language Models](papers/30-scaling-laws/README.md) | [2001.08361](https://arxiv.org/abs/2001.08361) | done |
-| 31 | Long Short-Term Memory | [DOI](https://doi.org/10.1162/neco.1997.9.8.1735) | done |
-| 32 | Sequence to Sequence Learning with Neural Networks | [1409.3215](https://arxiv.org/abs/1409.3215) | done |
-| 33 | Neural Machine Translation by Jointly Learning to Align and Translate | [1409.0473](https://arxiv.org/abs/1409.0473) | done |
-| 34 | Dropout: A Simple Way to Prevent Neural Networks from Overfitting | [JMLR](https://www.jmlr.org/papers/v15/srivastava14a.html) | done |
-| 35 | GloVe: Global Vectors for Word Representation | EMNLP 2014 | done |
+| 31 | [Long Short-Term Memory](papers/31-long-short-term-memory/README.md) | [DOI](https://doi.org/10.1162/neco.1997.9.8.1735) | done |
+| 32 | [Sequence to Sequence Learning with Neural Networks](papers/32-sequence-to-sequence-learning/README.md) | [1409.3215](https://arxiv.org/abs/1409.3215) | done |
+| 33 | [Neural Machine Translation by Jointly Learning to Align and Translate](papers/33-bahdanau-attention/README.md) | [1409.0473](https://arxiv.org/abs/1409.0473) | done |
+| 34 | [Dropout: A Simple Way to Prevent Neural Networks from Overfitting](papers/34-dropout/README.md) | [JMLR](https://www.jmlr.org/papers/v15/srivastava14a.html) | done |
+| 35 | [GloVe: Global Vectors for Word Representation](papers/35-glove/README.md) | EMNLP 2014 | done |
 
 ## Adding a new paper
 1. Copy `templates/PAPER_TEMPLATE.md` to `papers/NN-slug/README.md`.
