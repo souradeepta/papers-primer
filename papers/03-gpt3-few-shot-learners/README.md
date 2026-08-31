@@ -554,7 +554,7 @@ changes *how well* it works, not *whether* it works.
   paper manipulates together; crediting results to parameter count alone
   overstates what one paper's specific data-mixture choices established.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What, precisely, is the difference between few-shot learning as
 this paper defines it and fine-tuning?
@@ -653,7 +653,7 @@ recurring compute and latency cost paid on every single inference
 request, unlike a fine-tuning cost that's paid once and amortized across
 many later requests.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

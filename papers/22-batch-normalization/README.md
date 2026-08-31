@@ -264,7 +264,7 @@ evaluation uses accumulated running estimates.
 **“BatchNorm fixes any unstable training.”** Learning rate, loss scaling, data,
 and architecture can still cause divergence.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why are gamma and beta needed?
 **A:** They let the network recover useful feature scales and offsets after
@@ -294,7 +294,7 @@ framework detail. Small or nonrepresentative batches make estimates noisy, so
 verify train/eval behavior, checkpoint running statistics, and consider group
 or layer normalization when batch size is constrained.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

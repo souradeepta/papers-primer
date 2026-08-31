@@ -48,7 +48,13 @@ papers so readers can follow the historical learning path. -->
 ## Common Misconceptions & Pitfalls
 <!-- >=2 items -->
 
+## Quick Concept Checks
+<!-- Optional concise recall questions. These do not replace the official SDE2 interview section. -->
+
 ## Interview Q&A
+<!-- Official SDE2 section: include >=3 scenario pairs, >=3 explicit follow-ups,
+and >=6 paragraph-length answers of at least 40 prose words each. Cover the
+mechanism, production trade-offs, failure modes, and testing/debugging evidence. -->
 **Q:** <!-- question -->
 **A:** <!-- answer -->
 

@@ -276,7 +276,7 @@ recent behavior policy and must be refreshed regularly.
 **“A higher reward proves correct behavior.”** Reward can be misspecified or
 gamed, especially outside the training distribution.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What is the PPO ratio?
 **A:** The current policy's action probability divided by the rollout policy's
@@ -306,7 +306,7 @@ clip fraction, entropy, reward, and value error together. Normalize advantages
 and keep terminal masks correct, since a mistaken bootstrap target can dominate
 the policy signal.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

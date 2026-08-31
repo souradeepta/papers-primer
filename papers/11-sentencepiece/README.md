@@ -181,7 +181,7 @@ It is intentionally not a replacement for SentencePiece training. Its invariant 
 - **“Subword pieces are linguistically correct morphemes.”** They are statistical vocabulary units and can split or join text in non-linguistic ways.
 - **“A tokenizer can be swapped without retraining.”** Its IDs index learned embeddings, so a changed tokenizer changes the model’s input alphabet.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why does SentencePiece use a visible whitespace marker?
 **A:** It preserves word boundaries in the character stream, so concatenating decoded pieces can restore spaces deterministically.
@@ -207,7 +207,7 @@ can reconstruct it without a language-specific word splitter. Test round trips
 on punctuation, multiple spaces, and languages without word boundaries; those
 cases reveal pipeline assumptions that ordinary English examples hide.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

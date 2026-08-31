@@ -271,7 +271,7 @@ causal claims require intervention evidence.
 **“Inductive means preprocessing is unnecessary.”** Features, edge semantics,
 node IDs, and split policy remain part of the model contract.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What does GAT normalize?
 **A:** Scores across each target node's allowed neighborhood.
@@ -297,7 +297,7 @@ feature. Inspect normalization by node degree and use sparse edge operations;
 building a dense adjacency square makes even a modest graph unnecessarily
 expensive.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

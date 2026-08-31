@@ -278,7 +278,7 @@ prediction type and training schedule.
 **“More steps always improve a product.”** They can increase quality but also
 latency, cost, and operational failure opportunities.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What does a basic DDPM network predict?
 **A:** Usually the Gaussian noise added at a sampled timestep.
@@ -304,7 +304,7 @@ Precompute schedule coefficients with care, keep timestep broadcasting correct,
 and inspect generated samples across the reverse trajectory rather than only
 the final image.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

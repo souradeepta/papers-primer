@@ -194,7 +194,7 @@ The constants are intentionally illustrative. The point is executable intuition:
 
 **“A lower pre-training loss guarantees better behavior.”** Loss is an important proxy and Chinchilla reports downstream evaluations, but safety, factuality, instruction following, domain fit, and latency require their own measurements and post-training work.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What question does Chinchilla answer?
 **A:** Given fixed dense language-model training compute, it asks how to allocate that budget between parameter count and training-token count to minimize final pre-training loss.
@@ -234,7 +234,7 @@ tokens, report compute, and compare models at matched budgets. A model that
 looks impressive at one size may be an inefficient use of the same training
 resources.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

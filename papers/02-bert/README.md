@@ -537,7 +537,7 @@ targets over long sequences, not guarantees for any individual short one.
   size as material to its state-of-the-art results, particularly on
   smaller fine-tuning datasets.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What specifically makes BERT "bidirectional" in a way that ELMo's
 combination of forward and backward LSTMs is not?
@@ -623,7 +623,7 @@ helps somewhat even on tasks that aren't explicitly about sentence pairs,
 though the much larger effect on SQuAD specifically comes from losing
 bidirectionality, not from losing NSP.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

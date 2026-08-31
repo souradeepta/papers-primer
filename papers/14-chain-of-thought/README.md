@@ -172,7 +172,7 @@ python3 papers/14-chain-of-thought/code/trace_majority_vote.py
 - **“The original paper introduced every reasoning prompt variant.”** Zero-shot CoT and self-consistency are later work.
 - **“More steps always help.”** They add cost, error opportunities, and sometimes distract smaller models.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What changes in CoT prompting compared with ordinary few-shot prompting?
 **A:** Demonstrations contain intermediate rationale tokens before final answers.
@@ -198,7 +198,7 @@ make every intermediate statement true. Use held-out answers, multiple prompt
 forms, and task-specific verification rather than grading only whether an
 explanation sounds plausible.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

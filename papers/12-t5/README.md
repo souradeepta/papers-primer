@@ -182,7 +182,7 @@ The program is a data transformation, not a trained Transformer. That is intenti
 - **“An encoder–decoder always beats a decoder-only model.”** Architecture choice depends on task, scale, data, serving constraints, and desired generation interface.
 - **“All T5 checkpoints share one exact configuration.”** Later T5-family releases alter objectives, data, training, and model settings.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What does the encoder contribute that a causal decoder lacks?
 **A:** It can represent every source token using both left and right source context before the target is generated.
@@ -208,7 +208,7 @@ target teaches the decoder to restore missing spans in order. Keep sentinel
 construction, target shifting, and task prefixes identical between pretraining
 and fine-tuning or the model receives a different interface than it learned.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

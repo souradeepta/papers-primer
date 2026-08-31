@@ -179,7 +179,7 @@ Expected output reports a maximum absolute difference on the order of 1e-7 betwe
 
 **"Enabling a fused/flash attention backend is a free, universal speedup."** It depends on head dimension, dtype, GPU generation, and sequence length being in the kernel's supported and favorable regime; unsupported configurations silently fall back to a slower kernel, and very short sequences may see little benefit since the eliminated HBM traffic is proportionally smaller relative to fixed overheads.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What specific problem does FlashAttention solve that sparse/approximate attention methods also try to solve, and how is its approach fundamentally different?
 **A:** Both address self-attention's quadratic time/memory cost in sequence length. Sparse and approximate methods (Reformer, Linformer, Performer, etc.) reduce cost by computing something other than exact softmax attention. FlashAttention instead keeps the exact math unchanged and reduces cost by minimizing data movement between GPU HBM and on-chip SRAM — it is an implementation-level, IO-aware algorithm, not a modeling-level approximation.
@@ -219,7 +219,7 @@ dropout, head dimension, dtype, and sequence lengths against the supported
 kernel path. A correct fallback is preferable to silently choosing a fast
 kernel with incompatible masking semantics.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

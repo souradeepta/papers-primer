@@ -272,7 +272,7 @@ autoencoder can reconstruct well while leaving a prior-sampled latent space bad.
 **“KL is just regularization.”** It has a probabilistic role: it relates the
 approximate posterior to the model's chosen prior.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What does amortized inference mean?
 **A:** One encoder network maps every input to posterior parameters instead of
@@ -302,7 +302,7 @@ reconstruction error with a KL term that keeps latents near a simple prior.
 Inspect both terms: a tiny reconstruction loss with collapsed KL means the
 decoder may be ignoring the latent code.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

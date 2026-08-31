@@ -270,7 +270,7 @@ transformed while still being designated as a positive pair.
 **“Loss alone proves representation quality.”** Transfer needs a held-out
 downstream evaluation and shortcut analysis.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What is a SimCLR positive pair?
 **A:** Two independently augmented views of the same source image.
@@ -299,7 +299,7 @@ are learned, so tune crop, color, blur, and batch size as part of the method.
 Evaluate frozen representations with a linear probe to separate representation
 quality from classifier fine-tuning.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

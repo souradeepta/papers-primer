@@ -267,7 +267,7 @@ task behavior, safety, or product utility.
 **“More parameters are always compute-optimal.”** A fixed budget also constrains
 tokens and training steps.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why use log axes?
 **A:** A power component becomes approximately linear, exposing trends and
@@ -293,7 +293,7 @@ then treat extrapolation as a planning estimate rather than a guarantee. Data
 quality, architecture, and optimizer changes can shift the curve, so do not
 mix incompatible runs into one tidy-looking power law.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

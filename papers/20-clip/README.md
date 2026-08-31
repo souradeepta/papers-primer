@@ -268,7 +268,7 @@ not a calibrated claim about reality.
 **“CLIP detects every object.”** Standard zero-shot scoring compares a whole
 image to supplied text; detection requires additional methods.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What is CLIP's training target?
 **A:** It identifies matching image-text pairs within a batch in both directions.
@@ -297,7 +297,7 @@ and duplicate captions matter. At zero-shot inference, compare an image
 embedding to carefully chosen text prompts; prompt wording is an input feature,
 not an afterthought.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

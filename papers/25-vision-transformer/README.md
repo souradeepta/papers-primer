@@ -260,7 +260,7 @@ pixels and patch size sets a resolution-versus-compute tradeoff.
 **“Attention makes positional information unnecessary.”** Position embeddings
 are required to distinguish layouts with the same unordered patch set.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** How many tokens does a patch ViT create?
 **A:** \(HW/P^2\) image patch tokens, plus any special tokens such as the class
@@ -291,7 +291,7 @@ but make sequence-square attention expensive. Validate image normalization,
 patch ordering, class-token handling, and resolution changes before attributing
 a result to architecture.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

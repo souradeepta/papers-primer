@@ -269,7 +269,7 @@ or evaluated on an uninformative split.
 **“Random noise guarantees diversity.”** A generator can ignore parts of its
 latent input and collapse to a few outputs.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What does a GAN learn without explicitly modeling?
 **A:** It learns a sampler that can produce data-like samples without requiring
@@ -299,7 +299,7 @@ discriminator can provide poor gradients, while a weak one gives little useful
 signal. Monitor sample diversity, discriminator behavior, and mode coverage,
 not a single scalar loss alone.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

@@ -187,7 +187,7 @@ The code is deliberately small: it demonstrates the paper’s probabilistic comp
 - **“Citations prove support.”** A cited document may be irrelevant or contradict the answer; support needs evaluation.
 - **“Updating documents automatically updates every response.”** The updated content must be chunked, embedded, indexed, retrieved, and used by the generator.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What are RAG’s parametric and non-parametric memories?
 **A:** The generator’s learned weights are parametric; the searchable document index is non-parametric.
@@ -213,7 +213,7 @@ metadata filters can change an answer before the generator runs. Evaluate
 retrieval recall separately from answer quality, and retain citations or chunk
 identifiers so an incorrect answer can be traced to retrieval versus synthesis.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

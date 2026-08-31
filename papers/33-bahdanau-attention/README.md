@@ -142,7 +142,7 @@ exactly zero probability.
 - Soft attention differs from a hard lookup: all valid positions can
   contribute.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What problem does Bahdanau attention solve?  
 **A:** The fixed-length encoder-vector bottleneck in recurrent Seq2Seq.
@@ -255,7 +255,7 @@ that their probability is zero. In a full translation model, log the alignment
 matrix with source and target tokens; it helps diagnose repeated, skipped, or
 misaligned content without claiming a causal explanation.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

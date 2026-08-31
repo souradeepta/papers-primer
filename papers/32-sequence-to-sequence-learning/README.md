@@ -141,7 +141,7 @@ training-versus-generation difference explicit.
   step; that is the next paper's contribution.
 - Teacher forcing during training differs from autoregressive inference.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What connects encoder and decoder?  
 **A:** The encoder final LSTM state initializes the decoder.
@@ -256,7 +256,7 @@ the central operational risk: a low teacher-forced loss can coexist with poor
 free-running output. Test exact token shifts, end-token termination, and
 length-stratified generation before optimizing beam search.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

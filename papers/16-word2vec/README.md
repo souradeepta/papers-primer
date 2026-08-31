@@ -251,7 +251,7 @@ statistic, not a lexical guarantee.
 where an offset is useful and exact-match scoring is brittle. Multiword names,
 polysemy, and cultural variation routinely break it.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What is the difference between CBOW and skip-gram?
 **A:** CBOW predicts a center word from its context; skip-gram predicts context
@@ -285,7 +285,7 @@ Build examples from a fixed window, exclude padding and self-pairs, then inspect
 nearest neighbors and a downstream task rather than assuming lower loss means
 better semantic behavior.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

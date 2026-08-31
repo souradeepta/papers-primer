@@ -270,7 +270,7 @@ and can contain approximation error.
 **“DQN handles any action space.”** Its max over actions assumes a manageable
 discrete set.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why use replay?
 **A:** It breaks up sequential correlation and lets transitions support several
@@ -300,7 +300,7 @@ Track replay coverage, epsilon schedule, target-update cadence, and episodic
 returns; one unusually high reward is not evidence that value learning is
 stable.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

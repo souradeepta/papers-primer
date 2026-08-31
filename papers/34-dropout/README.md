@@ -135,7 +135,7 @@ Switching model.train and model.eval is the key production behavior to notice.
 - Dropout is not the same as permanently pruning a network.
 - More dropout is not always better; too much blocks useful capacity.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why does dropout reduce overfitting?  
 **A:** It discourages units from relying on narrow co-adaptations.
@@ -254,7 +254,7 @@ outputs should match because inverted scaling already corrected expected
 activation size. This simple test catches a common deployment bug where a
 model is exported while still in training mode.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

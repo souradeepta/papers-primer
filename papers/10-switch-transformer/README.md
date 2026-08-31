@@ -180,7 +180,7 @@ The code does not train experts because the routing invariant is the point. It s
 - **“The balancing loss guarantees semantic specialists.”** It encourages traffic balance, not a human-interpretable division of labor.
 - **“Dropped tokens are harmless.”** They are a bounded-resource safety valve and must be monitored because systematic drops can degrade quality.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What makes Switch different from top-k MoE routing?
 **A:** It routes each token to exactly one expert, avoiding the second expert’s computation and combination step.
@@ -213,7 +213,7 @@ model is not automatically cheap. Test router determinism, overflow handling,
 and the distinction between training-time noisy routing and inference-time
 dispatch before comparing throughput.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

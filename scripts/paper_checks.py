@@ -23,6 +23,8 @@ CS_ANALOGY_MARKER = "💻 **CS analogy:**"
 _CODE_FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
 _IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+\.gif)\)")
 _QA_RE = re.compile(r"\*\*Q:\*\*")
+_FOLLOWUP_RE = re.compile(r"\*\*Follow-up:\*\*")
+_ANSWER_RE = re.compile(r"\*\*A:\*\*(.*?)(?=\n\n\*\*(?:Q|Follow-up):|\Z)", re.DOTALL)
 _LINK_RE = re.compile(r"\[[^\]]+\]\((https?://[^)]+)\)")
 
 
@@ -124,6 +126,27 @@ def check_mechanism_mermaid(text: str) -> list[str]:
 
 def check_qa_pairs(text: str) -> int:
     return len(_QA_RE.findall(text))
+
+
+def check_interview_quality(text: str) -> list[str]:
+    """Enforce the paragraph-depth standard in the official Interview Q&A."""
+    body = _section_body(text, "Interview Q&A")
+    if body is None:
+        return ["missing official Interview Q&A section"]
+    answers = [" ".join(a.split()) for a in _ANSWER_RE.findall(body)]
+    questions = len(re.findall(r"\*\*Q:\*\*", body))
+    followups = len(_FOLLOWUP_RE.findall(body))
+    errors = []
+    if questions < 3:
+        errors.append(f"only {questions} scenario questions; need >=3")
+    if followups < 3:
+        errors.append(f"only {followups} follow-ups; need >=3")
+    short = [len(a.split()) for a in answers if len(a.split()) < 40]
+    if len(answers) < 6:
+        errors.append(f"only {len(answers)} answers; need >=6 including follow-ups")
+    if short:
+        errors.append(f"{len(short)} answers are shorter than 40 words")
+    return errors
 
 
 def check_further_reading(text: str) -> int:

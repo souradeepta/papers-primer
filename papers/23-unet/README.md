@@ -269,7 +269,7 @@ that are directly useful for localization.
 **“Any image augmentation applies to masks.”** Geometry must match exactly and
 label interpolation must preserve categorical values.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why does U-Net downsample first?
 **A:** Downsampling grows receptive field and captures broader context efficiently.
@@ -294,7 +294,7 @@ paths restore location detail that a bottleneck alone loses. Check alignment
 after every crop or resize, because an off-by-one spatial mismatch can either
 crash concatenation or quietly shift segmentation boundaries.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

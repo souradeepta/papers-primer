@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from paper_checks import (
     check_code_dir,
     check_further_reading,
+    check_interview_quality,
     check_gifs,
     check_mechanism_mermaid,
     check_qa_pairs,
@@ -41,7 +42,9 @@ def test_paper_is_spec_compliant(paper_dir: Path):
     assert not code_errors, f"{paper_dir.name}: {code_errors}"
 
     qa_count = check_qa_pairs(text)
-    assert qa_count >= 5, f"{paper_dir.name}: {qa_count} Q&A pairs, need >= 5"
+    assert qa_count >= 5, f"{paper_dir.name}: {qa_count} Q&A markers, need >= 5"
+    interview_errors = check_interview_quality(text)
+    assert not interview_errors, f"{paper_dir.name}: {interview_errors}"
 
     reading_count = check_further_reading(text)
     assert reading_count >= 3, f"{paper_dir.name}: {reading_count} further-reading links, need >= 3"

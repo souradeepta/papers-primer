@@ -145,7 +145,7 @@ change a shorter sequence's hidden or cell state.
 - LSTM improves long-range retention; it does not guarantee perfect recall.
 - Hidden state is the exposed view of memory, not the cell state itself.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why is LSTM better than a basic RNN for long dependencies?  
 **A:** Its gated additive cell state can preserve information and gradients.
@@ -263,7 +263,7 @@ not harmless once a learned bias is present. Inspect forget-gate averages and
 gradient norms across long sequences, but do not mistake a large gate value for
 proof that a particular word caused a prediction.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

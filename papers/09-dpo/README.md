@@ -194,7 +194,7 @@ This is not a language model or a benchmark. It isolates the gradient direction 
 - **“The reference is optional bookkeeping.”** It anchors behavior and defines the log ratios. Accidentally training it invalidates the intended objective.
 - **“Offline means safe.”** Fixed preference data can be biased, noisy, jailbroken, or unrepresentative; DPO does not repair those labels.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What is the DPO training example format?
 **A:** A prompt plus a chosen and rejected completion, scored conditionally under both policy and frozen reference.
@@ -228,7 +228,7 @@ with a malformed rejected answer can teach superficial formatting rather than
 the desired behavior. Evaluate both preference accuracy and task-specific
 safety or helpfulness after optimization.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

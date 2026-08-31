@@ -463,7 +463,7 @@ probability distribution for a real (if untrained) set of projections.
   motivation for the scaling term (see The Mechanism above for the exact
   attribution).
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why divide by `sqrt(d_k)` in scaled dot-product attention — what
 actually breaks if you don't?
@@ -554,7 +554,7 @@ decoder design: the model is architecturally required to generate one
 token at a time at inference, even though it was trained with full
 sequences available in parallel (via teacher forcing).
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

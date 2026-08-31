@@ -267,7 +267,7 @@ weight decay have different updates with adaptive preconditioning.
 **“The denominator is curvature.”** Squared gradients are a diagonal history,
 not a Hessian estimate.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why does Adam need bias correction?
 **A:** Zero-initialized moving averages underestimate moments at early steps;
@@ -296,7 +296,7 @@ state belongs to each parameter tensor and must be checkpointed with model
 weights. Log learning rate, gradient norm, and update norm; these distinguish
 a data issue from an optimizer configuration whose effective step is too large.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

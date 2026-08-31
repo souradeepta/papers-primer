@@ -159,7 +159,7 @@ python3 papers/15-pagedattention-vllm/code/block_manager.py
 - **“Sharing a prefix is always safe.”** Shared blocks need reference counting, authorization-aware keys, and copy-on-write protection for modifications.
 - **“Near-zero waste means no memory limit.”** Active KV entries, weights, scheduler queues, and block metadata still consume finite GPU memory.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why does an LLM server need a KV cache?
 **A:** Decode steps reuse prior attention keys and values instead of recomputing the full prefix every token.
@@ -185,7 +185,7 @@ prefix blocks safely. A serving implementation must track block ownership,
 reference counts, eviction, and request cancellation; a cache leak or mistaken
 shared writable block is both a throughput and correctness failure.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

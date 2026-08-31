@@ -138,7 +138,7 @@ during training.
 - GloVe is not a contextual embedding model; each word type has one vector.
 - A high co-occurrence count alone is not semantic proof; corpus bias matters.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What data does GloVe learn from?  
 **A:** Word-context co-occurrence counts from a corpus.
@@ -252,7 +252,7 @@ memory on absent pairs. After fitting, inspect neighbors and downstream
 retrieval, because reducing log-count reconstruction loss alone does not
 guarantee useful semantics.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

@@ -504,7 +504,7 @@ assertions check.)
   simpler than, say, a game-playing RL agent, even though the underlying
   PPO algorithm is general-purpose.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Walk through the three stages of the RLHF pipeline in this paper —
 what does each stage optimize, and what does each stage's output feed
@@ -598,7 +598,7 @@ better instruction-following, meaning the two axes (scale/capability vs.
 alignment/preference-matching) genuinely can move somewhat independently
 in both directions, not just in InstructGPT's favor.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

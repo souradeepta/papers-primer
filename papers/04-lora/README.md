@@ -535,7 +535,7 @@ ablation is comparing.
   modest than the 10,000x parameter-count number might suggest at a
   glance.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Walk through the LoRA forward-pass equation and explain what each
 term does.
@@ -631,7 +631,7 @@ extra per-request compute (running two matrix multiplies instead of
 one merged one) for the ability to serve arbitrarily many task-specific
 adapters off a single copy of the base model's weights in memory.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

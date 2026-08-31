@@ -187,7 +187,7 @@ The program is deliberately a single-head vector calculation, not a language mod
 - **“Rotation makes attention translation invariant.”** The positional factor has the relative-offset identity; masks, content, boundaries, and learned layers can still make a whole network sensitive to absolute context.
 - **“RoPE solves arbitrary length extrapolation.”** The formula accepts any integer position, but a trained model may not use very long or rescaled phases well.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** Why rotate Q and K instead of the token embedding before projection?
 **A:** Rotating Q/K makes the relative-position identity apply directly to the dot product that produces attention logits. Pre-projection rotation would interact with learned projections differently.
@@ -220,7 +220,7 @@ autoregressive generation. A common serving bug is restarting positions at
 zero for a newly appended cached chunk, which changes the intended relative
 geometry even though tensor shapes still look valid.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 

@@ -261,7 +261,7 @@ learned mapping between internal feature tensors.
 **“Every shortcut is free.”** Projection shortcuts, normalization, and shape
 changes add cost and must be included in profiling.
 
-## Interview Q&A
+## Quick Concept Checks
 
 **Q:** What problem did ResNet target?
 **A:** Optimization degradation: deeper plain networks could train worse than
@@ -292,7 +292,7 @@ stage, use normalization and activation in the intended order, and compare a
 plain-depth control to confirm that residual paths—not just more parameters—
 improve optimization.
 
-## SDE2 Interview Drill-down
+## Interview Q&A
 
 These prompts are designed for a second-level software engineering interview: explain the mechanism, name the operational trade-off, and describe how you would test it.
 
